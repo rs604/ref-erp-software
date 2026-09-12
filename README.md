@@ -7,9 +7,9 @@ Built 9 Sep 2026, replacing the old Tokyo project.
 
 | Path | What it is |
 |---|---|
-| `migrations/` | Every change ever made to the database, in order. This folder IS the schema. |
-| `functions/` | Edge functions — small programs that run next to the database |
-| `tokyo-backup/` | Frozen rescue copy of the old Tokyo project. Reference only, nothing here runs. |
+| `supabase/migrations/` | Every change ever made to the database, in order. This folder IS the schema. |
+| `supabase/functions/` | Edge functions — small programs that run next to the database |
+| `supabase/tokyo-backup/` | Frozen rescue copy of the old Tokyo project. Reference only, nothing here runs. |
 
 ## The idea behind the shape
 
@@ -85,4 +85,4 @@ So the database keeps its own.
 
 ## Rebuilding this database from scratch
 
-Replay `migrations/` in filename order. There is no other source of truth.
+Replay `supabase/migrations/` in filename order. There is no other source of truth.
