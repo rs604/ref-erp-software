@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refcon ERP — Set Your Password</title>
+<style>
+  :root {
+    --bg:#eef1f4; --surface:#fff; --line:#dde2e8; --primary:#3b5b74;
+    --primary-dark:#2c4457; --text:#263238; --muted:#6b7684;
+    --danger:#a5453a; --danger-bg:#fbeceb; --success:#3a7a5d; --success-bg:#eaf5ef;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; color:var(--text);
+    display:flex; align-items:center; justify-content:center; padding:24px; }
+  .card { width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; padding:34px 28px 28px;
+    box-shadow:0 1px 3px rgba(38,50,56,.06),0 8px 24px rgba(38,50,56,.04); }
+  .simple-brand { font-size:13px; font-weight:700; letter-spacing:2px; color:var(--primary); margin-bottom:10px; }
+  h1 { font-size:22px; font-weight:650; letter-spacing:-.2px; margin:0 0 6px; }
+  .sub { color:var(--muted); font-size:13.5px; margin:0 0 26px; line-height:1.5; }
+  label { display:block; font-size:12.5px; color:var(--muted); margin:0 0 6px; font-weight:500; }
+  .field { margin-bottom:16px; }
+  input { width:100%; background:#fafbfc; border:1px solid var(--line); border-radius:8px;
+    padding:12px 14px; font-size:15.5px; color:var(--text); font-family:'Inter',sans-serif; outline:none; }
+  input:focus { border-color:var(--primary); background:#fff; }
+  button { width:100%; padding:13px; border-radius:8px; border:none; background:var(--primary);
+    color:#fff; font-size:14.5px; font-weight:600; cursor:pointer; margin-top:6px; }
+  button:hover { background:var(--primary-dark); }
+  button:disabled { opacity:.6; cursor:not-allowed; }
+  .linkbtn { background:none; border:none; color:var(--primary); font-size:12.5px;
+    text-align:center; margin-top:14px; padding:0; cursor:pointer; }
+  .linkbtn:hover { background:none; text-decoration:underline; }
+  .msg { margin-top:16px; padding:12px 14px; border-radius:8px; font-size:13.5px;
+    display:none; line-height:1.5; }
+  .msg.error { display:block; background:var(--danger-bg); border:1px solid #f0d3d0; color:var(--danger); }
+  .msg.success { display:block; background:var(--success-bg); border:1px solid #cfe6da; color:var(--success); }
+  .rules { font-size:12px; color:var(--muted); line-height:1.7; margin:0 0 18px; padding-left:18px; }
+  .rules li.ok { color:var(--success); }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="simple-brand">REF</div>
+    <h1 id="heading">Set Your Password</h1>
+    <p class="sub" id="subtitle">Choose a password only you know.</p>
+
+    <ul class="rules" id="rules">
+      <li id="r-len">At least 10 characters</li>
+      <li id="r-mix">A mix of letters and numbers</li>
+      <li id="r-match">Both boxes match</li>
+    </ul>
+
+    <form id="pwForm">
+      <div class="field">
+        <label for="pw1">New password</label>
+        <input type="password" id="pw1" autocomplete="new-password" required />
+      </div>
+      <div class="field">
+        <label for="pw2">Type it again</label>
+        <input type="password" id="pw2" autocomplete="new-password" required />
+      </div>
+      <button type="submit" id="saveBtn" disabled>Save Password</button>
+    </form>
+
+    <button type="button" class="linkbtn" id="backBtn">Back to sign in</button>
+    <div class="msg" id="msgBox"></div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="app-config.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var pw1 = document.getElementById('pw1');
+  var pw2 = document.getElementById('pw2');
+  var saveBtn = document.getElementById('saveBtn');
+  var msgBox = document.getElementById('msgBox');
+  var isFirstLogin = new URLSearchParams(window.location.search).get('first') === '1';
+
+  if (isFirstLogin) {
+    document.getElementById('heading').textContent = 'Choose Your Password';
+    document.getElementById('subtitle').textContent =
+      'This is your first sign-in. Set a password before you go any further.';
+  }
+
+  function show(kind, text) { msgBox.className = 'msg ' + kind; msgBox.textContent = text; }
+
+  function check() {
+    var a = pw1.value, b = pw2.value;
+    var okLen   = a.length >= 10;
+    var okMix   = /[A-Za-z]/.test(a) && /[0-9]/.test(a);
+    var okMatch = a.length > 0 && a === b;
+    document.getElementById('r-len').className   = okLen ? 'ok' : '';
+    document.getElementById('r-mix').className   = okMix ? 'ok' : '';
+    document.getElementById('r-match').className = okMatch ? 'ok' : '';
+    saveBtn.disabled = !(okLen && okMix && okMatch);
+    return okLen && okMix && okMatch;
+  }
+
+  pw1.addEventListener('input', check);
+  pw2.addEventListener('input', check);
+
+  /* A reset link from email arrives with a recovery session already in
+     place, so there is nothing extra to do here -- the library picks it
+     up from the address bar. If there is no session at all, the link has
+     expired or the page was opened directly. */
+  REF.getSession().then(function (session) {
+    if (!session) {
+      show('error', 'This link has expired, or you are not signed in. Ask for a new reset link.');
+      saveBtn.disabled = true;
+      pw1.disabled = true;
+      pw2.disabled = true;
+    }
+  });
+
+  document.getElementById('pwForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!check()) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    REF.changePassword(pw1.value).then(function (result) {
+      if (result.error) {
+        show('error', result.error.message || 'That password was not accepted. Try a different one.');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Password';
+        return;
+      }
+      /* Tell the server the starter password is gone, then move on. */
+      return REF.call('set-password-done', {}).then(function () {
+        show('success', 'Password saved. Taking you in...');
+        setTimeout(function () { window.location.href = 'index.html'; }, 1200);
+      });
+    }).catch(function () {
+      show('error', 'Could not save the password. Check your connection and try again.');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Password';
+    });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', function () {
+    window.location.href = 'index.html';
+  });
+
+  pw1.focus();
+})();
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1787838443';</script>
+<script>window.__BUILD_VERSION__ = '1789110669';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -67,13 +67,6 @@
   h1, h2, h3, .label-face { font-family: 'Inter', sans-serif; }
   .mono { font-family: 'IBM Plex Mono', monospace; }
 
-  #authGate {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
   .auth-card {
     width: 100%;
     max-width: 360px;
@@ -730,48 +723,6 @@
 </head>
 <body>
 
-<div id="authGate">
-  <div class="auth-card" id="loginCard">
-    <div class="auth-brand">REF ERP</div>
-    <p class="auth-title">Sign in</p>
-    <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@refconveyors.com" /></div>
-    <div class="field"><label>Password</label><input type="password" id="loginPassword" /></div>
-    <button class="btn btn-block" id="loginBtn">Sign in</button>
-    <button type="button" id="forgotPasswordLink" style="background:none; border:none; color:var(--steel); font-size:12.5px; margin-top:10px; cursor:pointer; text-decoration:underline;">Forgot password?</button>
-    <div class="msg" id="loginMsg"></div>
-  </div>
-
-  <div class="auth-card" id="forgotPasswordCard" style="display:none;">
-    <div class="auth-brand">REF ERP</div>
-    <p class="auth-title">Reset Password</p>
-    <p style="font-size:12.5px; color:var(--muted); margin-top:-6px;">Enter your email — if it has ERP access, we'll send a reset link.</p>
-    <div class="field"><label>Email</label><input type="email" id="forgotEmail" placeholder="you@refconveyors.com" /></div>
-    <button class="btn btn-block" id="sendResetBtn">Send Reset Link</button>
-    <button type="button" id="backToLoginLink" style="background:none; border:none; color:var(--steel); font-size:12.5px; margin-top:10px; cursor:pointer; text-decoration:underline;">‹ Back to sign in</button>
-    <div class="msg" id="forgotMsg"></div>
-  </div>
-
-  <div class="auth-card" id="resetPasswordCard" style="display:none;">
-    <div class="auth-brand">REF ERP</div>
-    <p class="auth-title">Set a New Password</p>
-    <p style="font-size:12.5px; color:var(--muted); margin-top:-6px;">Minimum 8 characters, with a letter, a number, and a symbol.</p>
-    <div class="field"><label>New Password</label><input type="password" id="resetNewPassword" /></div>
-    <div class="field"><label>Confirm New Password</label><input type="password" id="resetConfirmPassword" /></div>
-    <button class="btn btn-block" id="submitResetBtn">Set Password</button>
-    <div class="msg" id="resetMsg"></div>
-  </div>
-
-  <div class="auth-card" id="forceChangeCard" style="display:none;">
-    <div class="auth-brand">REF ERP</div>
-    <p class="auth-title">Set Your Password</p>
-    <p style="font-size:12.5px; color:var(--muted); margin-top:-6px;">This is your first login. Please set a permanent password — minimum 8 characters, with a letter, a number, and a symbol.</p>
-    <div class="field"><label>New Password</label><input type="password" id="forceNewPassword" /></div>
-    <div class="field"><label>Confirm New Password</label><input type="password" id="forceConfirmPassword" /></div>
-    <button class="btn btn-block" id="submitForceChangeBtn">Set Password &amp; Continue</button>
-    <div class="msg" id="forceChangeMsg"></div>
-  </div>
-</div>
-
 <div class="app-shell" id="appShell" style="display:none">
   <div class="sidebar">
     <div class="sidebar-brand" style="display:flex; align-items:center; justify-content:space-between;">
@@ -974,10 +925,9 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="app-config.js"></script>
 <script>
-  const SUPABASE_URL = "https://mamamjohuuacxezcwgqv.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_uqu742FOxl_J1VqWOsrtjw_-Ja4QfNa";
-
   let currentUser = null;
   let dashboardData = null;
 
@@ -1053,9 +1003,7 @@
     }
   }
 
-  const authGate = document.getElementById('authGate');
   const appShell = document.getElementById('appShell');
-  const loginMsg = document.getElementById('loginMsg');
 
   const pageTitles = {
     approvals: ['Approvals', 'Entries waiting for your review'],
@@ -1066,77 +1014,17 @@
     settings: ['Settings', 'Configure system-wide rules'],
   };
 
-  async function apiLogin(mobile, pin) {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({ mobile_number: mobile, pin })
-    });
-    return res.json();
-  }
+  async function apiAdmin(payload) { return REF.call('admin-actions', payload); }
 
-  async function apiErpAuth(payload) {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/erp-auth`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify(payload)
-    });
-    return res.json();
-  }
+  async function apiHR(payload) { return REF.call('hr-actions', payload); }
 
-  async function apiAdmin(payload) {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-actions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({ requester_id: currentUser.id, ...payload })
-    });
-    return res.json();
-  }
+  async function apiPermissions(payload) { return REF.call('permissions-actions', payload); }
 
-  async function apiHR(payload) {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/hr-actions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({ requester_id: currentUser.id, ...payload })
-    });
-    return res.json();
-  }
+  async function apiPayroll(payload) { return REF.call('payroll-actions', payload); }
 
-  async function apiPermissions(payload) {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/permissions-actions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({ requester_id: currentUser.id, ...payload })
-    });
-    return res.json();
-  }
+  async function apiHRMS(payload) { return REF.call('hrms-actions', payload); }
 
-  async function apiPayroll(payload) {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/payroll-actions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({ requester_id: currentUser.id, ...payload })
-    });
-    return res.json();
-  }
-
-  async function apiHRMS(payload) {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/hrms-actions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({ requester_id: currentUser.id, ...payload })
-    });
-    return res.json();
-  }
-
-  async function apiVendor(payload) {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/vendor-actions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({ requester_id: currentUser.id, ...payload })
-    });
-    return res.json();
-  }
+  async function apiVendor(payload) { return REF.call('vendor-actions', payload); }
 
   let controlPanelLoaded = false;
   let adminPanelLoaded = false;
@@ -1163,14 +1051,6 @@
     renderEmployeeMasterList();
   }
 
-  let sessionToken = null;
-
-  function showAuthCard(cardId) {
-    ['loginCard', 'forgotPasswordCard', 'resetPasswordCard', 'forceChangeCard'].forEach(id => {
-      document.getElementById(id).style.display = id === cardId ? 'block' : 'none';
-    });
-  }
-
   const VIEW_PERMISSION_MAP = {
     'km-tracker': 'km_tracker.view',
     'employee-master': 'employee_master.view',
@@ -1184,12 +1064,8 @@
   let myPermissionKeys = [];
 
   async function applyNavVisibility() {
-    isOwnerUser = currentUser.role === 'owner';
-    myPermissionKeys = [];
-    if (!isOwnerUser) {
-      const data = await apiPermissions({ action: 'get_my_permissions' });
-      if (data.success) myPermissionKeys = data.permission_keys || [];
-    }
+    isOwnerUser = currentUser.is_owner;
+    myPermissionKeys = currentUser.permissions || [];
     document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
       const view = btn.dataset.view;
       if (view === 'admin-panel') {
@@ -1215,102 +1091,14 @@
     });
   }
 
-  function completeLogin(employee, token) {
-    currentUser = employee;
-    sessionToken = token;
-    sessionStorage.setItem('admin_session', JSON.stringify(currentUser));
-    sessionStorage.setItem('admin_session_token', sessionToken);
-    authGate.style.display = 'none';
+  function completeLogin(user) {
+    currentUser = user;
     appShell.style.display = 'flex';
     document.getElementById('userName').textContent = currentUser.name;
-    document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
+    document.getElementById('userRole').textContent = (currentUser.is_owner ? 'OWNER' : (currentUser.roles[0] || 'STAFF')).toUpperCase();
     applyNavVisibility();
     switchMainView('home');
   }
-
-  document.getElementById('loginBtn').addEventListener('click', async () => {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    loginMsg.className = 'msg';
-    const btn = document.getElementById('loginBtn');
-    setButtonLoading(btn, true, 'Signing in');
-    const data = await apiErpAuth({ action: 'login', email, password });
-    setButtonLoading(btn, false);
-    if (!data.success) {
-      loginMsg.className = 'msg error';
-      loginMsg.textContent = data.error || 'Login failed.';
-      return;
-    }
-    if (data.employee.must_change_password) {
-      sessionToken = data.token;
-      pendingForceChangeEmployee = data.employee;
-      showAuthCard('forceChangeCard');
-      return;
-    }
-    completeLogin(data.employee, data.token);
-  });
-
-  let pendingForceChangeEmployee = null;
-
-  document.getElementById('forgotPasswordLink').addEventListener('click', () => showAuthCard('forgotPasswordCard'));
-  document.getElementById('backToLoginLink').addEventListener('click', () => showAuthCard('loginCard'));
-
-  document.getElementById('sendResetBtn').addEventListener('click', async () => {
-    const email = document.getElementById('forgotEmail').value.trim();
-    const msg = document.getElementById('forgotMsg');
-    msg.className = 'msg';
-    if (!email) { msg.className = 'msg error'; msg.textContent = 'Please enter your email.'; return; }
-    const btn = document.getElementById('sendResetBtn');
-    setButtonLoading(btn, true, 'Sending');
-    const data = await apiErpAuth({ action: 'request_password_reset', email });
-    setButtonLoading(btn, false);
-    msg.className = 'msg success';
-    msg.textContent = data.message || 'If that email has ERP access, a reset link has been sent.';
-  });
-
-  document.getElementById('submitResetBtn').addEventListener('click', async () => {
-    const newPw = document.getElementById('resetNewPassword').value;
-    const confirmPw = document.getElementById('resetConfirmPassword').value;
-    const msg = document.getElementById('resetMsg');
-    msg.className = 'msg';
-    if (newPw !== confirmPw) { msg.className = 'msg error'; msg.textContent = 'Passwords do not match.'; return; }
-    const urlParams = new URLSearchParams(window.location.search);
-    const resetToken = urlParams.get('reset_token');
-    const btn = document.getElementById('submitResetBtn');
-    setButtonLoading(btn, true, 'Saving');
-    const data = await apiErpAuth({ action: 'reset_password', reset_token: resetToken, new_password: newPw });
-    setButtonLoading(btn, false);
-    if (!data.success) { msg.className = 'msg error'; msg.textContent = data.error; return; }
-    msg.className = 'msg success';
-    msg.textContent = 'Password updated. You can now sign in.';
-    window.history.replaceState({}, '', window.location.pathname);
-    setTimeout(() => showAuthCard('loginCard'), 1200);
-  });
-
-  document.getElementById('submitForceChangeBtn').addEventListener('click', async () => {
-    const newPw = document.getElementById('forceNewPassword').value;
-    const confirmPw = document.getElementById('forceConfirmPassword').value;
-    const msg = document.getElementById('forceChangeMsg');
-    msg.className = 'msg';
-    if (newPw !== confirmPw) { msg.className = 'msg error'; msg.textContent = 'Passwords do not match.'; return; }
-    const btn = document.getElementById('submitForceChangeBtn');
-    setButtonLoading(btn, true, 'Saving');
-    const data = await apiErpAuth({ action: 'change_password', token: sessionToken, new_password: newPw });
-    setButtonLoading(btn, false);
-    if (!data.success) { msg.className = 'msg error'; msg.textContent = data.error; return; }
-    pendingForceChangeEmployee.must_change_password = false;
-    completeLogin(pendingForceChangeEmployee, sessionToken);
-  });
-
-  // If the page loaded with a password-reset link, show that screen immediately
-  (function checkForResetToken() {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('reset_token')) {
-      authGate.style.display = 'flex';
-      appShell.style.display = 'none';
-      showAuthCard('resetPasswordCard');
-    }
-  })();
 
   // --- Sidebar tree: expandable parents (Control Panel, Masters, HR) ---
   document.querySelectorAll('.nav-parent').forEach(btn => {
@@ -1433,7 +1221,7 @@
 
   async function loadHome() {
     showSpinner('homeContent');
-    const isOwner = currentUser.role === 'owner';
+    const isOwner = currentUser.is_owner;
 
     const [pendingRes, myRes] = await Promise.all([
       isOwner ? apiHR({ action: 'get_pending_erp_requests' }) : Promise.resolve({ success: true, requests: [] }),
@@ -1566,13 +1354,16 @@
     }
   });
 
+  const ENTRY_STATUS_TAG = { draft: 'pending_evening', submitted: 'calculated', approved: 'approved', completed: 'paid', cancelled: 'rejected' };
+  const ENTRY_STATUS_LABEL = { draft: 'Pending evening', submitted: 'Awaiting approval', approved: 'Approved', completed: 'Paid', cancelled: 'Rejected' };
+
   function buildTable(rows, showActions) {
     let html = `<div class="table-scroll"><table class="ledger"><thead><tr>
       <th>Employee</th><th>Date</th><th>Vehicle</th><th>Morning</th><th>Evening</th><th>KM</th><th>Cost</th><th>Status</th>${showActions ? '<th>Action</th>' : ''}
     </tr></thead><tbody>`;
     rows.forEach(e => {
-      const rowClass = e.status === 'calculated' ? 'row-pending' : e.status === 'approved' ? 'row-approved' : e.status === 'rejected' ? 'row-rejected' : e.status === 'paid' ? 'row-paid' : 'row-open';
-      const rejectionNote = e.status === 'rejected' && e.rejection_reason ? `<div class="rejection-note">Reason: ${e.rejection_reason}</div>` : '';
+      const rowClass = e.status === 'submitted' ? 'row-pending' : e.status === 'approved' ? 'row-approved' : e.status === 'cancelled' ? 'row-rejected' : e.status === 'completed' ? 'row-paid' : 'row-open';
+      const rejectionNote = e.status === 'cancelled' && e.rejection_reason ? `<div class="rejection-note">Reason: ${e.rejection_reason}</div>` : '';
       html += `<tr class="${rowClass}">
         <td data-label="Employee">${e.employees?.name || '—'}</td>
         <td data-label="Date" class="mono">${e.entry_date}</td>
@@ -1591,7 +1382,7 @@
         </td>
         <td data-label="KM" class="num-cell">${e.km_traveled ?? '—'}</td>
         <td data-label="Cost" class="num-cell">${e.cost !== null ? '₹' + e.cost : '—'}</td>
-        <td data-label="Status"><span class="status-tag ${e.status}">${e.status.replace('_',' ')}</span>${rejectionNote}</td>
+        <td data-label="Status"><span class="status-tag ${ENTRY_STATUS_TAG[e.status] || 'pending_evening'}">${ENTRY_STATUS_LABEL[e.status] || e.status.replace('_',' ')}</span>${rejectionNote}</td>
         ${showActions ? `<td class="action-cell" data-label="">
           <div style="display:flex; gap:6px;">
             <button class="btn btn-sm approve-btn" data-id="${e.id}">Approve</button>
@@ -1605,7 +1396,7 @@
   }
 
   function renderApprovals() {
-    const pending = dashboardData.entries.filter(e => e.status === 'calculated');
+    const pending = dashboardData.entries.filter(e => e.status === 'submitted');
 
     let html = `<div class="panel">
       <div class="panel-header header-pending"><span class="panel-title">Pending Approval<span class="count-chip">${pending.length}</span></span></div>
@@ -1659,7 +1450,7 @@
   function openFiltersModal() {
     const employeeOptions = dashboardData.employees.map(e => `<option value="${e.id}" ${activeFilters.employee === e.id ? 'selected' : ''}>${e.name}</option>`).join('');
     const vehicleOptions = dashboardData.vehicles.map(v => `<option value="${v.id}" ${activeFilters.vehicle === v.id ? 'selected' : ''}>${v.vehicle_name}</option>`).join('');
-    const statusOpts = ['pending_evening','calculated','approved','rejected','paid'].map(s => `<option value="${s}" ${activeFilters.status === s ? 'selected' : ''}>${s.replace('_',' ')}</option>`).join('');
+    const statusOpts = ['draft','submitted','approved','completed','cancelled'].map(s => `<option value="${s}" ${activeFilters.status === s ? 'selected' : ''}>${ENTRY_STATUS_LABEL[s] || s.replace('_',' ')}</option>`).join('');
 
     const modalHtml = `
       <div class="auth-card" style="max-width:420px" onclick="event.stopPropagation()">
@@ -1714,7 +1505,7 @@
       const veh = dashboardData.vehicles.find(v => v.id === activeFilters.vehicle);
       chips.push(`Vehicle: ${veh ? veh.vehicle_name : '—'}`);
     }
-    if (activeFilters.status) chips.push(`Status: ${activeFilters.status.replace('_',' ')}`);
+    if (activeFilters.status) chips.push(`Status: ${ENTRY_STATUS_LABEL[activeFilters.status] || activeFilters.status.replace('_',' ')}`);
     if (activeFilters.from) chips.push(`From: ${activeFilters.from}`);
     if (activeFilters.to) chips.push(`To: ${activeFilters.to}`);
 
@@ -1779,7 +1570,7 @@
           <div class="roster-meta">${emp.mobile_number} · ${emp.status}</div></div>
           <div>
           ${emp.status === 'active' && emp.role !== 'owner' ? `<button class="btn btn-sm btn-danger init-removal-btn" data-id="${emp.id}">Remove</button>` : ''}
-          ${emp.status === 'pending_removal' && currentUser.role === 'owner' ? `<button class="btn btn-sm approve-removal-btn" data-id="${emp.id}">Confirm Removal</button>` : ''}
+          ${emp.status === 'pending_removal' && currentUser.is_owner ? `<button class="btn btn-sm approve-removal-btn" data-id="${emp.id}">Confirm Removal</button>` : ''}
           </div>
         </div>
         ${vehicleControl}
@@ -1794,7 +1585,7 @@
       const btn = document.getElementById('addEmpBtn');
       msg.className = 'msg';
       setButtonLoading(btn, true, 'Adding');
-      const res = await apiAdmin({
+      const res = await apiHR({
         action: 'add_employee',
         name: document.getElementById('newEmpName').value.trim(),
         mobile_number: document.getElementById('newEmpMobile').value.trim(),
@@ -2418,7 +2209,7 @@
           </tr></thead><tbody>
             ${rows.length === 0 ? `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:18px;">No salary sheets yet. Create one to get started.</td></tr>` : rows.map(p => `
               <tr class="${p.status === 'finalised' ? 'row-approved' : 'row-open'}">
-                <td><strong>${monthLabel(p.period_month, p.period_year)}</strong></td>
+                <td><strong>${monthLabel(p.period_month_no, p.period_year)}</strong></td>
                 <td><span class="status-tag ${p.status === 'finalised' ? 'approved' : 'calculated'}">${p.status}</span></td>
                 <td>${fmtShortDate(p.created_at)}</td>
                 <td>${p.finalised_at ? fmtShortDate(p.finalised_at) : '—'}</td>
@@ -2616,7 +2407,7 @@
       ${canEdit ? `<button class="btn btn-sm" id="paySaveBtn" disabled title="Save your figures to the database. The sheet stays editable and nothing is deducted from any loan or advance ledger yet.">Save Draft</button>` : ''}
       ${canFinalise ? `<button class="btn btn-sm btn-outline" id="payFinaliseBtn" title="Lock this sheet and post the deductions: loan amounts are recorded against each loan and advance amounts reduce each outstanding advance. This cannot be undone.">Finalise &amp; Post</button>` : ''}
     `);
-    document.getElementById('pageTitle').textContent = `Salary Sheet — ${monthLabel(period.period_month, period.period_year)}`;
+    document.getElementById('pageTitle').textContent = `Salary Sheet — ${monthLabel(period.period_month_no, period.period_year)}`;
     document.getElementById('pageSub').innerHTML = `<span class="status-tag ${locked ? 'approved' : 'calculated'}">${period.status}</span> <span style="margin-left:6px;">${entries.length} employees</span>`;
     document.querySelector('#view-salary-calculator .content')?.classList.add('content-flush');
 
@@ -2940,7 +2731,7 @@
     const totalAdv = currentPayrollSheet.entries.reduce((s, e) => s + Number(e.advance_deduction || 0), 0);
 
     if (!confirm(
-      `Finalise the salary sheet for ${monthLabel(p.period_month, p.period_year)}?\n\n` +
+      `Finalise the salary sheet for ${monthLabel(p.period_month_no, p.period_year)}?\n\n` +
       `Net payable: ${fmtMoney(totalNet)}\n` +
       `Loan deductions to post: ${fmtMoney(totalLoan)}\n` +
       `Advance recoveries to post: ${fmtMoney(totalAdv)}\n\n` +
@@ -2971,7 +2762,7 @@
       <div id="slipPrintArea" style="font-family:Inter,sans-serif; color:#111;">
         <div style="text-align:center; border-bottom:2px solid #111; padding-bottom:10px; margin-bottom:14px;">
           <div style="font-size:16px; font-weight:700;">RAGHBIR ERECTORS &amp; FABRICATORS</div>
-          <div style="font-size:12px; margin-top:2px;">Salary Slip — ${monthLabel(per.period_month, per.period_year)}</div>
+          <div style="font-size:12px; margin-top:2px;">Salary Slip — ${monthLabel(per.period_month_no, per.period_year)}</div>
         </div>
         <table style="width:100%; font-size:12px; margin-bottom:14px;">
           <tr><td style="padding:3px 0;"><strong>Name:</strong> ${emp.name || ''}</td><td style="padding:3px 0;"><strong>Code:</strong> ${emp.employee_code || ''}</td></tr>
@@ -3012,7 +2803,7 @@
     document.getElementById('slipCloseBtn').addEventListener('click', closeModal);
     document.getElementById('slipPrintBtn').addEventListener('click', () => {
       const w = window.open('', '_blank');
-      w.document.write(`<html><head><title>Salary Slip - ${emp.name || ''} - ${monthLabel(per.period_month, per.period_year)}</title>
+      w.document.write(`<html><head><title>Salary Slip - ${emp.name || ''} - ${monthLabel(per.period_month_no, per.period_year)}</title>
         <style>body{font-family:Inter,Arial,sans-serif;padding:28px;max-width:720px;margin:0 auto;}table{border-collapse:collapse;}</style>
         </head><body>${document.getElementById('slipPrintArea').innerHTML}</body></html>`);
       w.document.close();
@@ -3032,9 +2823,23 @@
   let loansData = null;
   let advancesData = null;
   let laActiveTab = 'loans';
-  let loanStatusFilter = 'active';
-  let advanceStatusFilter = 'outstanding';
+  let loanStatusFilter = 'open';
+  let advanceStatusFilter = 'open';
   let laSearchQuery = '';
+
+  // The back end now speaks the shared status vocabulary for these two ledgers:
+  //   draft -> submitted -> approved -> completed, plus cancelled.
+  // It still sends the old word alongside as `legacy_status`, but every
+  // comparison below is on the real `status`. A loan/advance is still "open"
+  // (money outstanding, ledger live) in any state before completed, which is
+  // exactly what the old word 'active' / 'outstanding' used to mean.
+  const LA_OPEN_STATUSES = ['draft', 'submitted', 'approved'];
+  const laIsOpen = (s) => LA_OPEN_STATUSES.includes(s);
+  const laStatusTagClass = (s) => s === 'completed' ? 'approved' : (s === 'cancelled' ? 'rejected' : 'calculated');
+  const LOAN_STATUS_LABEL = { draft: 'Draft', submitted: 'Pending Approval', approved: 'Active', completed: 'Closed', cancelled: 'Cancelled' };
+  const ADVANCE_STATUS_LABEL = { draft: 'Draft', submitted: 'Pending Approval', approved: 'Outstanding', completed: 'Recovered', cancelled: 'Cancelled' };
+  const LOAN_FILTER_LABEL = { open: 'active', completed: 'closed', cancelled: 'cancelled' };
+  const ADVANCE_FILTER_LABEL = { open: 'outstanding', completed: 'recovered', cancelled: 'cancelled' };
 
   function fmtMoney(n) {
     const v = Number(n || 0);
@@ -3120,45 +2925,46 @@
   // ---------------- LOANS PANE ----------------
   function renderLoansPane(employeeId, scoped, canCreate, canEdit) {
     let rows = loansData || [];
-    if (loanStatusFilter !== 'all') rows = rows.filter(l => l.status === loanStatusFilter);
+    if (loanStatusFilter === 'open') rows = rows.filter(l => laIsOpen(l.status));
+    else if (loanStatusFilter !== 'all') rows = rows.filter(l => l.status === loanStatusFilter);
     if (!scoped && laSearchQuery) {
       const q = laSearchQuery.toLowerCase();
       rows = rows.filter(l => (l.employees?.name || '').toLowerCase().includes(q) || (l.employees?.employee_code || '').toLowerCase().includes(q));
     }
-    const totalOutstanding = rows.filter(l => l.status === 'active').reduce((s, l) => s + Number(l.balance), 0);
+    const totalOutstanding = rows.filter(l => laIsOpen(l.status)).reduce((s, l) => s + Number(l.balance), 0);
 
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
         <p style="font-size:12px; color:var(--muted); margin:0;">Money lent to an employee, repaid over multiple months.</p>
         <div style="display:flex; gap:8px; align-items:center;">
           <select id="loanStatusFilter" style="font-size:12.5px; padding:6px 10px; border-radius:6px; border:1px solid var(--border);">
-            <option value="active" ${loanStatusFilter === 'active' ? 'selected' : ''}>Active</option>
-            <option value="closed" ${loanStatusFilter === 'closed' ? 'selected' : ''}>Closed</option>
+            <option value="open" ${loanStatusFilter === 'open' ? 'selected' : ''}>Active</option>
+            <option value="completed" ${loanStatusFilter === 'completed' ? 'selected' : ''}>Closed</option>
             <option value="cancelled" ${loanStatusFilter === 'cancelled' ? 'selected' : ''}>Cancelled</option>
             <option value="all" ${loanStatusFilter === 'all' ? 'selected' : ''}>All</option>
           </select>
           ${canCreate ? `<button class="btn btn-sm" id="loanAddBtn">+ New Loan</button>` : ''}
         </div>
       </div>
-      ${loanStatusFilter === 'active' && rows.length > 0 ? `<div style="padding:10px 14px; background:var(--surface-sunken); border:1px solid var(--border); border-radius:6px; margin-bottom:14px; font-size:13px;">Total outstanding: <strong>${fmtMoney(totalOutstanding)}</strong></div>` : ''}
+      ${loanStatusFilter === 'open' && rows.length > 0 ? `<div style="padding:10px 14px; background:var(--surface-sunken); border:1px solid var(--border); border-radius:6px; margin-bottom:14px; font-size:13px;">Total outstanding: <strong>${fmtMoney(totalOutstanding)}</strong></div>` : ''}
       <div class="table-scroll">
         <table class="ledger"><thead><tr>
           ${!scoped ? '<th>Employee</th>' : ''}
           <th>Amount</th><th>Repaid</th><th>Balance</th><th>Disbursed</th><th>Schedule</th><th>Status</th><th>Action</th>
         </tr></thead><tbody>
-          ${rows.length === 0 ? `<tr><td colspan="${scoped ? 7 : 8}" style="text-align:center; color:var(--muted); padding:16px;">No ${loanStatusFilter === 'all' ? '' : loanStatusFilter + ' '}loans.</td></tr>` : rows.map(l => `
-            <tr class="${l.status === 'active' ? 'row-open' : 'row-approved'}">
+          ${rows.length === 0 ? `<tr><td colspan="${scoped ? 7 : 8}" style="text-align:center; color:var(--muted); padding:16px;">No ${loanStatusFilter === 'all' ? '' : (LOAN_FILTER_LABEL[loanStatusFilter] || loanStatusFilter) + ' '}loans.</td></tr>` : rows.map(l => `
+            <tr class="${laIsOpen(l.status) ? 'row-open' : 'row-approved'}">
               ${!scoped ? `<td><strong>${l.employees?.name || '—'}</strong><div style="font-size:11px; color:var(--muted);">${l.employees?.employee_code || ''}</div></td>` : ''}
               <td>${fmtMoney(l.principal_amount)}</td>
               <td>${fmtMoney(l.total_repaid)}</td>
               <td><strong style="color:${Number(l.balance) > 0 ? 'var(--danger)' : 'var(--green)'};">${fmtMoney(l.balance)}</strong></td>
               <td>${fmtShortDate(l.disbursed_on)}</td>
               <td style="font-size:12px;">${l.monthly_deduction ? fmtMoney(l.monthly_deduction) + '/mo' : (l.total_installments ? l.total_installments + ' installments' : '—')}</td>
-              <td><span class="status-tag ${l.status === 'active' ? 'calculated' : (l.status === 'closed' ? 'approved' : 'rejected')}">${l.status}</span></td>
+              <td><span class="status-tag ${laStatusTagClass(l.status)}">${LOAN_STATUS_LABEL[l.status] || l.status}</span></td>
               <td class="action-cell">
                 <div style="display:flex; gap:4px; flex-wrap:wrap;">
                   <button class="btn btn-sm btn-outline loan-history-btn" data-id="${l.id}">History</button>
-                  ${l.status === 'active' && canEdit ? `<button class="btn btn-sm loan-repay-btn" data-id="${l.id}">+ Repayment</button>` : ''}
+                  ${l.status === 'approved' && canEdit ? `<button class="btn btn-sm loan-repay-btn" data-id="${l.id}">+ Repayment</button>` : ''}
                 </div>
               </td>
             </tr>
@@ -3197,43 +3003,44 @@
   // ---------------- ADVANCES PANE ----------------
   function renderAdvancesPane(employeeId, scoped, canCreate, canEdit) {
     let rows = advancesData || [];
-    if (advanceStatusFilter !== 'all') rows = rows.filter(a => a.status === advanceStatusFilter);
+    if (advanceStatusFilter === 'open') rows = rows.filter(a => laIsOpen(a.status));
+    else if (advanceStatusFilter !== 'all') rows = rows.filter(a => a.status === advanceStatusFilter);
     if (!scoped && laSearchQuery) {
       const q = laSearchQuery.toLowerCase();
       rows = rows.filter(a => (a.employees?.name || '').toLowerCase().includes(q) || (a.employees?.employee_code || '').toLowerCase().includes(q));
     }
-    const totalOutstanding = rows.filter(a => a.status === 'outstanding').reduce((s, a) => s + Number(a.outstanding), 0);
+    const totalOutstanding = rows.filter(a => laIsOpen(a.status)).reduce((s, a) => s + Number(a.outstanding), 0);
 
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
         <p style="font-size:12px; color:var(--muted); margin:0;">Salary paid early, recovered from that month's salary. Any shortfall carries to the next month.</p>
         <div style="display:flex; gap:8px; align-items:center;">
           <select id="advStatusFilter" style="font-size:12.5px; padding:6px 10px; border-radius:6px; border:1px solid var(--border);">
-            <option value="outstanding" ${advanceStatusFilter === 'outstanding' ? 'selected' : ''}>Outstanding</option>
-            <option value="recovered" ${advanceStatusFilter === 'recovered' ? 'selected' : ''}>Recovered</option>
+            <option value="open" ${advanceStatusFilter === 'open' ? 'selected' : ''}>Outstanding</option>
+            <option value="completed" ${advanceStatusFilter === 'completed' ? 'selected' : ''}>Recovered</option>
             <option value="cancelled" ${advanceStatusFilter === 'cancelled' ? 'selected' : ''}>Cancelled</option>
             <option value="all" ${advanceStatusFilter === 'all' ? 'selected' : ''}>All</option>
           </select>
           ${canCreate ? `<button class="btn btn-sm" id="advAddBtn">+ New Advance</button>` : ''}
         </div>
       </div>
-      ${advanceStatusFilter === 'outstanding' && rows.length > 0 ? `<div style="padding:10px 14px; background:var(--surface-sunken); border:1px solid var(--border); border-radius:6px; margin-bottom:14px; font-size:13px;">Total outstanding: <strong>${fmtMoney(totalOutstanding)}</strong></div>` : ''}
+      ${advanceStatusFilter === 'open' && rows.length > 0 ? `<div style="padding:10px 14px; background:var(--surface-sunken); border:1px solid var(--border); border-radius:6px; margin-bottom:14px; font-size:13px;">Total outstanding: <strong>${fmtMoney(totalOutstanding)}</strong></div>` : ''}
       <div class="table-scroll">
         <table class="ledger"><thead><tr>
           ${!scoped ? '<th>Employee</th>' : ''}
           <th>Amount</th><th>Recovered</th><th>Outstanding</th><th>Given On</th><th>Against Salary Of</th><th>Status</th><th>Action</th>
         </tr></thead><tbody>
-          ${rows.length === 0 ? `<tr><td colspan="${scoped ? 7 : 8}" style="text-align:center; color:var(--muted); padding:16px;">No ${advanceStatusFilter === 'all' ? '' : advanceStatusFilter + ' '}advances.</td></tr>` : rows.map(a => `
-            <tr class="${a.status === 'outstanding' ? 'row-open' : 'row-approved'}">
+          ${rows.length === 0 ? `<tr><td colspan="${scoped ? 7 : 8}" style="text-align:center; color:var(--muted); padding:16px;">No ${advanceStatusFilter === 'all' ? '' : (ADVANCE_FILTER_LABEL[advanceStatusFilter] || advanceStatusFilter) + ' '}advances.</td></tr>` : rows.map(a => `
+            <tr class="${laIsOpen(a.status) ? 'row-open' : 'row-approved'}">
               ${!scoped ? `<td><strong>${a.employees?.name || '—'}</strong><div style="font-size:11px; color:var(--muted);">${a.employees?.employee_code || ''}</div></td>` : ''}
               <td>${fmtMoney(a.amount)}</td>
               <td>${fmtMoney(a.recovered_amount)}</td>
               <td><strong style="color:${Number(a.outstanding) > 0 ? 'var(--danger)' : 'var(--green)'};">${fmtMoney(a.outstanding)}</strong></td>
               <td>${fmtShortDate(a.advance_date)}</td>
               <td>${fmtPeriod(a.payroll_period)}${a.carried_forward ? ' <span class="status-tag calculated" style="font-size:9px;">CARRIED</span>' : ''}</td>
-              <td><span class="status-tag ${a.status === 'outstanding' ? 'calculated' : (a.status === 'recovered' ? 'approved' : 'rejected')}">${a.status}</span></td>
+              <td><span class="status-tag ${laStatusTagClass(a.status)}">${ADVANCE_STATUS_LABEL[a.status] || a.status}</span></td>
               <td class="action-cell">
-                ${a.status === 'outstanding' && canEdit ? `<button class="btn btn-sm adv-recover-btn" data-id="${a.id}">Record Recovery</button>` : ''}
+                ${a.status === 'approved' && canEdit ? `<button class="btn btn-sm adv-recover-btn" data-id="${a.id}">Record Recovery</button>` : ''}
               </td>
             </tr>
             ${a.notes ? `<tr><td colspan="${scoped ? 7 : 8}" style="background:var(--surface-sunken); font-size:12px; padding:6px 16px; color:var(--muted);">${a.notes}</td></tr>` : ''}`).join('')}
@@ -5163,17 +4970,8 @@
     }, true);
   });
 
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    if (sessionToken) {
-      try { await apiErpAuth({ action: 'logout', token: sessionToken }); } catch (e) { /* proceed with local logout regardless */ }
-    }
-    sessionStorage.removeItem('admin_session');
-    sessionStorage.removeItem('admin_session_token');
-    currentUser = null;
-    sessionToken = null;
-    appShell.style.display = 'none';
-    authGate.style.display = 'flex';
-    showAuthCard('loginCard');
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    REF.signOut().then(function () { window.location.href = 'index.html'; });
   });
 
   // ============ ADMIN PANEL: ROLES & PERMISSIONS ============
@@ -5672,7 +5470,7 @@
     const html = `<div class="panel panel-no-clip">
       <div class="panel-header"><span class="panel-title">${isIndividual ? 'Add New Individual/Contractor' : 'Add New Vendor'}</span>
         <div style="display:flex; align-items:center; gap:14px;">
-          ${currentUser.role === 'owner' ? `
+          ${currentUser.is_owner ? `
           <label style="display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--danger); cursor:pointer;">
             <input type="checkbox" id="vf_is_test_entry" style="width:auto;" />
             Mark as Test Entry
@@ -6514,42 +6312,13 @@
   // (via the saved-view restore below), so every module's functions/consts it might call into
   // need to already be defined by the time it runs.
   //
-  // This is the actual security fix: instead of blindly trusting whatever employee ID was cached
-  // in sessionStorage forever, the saved TOKEN is re-validated against the server on every page
-  // load. An expired, revoked, or forged token no longer gets silent access.
-  (async function restoreSession() {
-    if (new URLSearchParams(window.location.search).get('reset_token')) return; // handled separately above
-    const savedToken = sessionStorage.getItem('admin_session_token');
-    if (!savedToken) return;
-    try {
-      const data = await apiErpAuth({ action: 'validate_session', token: savedToken });
-      if (!data.valid) {
-        sessionStorage.removeItem('admin_session');
-        sessionStorage.removeItem('admin_session_token');
-        return;
-      }
-      if (data.employee.must_change_password) {
-        sessionToken = savedToken;
-        pendingForceChangeEmployee = data.employee;
-        authGate.style.display = 'flex';
-        appShell.style.display = 'none';
-        showAuthCard('forceChangeCard');
-        return;
-      }
-      currentUser = data.employee;
-      sessionToken = savedToken;
-      authGate.style.display = 'none';
-      appShell.style.display = 'flex';
-      document.getElementById('userName').textContent = currentUser.name;
-      document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
-      applyNavVisibility();
-      const savedView = sessionStorage.getItem('admin_active_view');
-      switchMainView(savedView || 'home');
-    } catch (e) {
-      sessionStorage.removeItem('admin_session');
-      sessionStorage.removeItem('admin_session_token');
-    }
-  })();
+  // This is the actual security fix: identity comes only from the signed session token that
+  // REF holds. Nobody is logged in here — index.html does that, and anyone arriving without a
+  // valid session (or still on a starter password) is sent back there by REF.requireSession.
+  REF.requireSession().then(function (user) {
+    if (!user) return;               // REF already redirected
+    completeLogin(user);
+  }).catch(function () { REF.goToLogin(); });
 </script>
 
 

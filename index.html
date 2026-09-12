@@ -6,8 +6,8 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Vehicle KM Tracker — Login</title>
-<script>window.__BUILD_VERSION__ = '1787838443';</script>
+<title>Refcon ERP — Sign In</title>
+<script>window.__BUILD_VERSION__ = '1789110669';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -138,6 +138,21 @@
   button:hover { background: var(--primary-dark); }
   button:disabled { opacity: 0.6; cursor: not-allowed; }
 
+  .linkbtn {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 12.5px;
+    font-weight: 500;
+    text-align: center;
+    margin-top: 14px;
+    padding: 0;
+    cursor: pointer;
+  }
+  .linkbtn:hover { background: none; text-decoration: underline; }
+
   .msg {
     margin-top: 16px;
     padding: 12px 14px;
@@ -163,6 +178,7 @@
     font-size: 11.5px;
     color: #a3aab3;
     margin-top: 20px;
+    line-height: 1.6;
   }
   .simple-brand {
     font-size: 13px;
@@ -177,78 +193,122 @@
 
   <div class="card">
     <div class="simple-brand">REF</div>
-    <p class="badge">Fleet Access</p>
-    <h1>Log In</h1>
-    <p class="sub">Enter your registered mobile number and PIN to continue.</p>
+    <p class="badge">Refcon ERP</p>
+    <h1>Sign In</h1>
+    <p class="sub">Use your email address, or your employee number if you were given one.</p>
 
     <form id="loginForm">
       <div class="field">
-        <label for="mobile">Mobile Number</label>
-        <input type="tel" id="mobile" placeholder="10-digit mobile number" inputmode="numeric" maxlength="10" required />
+        <label for="userid">Email or Employee Number</label>
+        <input type="text" id="userid" placeholder="you@refconveyors.com or EMP-0014"
+               autocomplete="username" autocapitalize="none" spellcheck="false" required />
       </div>
       <div class="field">
-        <label for="pin">PIN</label>
-        <input type="password" id="pin" placeholder="4–6 digit PIN" inputmode="numeric" maxlength="6" required />
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Your password"
+               autocomplete="current-password" required />
       </div>
-      <button type="submit" id="submitBtn">Log In</button>
+      <button type="submit" id="submitBtn">Sign In</button>
     </form>
 
+    <button type="button" class="linkbtn" id="forgotBtn">Forgotten your password?</button>
+
     <div class="msg" id="msgBox"></div>
-    <p class="footer-note">Access is restricted to registered team numbers only.</p>
+    <p class="footer-note">
+      Every sign-in is recorded.<br />
+      Raghbir Erectors &amp; Fabricators, Ludhiana
+    </p>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="app-config.js"></script>
 <script>
-  const SUPABASE_URL = "https://mamamjohuuacxezcwgqv.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_uqu742FOxl_J1VqWOsrtjw_-Ja4QfNa";
+(function () {
+  'use strict';
 
-  const form = document.getElementById('loginForm');
-  const msgBox = document.getElementById('msgBox');
-  const submitBtn = document.getElementById('submitBtn');
-  const mobileInput = document.getElementById('mobile');
-  const pinInput = document.getElementById('pin');
+  var form      = document.getElementById('loginForm');
+  var msgBox    = document.getElementById('msgBox');
+  var submitBtn = document.getElementById('submitBtn');
+  var useridEl  = document.getElementById('userid');
+  var passEl    = document.getElementById('password');
+  var forgotBtn = document.getElementById('forgotBtn');
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  function show(kind, text) {
+    msgBox.className = 'msg ' + kind;
+    msgBox.textContent = text;
+  }
+  function clear() {
     msgBox.className = 'msg';
     msgBox.textContent = '';
+  }
+
+  /* Already signed in? Go straight through. */
+  REF.getSession().then(function (session) {
+    if (session) routeOnward();
+  }).catch(function () { /* not signed in, stay here */ });
+
+  function routeOnward() {
+    return REF.me(true).then(function (user) {
+      if (user.must_change_password) {
+        window.location.href = 'reset.html?first=1';
+        return;
+      }
+      /* Office staff go to the main screen. A driver with nothing but
+         Km Tracker access goes straight to the reading screen.        */
+      var officeKeys = ['employee_master.view','vendor_master.view','payroll.view',
+                        'loans_advances.view','holidays.view','km_tracker.view',
+                        'admin.users','admin.permissions','admin.audit','admin.settings'];
+      var hasOffice = user.is_owner || officeKeys.some(function (k) {
+        return REF.can(user, k);
+      });
+      window.location.href = hasOffice ? 'admin.html' : 'submit.html';
+    });
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    clear();
     submitBtn.disabled = true;
     submitBtn.textContent = 'Checking...';
 
-    try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          mobile_number: mobileInput.value.trim(),
-          pin: pinInput.value.trim()
-        })
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        msgBox.className = 'msg success';
-        msgBox.textContent = `Welcome, ${data.employee.name}. Redirecting...`;
-        sessionStorage.setItem('employee_id', data.employee.id);
-        sessionStorage.setItem('employee_name', data.employee.name);
-        sessionStorage.setItem('employee_role', data.employee.role);
-        setTimeout(() => { window.location.href = 'submit.html'; }, 800);
-      } else {
-        msgBox.className = 'msg error';
-        msgBox.textContent = data.error || 'Login failed. Please try again.';
+    REF.signIn(useridEl.value, passEl.value).then(function (result) {
+      if (result.error) {
+        /* Deliberately vague: never reveal whether the account exists. */
+        show('error', 'Those details were not recognised. Check and try again.');
+        return;
       }
-    } catch (err) {
-      msgBox.className = 'msg error';
-      msgBox.textContent = 'Could not reach the server. Check your connection and try again.';
-    } finally {
+      show('success', 'Signed in. Just a moment...');
+      return routeOnward();
+    }).catch(function () {
+      show('error', 'Could not reach the server. Check your connection and try again.');
+    }).then(function () {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Log In';
-    }
+      submitBtn.textContent = 'Sign In';
+    });
   });
+
+  forgotBtn.addEventListener('click', function () {
+    clear();
+    var who = useridEl.value.trim();
+    if (!who) {
+      show('error', 'Type your email or employee number first, then press this again.');
+      useridEl.focus();
+      return;
+    }
+    forgotBtn.disabled = true;
+    REF.sendPasswordReset(who).then(function () {
+      /* Same message either way, so nobody can use this to discover
+         which email addresses exist. */
+      show('success', 'If that account exists, a reset link is on its way. Check the inbox.');
+    }).catch(function () {
+      show('success', 'If that account exists, a reset link is on its way. Check the inbox.');
+    }).then(function () {
+      forgotBtn.disabled = false;
+    });
+  });
+
+  useridEl.focus();
+})();
 </script>
 </body>
 </html>
