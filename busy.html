@@ -141,10 +141,12 @@
       <button class="nav-item level-2 active" data-firm="REF" data-view="price">Price History</button>
       <button class="nav-item level-2" data-firm="REF" data-view="challans">Challans</button>
       <button class="nav-item level-2" data-firm="REF" data-view="reports">Reports</button>
+      <button class="nav-item level-2 owner-only" data-firm="REF" data-view="deleted" style="display:none">Deleted in Busy</button>
       <div class="nav-section-label">RS Industries</div>
       <button class="nav-item level-2" data-firm="RS" data-view="price">Price History</button>
       <button class="nav-item level-2" data-firm="RS" data-view="challans">Challans</button>
       <button class="nav-item level-2" data-firm="RS" data-view="reports">Reports</button>
+      <button class="nav-item level-2 owner-only" data-firm="RS" data-view="deleted" style="display:none">Deleted in Busy</button>
     </nav>
     <div class="sidebar-footer">Imported from Busy. Read only.</div>
   </div>
@@ -264,6 +266,51 @@
         </div>
       </div>
 
+      <!-- ---------------- deleted in busy (owner only) ---------------- -->
+      <div id="view-deleted" style="display:none">
+        <div class="note" style="border-left-color:var(--amber); background:var(--amber-bg);">
+          <strong>Why a 2018 invoice can never change.</strong><br />
+          Each sync compares only the years that are still on the office PC. Anything in those
+          years that has gone from Busy is marked deleted here — the row is never removed.
+          Once you take an old year off the PC it is <strong>frozen</strong>: kept here for good,
+          never compared again, never touched. You keep the current year and the one before it,
+          because late entries get posted into the previous year. So the older years simply stop
+          changing, and nothing is lost.
+        </div>
+
+        <div class="card">
+          <div style="font-weight:600; margin-bottom:8px;">Years held</div>
+          <div class="tbl-wrap" style="max-height:none">
+            <table class="tbl">
+              <thead><tr>
+                <th style="width:44px">Sr.</th><th>Year</th><th>Rows</th>
+                <th>Marked deleted</th><th>Last seen in a file</th><th>Still checked?</th>
+              </tr></thead>
+              <tbody id="fyRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:600; margin-bottom:8px;">Gone from Busy</div>
+          <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">
+            Sometimes a genuine correction, sometimes not. Either way it is worth knowing about.
+            These rows do not appear in price history, challans or reports.
+          </div>
+          <div class="tbl-wrap" style="max-height:none">
+            <table class="tbl">
+              <thead><tr>
+                <th style="width:44px">Sr.</th><th style="width:88px">Date</th><th style="width:74px">FY</th>
+                <th style="width:110px">Type</th><th style="width:86px">Vch No</th>
+                <th>Party</th><th>Item</th><th style="width:88px">Qty</th>
+                <th style="width:110px">Amount</th><th style="width:120px">Noticed</th>
+              </tr></thead>
+              <tbody id="deletedRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -322,20 +369,80 @@
     loadSync();
   }
 
+  var TITLES = {
+    price:    ['Price History', 'Every past rate, newest first'],
+    challans: ['Challans', 'Material sent out and brought in'],
+    reports:  ['Reports', 'Sales and purchases, month by month'],
+    deleted:  ['Deleted in Busy', 'Rows that were here and have gone']
+  };
+
   function setView(v) {
     view = v;
-    $('view-search').style.display  = (v === 'reports') ? 'none' : '';
+    $('view-search').style.display  = (v === 'price' || v === 'challans') ? '' : 'none';
     $('view-reports').style.display = (v === 'reports') ? '' : 'none';
+    $('view-deleted').style.display = (v === 'deleted') ? '' : 'none';
     $('challanNote').style.display  = (v === 'challans') ? '' : 'none';
-    $('pageTitle').textContent =
-      v === 'price' ? 'Price History' : v === 'challans' ? 'Challans' : 'Reports';
-    $('pageSub').textContent =
-      v === 'price' ? 'Every past rate, newest first'
-      : v === 'challans' ? 'Material sent out and brought in'
-      : 'Sales and purchases, month by month';
+    $('pageTitle').textContent = TITLES[v][0];
+    $('pageSub').textContent   = TITLES[v][1];
     if (v === 'challans') { $('docType').value = 'Delivery Challan'; }
     else if (v === 'price' && $('docType').value === 'Delivery Challan') { $('docType').value = ''; }
-    if (v === 'reports') loadReports(); else run();
+    if (v === 'reports') loadReports();
+    else if (v === 'deleted') loadDeleted();
+    else run();
+  }
+
+  /* ---------------- what went, and which years are still checked ------- */
+  function loadDeleted() {
+    $('fyRows').innerHTML = '<tr><td colspan="6" class="loading">Looking…</td></tr>';
+    $('deletedRows').innerHTML = '<tr><td colspan="10" class="loading">Looking…</td></tr>';
+
+    REF.supabase().from('busy_fy_status').select('*').eq('company', firm).order('fy')
+      .then(function (res) {
+        var rows = res.data || [];
+        if (!rows.length) {
+          $('fyRows').innerHTML = '<tr><td colspan="6" class="loading">No years loaded yet.</td></tr>';
+          return;
+        }
+        $('fyRows').innerHTML = rows.map(function (r, i) {
+          var seen = r.last_seen_at ? new Date(r.last_seen_at).toLocaleDateString('en-IN',
+                       { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+          return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.fy) + '</td>' +
+            '<td class="r">' + inr.format(r.live_rows || 0) + '</td>' +
+            '<td class="r">' + (r.deleted_rows ? inr.format(r.deleted_rows) : '') + '</td>' +
+            '<td>' + seen + '</td>' +
+            '<td>' + (r.is_frozen
+              ? '<span class="pill pill-grey" title="The file is no longer on the PC, so this year is kept as it is and never compared again">frozen</span>'
+              : '<span class="pill pill-amber">checked each sync</span>') + '</td></tr>';
+        }).join('');
+      });
+
+    REF.supabase().from('busy_deleted_rows').select('*').eq('company', firm)
+      .order('deleted_at', { ascending: false }).limit(500)
+      .then(function (res) {
+        if (res.error) {
+          $('deletedRows').innerHTML = '<tr><td colspan="10" class="loading">' +
+            esc(res.error.message) + '</td></tr>';
+          return;
+        }
+        var rows = res.data || [];
+        if (!rows.length) {
+          $('deletedRows').innerHTML =
+            '<tr><td colspan="10" class="loading">Nothing has gone missing from Busy. Good.</td></tr>';
+          return;
+        }
+        $('deletedRows').innerHTML = rows.map(function (r, i) {
+          var when = r.deleted_at ? new Date(r.deleted_at).toLocaleDateString('en-IN',
+                      { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+          return '<tr><td>' + (i + 1) + '</td><td>' + dmy(r.vch_date) + '</td>' +
+            '<td>' + esc(r.fy) + '</td><td>' + esc(r.doc_type) + '</td>' +
+            '<td>' + esc(r.vch_no) + '</td><td class="l">' + esc(r.party) + '</td>' +
+            '<td class="l">' + esc(r.item) + '</td>' +
+            '<td class="r">' + (r.qty ? inr2.format(r.qty) : '') + '</td>' +
+            '<td class="r">' + money(r.amount) + '</td>' +
+            '<td>' + when + (r.restored_at ? '<br><span class="pill pill-amber">came back</span>' : '') +
+            '</td></tr>';
+        }).join('');
+      });
   }
 
   function loadSync() {
@@ -545,6 +652,11 @@
       return;
     }
     $('shell').style.display = '';
+    if (user.is_owner) {
+      Array.prototype.forEach.call(document.querySelectorAll('.owner-only'), function (n) {
+        n.style.display = '';
+      });
+    }
     setFirm('REF');
     setView('price');
     $('q').focus();
