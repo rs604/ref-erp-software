@@ -1,0 +1,15 @@
+# REF ERP — Busy uploader settings.
+# Copy this file to config.txt and fill in the two lines that matter.
+# Anything after a # is a note and is ignored.
+
+# Where Busy keeps its data. Leave it blank on the first run and the
+# program will look in the usual places and save what it finds.
+busy_folder =
+
+# The address of the ERP's upload service. Raghbir has this.
+erp_url =
+
+# The upload token. Raghbir gets this from the ERP, on the
+# Busy Data > Download the uploader screen. Treat it like a password:
+# anyone holding it can send files to the ERP.
+upload_token =
