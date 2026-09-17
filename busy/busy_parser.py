@@ -1,4 +1,9 @@
-"""Busy Accounting -> clean rows. Reads any Busy FY database (MS Access .bds).
+"""Busy Accounting -> clean rows.
+
+vch_code is Busy's own voucher identity (Tran1.VchCode). The unique key for a
+row is company + fy + vch_code + sr_no. vch_no CANNOT be used: it is blank on
+every ledger row and repeats among item rows.
+ Reads any Busy FY database (MS Access .bds).
 
 Outputs TWO row kinds:
   kind='item'    item lines from bills, challans and orders
@@ -73,7 +78,7 @@ def parse_fy(path, company, fy):
             t = tax.get(r['VchCode'], {})
             out.append(dict(
                 kind='item', company=company, fy=fy,
-                doc_type=VCH[vt], vch_type=vt,
+                doc_type=VCH[vt], vch_type=vt, vch_code=r['VchCode'],
                 vch_no=clean(h['VchNo']), vch_date=h['Date'][:8],
                 party=name.get(h['MasterCode1'],''), sr_no=r['SrNo'],
                 item=name.get(r['MasterCode1'],''), description=' | '.join(lines),
@@ -92,7 +97,7 @@ def parse_fy(path, company, fy):
             grp = name.get(parent.get(r['MasterCode1'],''),'')
             out.append(dict(
                 kind='ledger', company=company, fy=fy,
-                doc_type=VCH[vt], vch_type=vt,
+                doc_type=VCH[vt], vch_type=vt, vch_code=r['VchCode'],
                 vch_no=clean(h['VchNo']), vch_date=h['Date'][:8],
                 party=name.get(h['MasterCode1'],''), sr_no=r['SrNo'],
                 item='', description=clean(r.get('ShortNar','')),
