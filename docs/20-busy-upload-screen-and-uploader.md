@@ -13,32 +13,30 @@ here, and are now built.
 
 ---
 
-## One real obstacle, and it is a deploy question
+## The obstacle turned out not to exist
 
-**The parser cannot run as a Supabase edge function.** Edge functions run Deno in
-a sandbox and cannot have `mdb-export` installed, and reading a `.bds` file needs
-it. So the parser runs as a **small container** instead — Cloud Run, Fly.io, or
-any cheap box that runs Docker.
+> **Superseded 17 Sep 2026, same day.** I built a container because mdbtools is a
+> Linux program and a Supabase edge function cannot have one. Raghbir then tested
+> **`access-parser`**, a pure-Python library, against a real file — 87 tables,
+> Tran1 3,591 rows, read in 6 seconds, identical output. **No system package, no
+> Dockerfile, no container, no Cloud Run.**
+>
+> `busy/parse-service/` has been removed, and the upload screen no longer sends
+> files anywhere: it reads the parser's output in the browser and loads it
+> straight into the database. See `docs/21-no-parse-service.md`.
 
-That is written and committed: `busy/parse-service/`, with a Dockerfile that
-installs mdbtools, and a README with the exact Cloud Run command. Deploy it in
-`asia-south1` so the rows do not cross the country twice.
-
-Nothing else is blocked by it. Once it is running, put its address in settings:
-
-```sql
-update public.busy_sync_settings set parse_service_url = 'https://…' where id = 1;
-```
+The rest of this document still stands.
 
 ---
 
 ## 1. The upload screen — Busy Data ▸ Load history
 
-Owner only.
+Owner only. *(Reworked the same day — it now takes the parser's rows file, not
+the `.bds` files. Everything below still describes it.)*
 
-- **Drop the `.bds` files on it, or click to choose them**
-- **It works out the firm and the year from each file. Nothing is typed**
-- Every file is **checked first and shown on screen** — firm, year, size — and
+- **Drop the rows file on it, or click to choose it**
+- **It works out the firm and the year from the rows. Nothing is typed**
+- The file is **read and shown on screen** — one batch per firm and year — and
   **nothing is loaded until you press the button**
 - Each file then shows a progress bar while it uploads, then what happened:
   rows read, added, updated, edited, deleted
@@ -126,26 +124,7 @@ fails for the number of days in settings.
 
 ---
 
-## What is not verified
-
-The parse service has **never been run against a real `.bds` file** — there are
-none here and mdbtools is not installed in this container. The parser inside it
-is yours, unchanged. Two things in my wrapper are a best reading and need
-checking on the first real file:
-
-- **The year, from the filename** — `db12024.bds` read as 2024-25
-- **The firm, from inside the file** — the company name looked for in `Company`,
-  `CompanyInfo`, `Cmp`, `CmpInfo` and `Master1`, matched against
-  "RAGHBIR / ERECTORS" and "RS INDUSTRIES"
-
-That is exactly why the screen **probes every file and shows what it understood
-before loading anything**. If it reads one wrongly it will be obvious on screen,
-and nothing will have been written.
-
----
-
 ## What is left
 
-1. **Deploy the parse service** and put its address in settings — then the load
-   can run
+1. **The rows file** from the updated parser — then the load can run
 2. **Build the `.exe`** on any Windows machine, upload it, set the version

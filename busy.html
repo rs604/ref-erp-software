@@ -343,17 +343,19 @@
         <div class="card">
           <div id="dropZone" style="border:2px dashed var(--border); border-radius:6px;
                padding:26px; text-align:center; background:var(--surface-sunken); cursor:pointer;">
-            <div style="font-weight:600; margin-bottom:4px;">Drop the Busy files here</div>
+            <div style="font-weight:600; margin-bottom:4px;">Drop the rows file here</div>
             <div style="font-size:12px; color:var(--muted);">
-              or click to choose them · the <code>.bds</code> files from the Busy folder ·
-              24 files, about 664 MB, so it will take a while
+              or click to choose it · the file the parser produced from the 24 Busy files ·
+              <code>.csv</code>, <code>.json</code> or <code>.jsonl</code>
             </div>
-            <input type="file" id="fileInput" multiple accept=".bds" style="display:none" />
+            <input type="file" id="fileInput" multiple accept=".csv,.json,.jsonl,.ndjson" style="display:none" />
           </div>
           <div style="font-size:11.5px; color:var(--muted); margin-top:9px;">
-            The firm and the financial year are worked out from each file — you do not type them.
-            Each file is checked first and shown below, and <strong>nothing is loaded until you
-            press the button.</strong>
+            The firm and the financial year come from the rows themselves — you do not type them.
+            The file is read here in the browser, split into one batch per firm and year, and
+            shown below. <strong>Nothing is loaded until you press the button.</strong>
+            A Busy <code>.bds</code> file cannot be read by a browser; this screen takes the
+            parser's output, not the Busy file itself.
           </div>
           <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <button class="btn" id="loadBtn" disabled>Load these files</button>
@@ -369,12 +371,12 @@
           <div class="tbl-wrap" style="max-height:none">
             <table class="tbl">
               <thead><tr>
-                <th style="width:44px">Sr.</th><th>File</th><th style="width:70px">Firm</th>
-                <th style="width:80px">Year</th><th style="width:80px">Size</th>
+                <th style="width:44px">Sr.</th><th style="width:70px">Firm</th>
+                <th style="width:90px">Year</th><th style="width:90px">Rows</th>
                 <th style="width:150px">Progress</th><th>Result</th>
               </tr></thead>
               <tbody id="uploadRows">
-                <tr><td colspan="7" class="loading">No files chosen yet.</td></tr>
+                <tr><td colspan="6" class="loading">No file chosen yet.</td></tr>
               </tbody>
             </table>
           </div>
@@ -854,15 +856,17 @@ upload_token = (shown on the download screen)</pre>
     });
   }
 
-  /* ---------------- loading the history ---------------- */
-  var settings = null;
-  var queue = [];
+  /* ---------------- loading the history ----------------
+     No parse service, and no .bds in the browser. This screen takes the file
+     the parser produced, splits it into one batch per firm and year, and hands
+     each batch to busy_import_fy directly. The database checks who is asking,
+     so nothing here holds a service key.
 
-  function fileSize(n) {
-    if (n > 1048576) return (n / 1048576).toFixed(1) + ' MB';
-    if (n > 1024) return Math.round(n / 1024) + ' KB';
-    return n + ' B';
-  }
+     THE ONE RULE THAT MATTERS HERE: a batch must hold the WHOLE year. The
+     import marks anything missing from the batch as deleted, so sending half a
+     year would mark the other half gone. Years are never split.          */
+  var settings = null;
+  var groups = [];
 
   function getSettings() {
     if (settings) return Promise.resolve(settings);
@@ -870,18 +874,7 @@ upload_token = (shown on the download screen)</pre>
       .then(function (res) { settings = res.data || {}; return settings; });
   }
 
-  function loadUploadScreen() {
-    getSettings().then(function (cfg) {
-      if (!cfg.parse_service_url) {
-        $('uploadState').innerHTML =
-          '<span style="color:var(--danger)">The parse service has no address yet, so nothing ' +
-          'can be read. See busy/parse-service/README.md — it needs deploying, then its address ' +
-          'saved in settings.</span>';
-        $('loadBtn').disabled = true;
-      }
-      refreshTotals();
-    });
-  }
+  function loadUploadScreen() { getSettings().then(refreshTotals); }
 
   function refreshTotals() {
     getSettings().then(function (cfg) {
@@ -894,39 +887,96 @@ upload_token = (shown on the download screen)</pre>
         q('busy_history_ref', 'item'), q('busy_history_rs', 'item'),
         q('busy_history_ref', null),   q('busy_history_rs', null)
       ]).then(function (n) {
-        var refItems = n[0], rsItems = n[1], total = n[2] + n[3];
+        var total = n[2] + n[3];
         function tile(label, got, want) {
           var done = (got === want);
-          var cls = done ? 'up' : (got > want ? 'down' : '');
           return '<div class="kpi"><div class="k">' + label + '</div>' +
-                 '<div class="v ' + cls + '">' + inr.format(got) + '</div>' +
+                 '<div class="v ' + (done ? 'up' : (got > want ? 'down' : '')) + '">' +
+                 inr.format(got) + '</div>' +
                  '<div style="font-size:11.5px; color:var(--muted)">of ' + inr.format(want) +
                  (done ? ' · matches' : ' expected') + '</div></div>';
         }
         $('loadTotals').innerHTML =
-          tile('Item rows, REF', refItems, cfg.expected_item_rows_ref || 21307) +
-          tile('Item rows, RS', rsItems, cfg.expected_item_rows_rs || 1425) +
+          tile('Item rows, REF', n[0], cfg.expected_item_rows_ref || 21307) +
+          tile('Item rows, RS', n[1], cfg.expected_item_rows_rs || 1425) +
           tile('All rows, both firms', total, cfg.expected_total_rows || 47635);
       });
     });
   }
 
-  function drawQueue() {
-    if (!queue.length) {
-      $('uploadRows').innerHTML = '<tr><td colspan="7" class="loading">No files chosen yet.</td></tr>';
+  /* A CSV reader that copes with quoted fields, because descriptions hold
+     commas, quotes and the " | " joiner. */
+  function parseCsv(text) {
+    var rows = [], row = [], field = '', inQuotes = false, i = 0;
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);   // strip a BOM
+    while (i < text.length) {
+      var c = text[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        field += c; i++; continue;
+      }
+      if (c === '"') { inQuotes = true; i++; continue; }
+      if (c === ',') { row.push(field); field = ''; i++; continue; }
+      if (c === '\r') { i++; continue; }
+      if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+      field += c; i++;
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    if (!rows.length) return [];
+    var head = rows.shift();
+    return rows.filter(function (r) { return r.length > 1; }).map(function (r) {
+      var o = {};
+      head.forEach(function (h, k) { o[h.trim()] = r[k] === undefined ? '' : r[k]; });
+      return o;
+    });
+  }
+
+  var NUMERIC = ['debit','credit','qty','rate','amount','cgst','sgst','igst','gst_rate','vch_total'];
+
+  function tidy(row) {
+    // An empty cell is nothing, not zero. The database refuses '' as a number.
+    NUMERIC.forEach(function (k) {
+      if (row[k] === '' || row[k] === undefined) row[k] = null;
+    });
+    if (row.sr_no === '' || row.sr_no === undefined) row.sr_no = null;
+    return row;
+  }
+
+  function readRowsFile(file) {
+    return file.text().then(function (text) {
+      var name = file.name.toLowerCase();
+      var rows;
+      if (name.endsWith('.csv')) {
+        rows = parseCsv(text);
+      } else if (name.endsWith('.jsonl') || name.endsWith('.ndjson')) {
+        rows = text.split('\n').filter(function (l) { return l.trim(); })
+                   .map(function (l) { return JSON.parse(l); });
+      } else {
+        var parsed = JSON.parse(text);
+        rows = Array.isArray(parsed) ? parsed : (parsed.rows || []);
+      }
+      return rows.map(tidy);
+    });
+  }
+
+  function drawGroups() {
+    if (!groups.length) {
+      $('uploadRows').innerHTML = '<tr><td colspan="6" class="loading">No file chosen yet.</td></tr>';
       $('loadBtn').disabled = true;
       return;
     }
-    $('uploadRows').innerHTML = queue.map(function (q, i) {
+    $('uploadRows').innerHTML = groups.map(function (g, i) {
       return '<tr><td>' + (i + 1) + '</td>' +
-        '<td class="l">' + esc(q.file.name) + '</td>' +
-        '<td>' + (q.company || '<span class="pill pill-grey">?</span>') + '</td>' +
-        '<td>' + (q.fy || '') + '</td>' +
-        '<td class="r">' + fileSize(q.file.size) + '</td>' +
-        '<td id="prog-' + i + '">' + (q.progress || '') + '</td>' +
-        '<td class="l" id="res-' + i + '">' + (q.result || '') + '</td></tr>';
+        '<td>' + esc(g.company) + '</td>' +
+        '<td>' + esc(g.fy) + '</td>' +
+        '<td class="r">' + inr.format(g.rows.length) + '</td>' +
+        '<td id="prog-' + i + '">' + (g.progress || '') + '</td>' +
+        '<td class="l" id="res-' + i + '">' + (g.result || '') + '</td></tr>';
     }).join('');
-    $('loadBtn').disabled = !queue.some(function (q) { return q.ready && !q.done; });
+    $('loadBtn').disabled = !groups.some(function (g) { return !g.done; });
   }
 
   function setCell(i, which, html) {
@@ -935,122 +985,117 @@ upload_token = (shown on the download screen)</pre>
   }
 
   function addFiles(list) {
-    Array.prototype.forEach.call(list, function (f) {
-      if (!/\.bds$/i.test(f.name)) return;
-      queue.push({ file: f, ready: false, done: false });
-    });
-    drawQueue();
-    probeAll();
-  }
+    var files = Array.prototype.slice.call(list);
+    var bds = files.filter(function (f) { return /\.bds$/i.test(f.name); });
+    if (bds.length) {
+      $('uploadState').innerHTML =
+        '<span style="color:var(--danger)">A browser cannot read a Busy <code>.bds</code> file. ' +
+        'Run the parser over the Busy folder and drop the rows file it produces here instead.</span>';
+      files = files.filter(function (f) { return !/\.bds$/i.test(f.name); });
+      if (!files.length) return;
+    }
 
-  /* Ask the service what each file IS, without loading anything. Raghbir sees
-     the firm and the year on screen before a single row is written. */
-  function probeAll() {
-    getSettings().then(function (cfg) {
-      if (!cfg.parse_service_url) return;
-      REF.getSession().then(function (session) {
-        var i = 0;
-        (function next() {
-          while (i < queue.length && queue[i].probed) i++;
-          if (i >= queue.length) { drawQueue(); return; }
-          var q = queue[i];
-          q.probed = true;
-          setCell(i, 'res', '<span style="color:var(--muted)">checking…</span>');
-          var fd = new FormData();
-          fd.append('file', q.file);
-          fetch(cfg.parse_service_url.replace(/\/$/, '') + '/probe', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + session.access_token },
-            body: fd
-          }).then(function (r) { return r.json(); }).then(function (d) {
-            if (d.ok) {
-              q.company = d.company; q.fy = d.fy; q.ready = true;
-              q.result = '<span style="color:var(--green)">ready — ' + esc(d.company_name || '') + '</span>';
-            } else if (d.skip) {
-              q.result = '<span class="pill pill-grey">not a year file</span> ' + esc(d.error);
-            } else {
-              q.result = '<span style="color:var(--danger)">' + esc(d.error || 'could not read it') + '</span>';
-            }
-            drawQueue(); next();
-          }).catch(function (e) {
-            q.result = '<span style="color:var(--danger)">' + esc(e.message) + '</span>';
-            drawQueue(); next();
-          });
-        })();
+    $('uploadState').textContent = 'Reading the file…';
+    Promise.all(files.map(readRowsFile)).then(function (lists) {
+      var all = [].concat.apply([], lists);
+      var byYear = {};
+      var noKey = 0;
+      all.forEach(function (row) {
+        if (!row.company || !row.fy) { noKey++; return; }
+        var key = row.company + '|' + row.fy;
+        (byYear[key] = byYear[key] || []).push(row);
       });
+
+      groups = Object.keys(byYear).sort().map(function (key) {
+        var bits = key.split('|');
+        return { company: bits[0], fy: bits[1], rows: byYear[key], done: false };
+      });
+
+      $('uploadState').innerHTML =
+        inr.format(all.length) + ' rows read, in ' + groups.length + ' firm-and-year batches.' +
+        (noKey ? ' <span style="color:var(--danger)">' + inr.format(noKey) +
+                 ' rows had no firm or year and were left out — check the file.</span>' : '');
+      drawGroups();
+    }).catch(function (e) {
+      $('uploadState').innerHTML =
+        '<span style="color:var(--danger)">That file could not be read: ' + esc(e.message) +
+        '</span>';
     });
   }
 
   function startLoad() {
     $('loadBtn').disabled = true;
     $('clearBtn').disabled = true;
-    getSettings().then(function (cfg) {
-      REF.getSession().then(function (session) {
-        var i = -1;
-        (function next() {
-          i++;
-          while (i < queue.length && (!queue[i].ready || queue[i].done)) i++;
-          if (i >= queue.length) {
-            $('uploadState').innerHTML =
-              '<span style="color:var(--green)">Finished. Check the three numbers above ' +
-              'before you move any file off the Busy PC.</span>';
-            $('clearBtn').disabled = false;
-            refreshTotals();
-            return;
-          }
-          var q = queue[i];
-          $('uploadState').textContent =
-            'Loading ' + q.file.name + ' — file ' + (i + 1) + ' of ' + queue.length +
-            '. Leave this page open.';
+    var i = -1;
+    (function next() {
+      i++;
+      while (i < groups.length && groups[i].done) i++;
+      if (i >= groups.length) {
+        $('uploadState').innerHTML =
+          '<span style="color:var(--green)">Finished. Check the three numbers above before you ' +
+          'move any file off the Busy PC.</span>';
+        $('clearBtn').disabled = false;
+        refreshTotals();
+        return;
+      }
+      var g = groups[i];
+      $('uploadState').textContent =
+        'Loading ' + g.company + ' ' + g.fy + ' — batch ' + (i + 1) + ' of ' + groups.length +
+        '. Leave this page open.';
+      setCell(i, 'prog', '<span style="color:var(--muted)">sending…</span>');
 
-          var fd = new FormData();
-          fd.append('file', q.file);
-          fd.append('company', q.company);
-          fd.append('fy', q.fy);
+      REF.supabase().from('busy_import_batches').insert({
+        company: g.company, fy: g.fy,
+        source_file: 'one-time load', status: 'draft'
+      }).select().single().then(function (b) {
+        var batchId = b.data ? b.data.id : null;
 
-          var xhr = new XMLHttpRequest();
-          xhr.open('POST', cfg.parse_service_url.replace(/\/$/, '') + '/import');
-          xhr.setRequestHeader('Authorization', 'Bearer ' + session.access_token);
-          xhr.upload.onprogress = function (e) {
-            if (!e.lengthComputable) return;
-            var pc = Math.round((e.loaded / e.total) * 100);
-            setCell(i, 'prog', '<div style="background:var(--surface-sunken); border-radius:3px; height:14px; position:relative">' +
-              '<div style="background:var(--steel); height:14px; width:' + pc + '%; border-radius:3px"></div>' +
-              '<span style="position:absolute; inset:0; font-size:10px; line-height:14px">' + pc + '%</span></div>');
-          };
-          xhr.onload = function () {
-            q.done = true;
-            var d = {};
-            try { d = JSON.parse(xhr.responseText); } catch (e) { d = { error: xhr.responseText }; }
-            if (d.ok) {
-              setCell(i, 'prog', '<span style="color:var(--green)">done</span>');
-              q.result = 'read ' + inr.format(d.rows_read) + ' · added ' + inr.format(d.inserted) +
-                (d.updated ? ' · updated ' + inr.format(d.updated) : '') +
-                (d.edited ? ' · <span style="color:var(--amber)">edited ' + inr.format(d.edited) + '</span>' : '') +
-                (d.deleted ? ' · <span style="color:var(--danger)">deleted ' + inr.format(d.deleted) + '</span>' : '');
-            } else if (d.refused) {
-              setCell(i, 'prog', '<span style="color:var(--danger)">refused</span>');
-              q.result = '<span style="color:var(--danger)"><strong>Nothing was loaded from this file.</strong><br>' +
-                esc(d.error) + '</span>';
-            } else {
-              setCell(i, 'prog', '<span style="color:var(--danger)">failed</span>');
-              q.result = '<span style="color:var(--danger)">' + esc(d.error || 'it did not work') + '</span>';
+        // The WHOLE year goes in one call. Splitting it would make the import
+        // treat the rest of the year as deleted.
+        return REF.supabase().rpc('busy_import_fy', {
+          p_batch_id: batchId,
+          p_company: g.company,
+          p_fy: g.fy,
+          p_rows: g.rows
+        }).then(function (res) {
+          g.done = true;
+          if (res.error) {
+            setCell(i, 'prog', '<span style="color:var(--danger)">refused</span>');
+            g.result = '<span style="color:var(--danger)"><strong>Nothing was loaded from this ' +
+                       'batch.</strong><br>' + esc(res.error.message) + '</span>';
+            if (batchId) {
+              REF.supabase().from('busy_import_batches').update({
+                status: 'cancelled', finished_at: new Date().toISOString(),
+                error_message: String(res.error.message).slice(0, 2000)
+              }).eq('id', batchId).then(function () {});
             }
-            setCell(i, 'res', q.result);
-            refreshTotals();
-            next();
-          };
-          xhr.onerror = function () {
-            q.done = true;
-            setCell(i, 'prog', '<span style="color:var(--danger)">failed</span>');
-            setCell(i, 'res', '<span style="color:var(--danger)">The connection dropped. ' +
-              'Nothing from this file was loaded — try it again on its own.</span>');
-            next();
-          };
-          xhr.send(fd);
-        })();
+          } else {
+            var d = (res.data && res.data[0]) || res.data || {};
+            setCell(i, 'prog', '<span style="color:var(--green)">done</span>');
+            g.result = 'added ' + inr.format(d.inserted || 0) +
+              ((d.updated) ? ' · updated ' + inr.format(d.updated) : '') +
+              ((d.edited) ? ' · <span style="color:var(--amber)">edited ' + inr.format(d.edited) + '</span>' : '') +
+              ((d.deleted) ? ' · <span style="color:var(--danger)">deleted ' + inr.format(d.deleted) + '</span>' : '');
+            if (batchId) {
+              REF.supabase().from('busy_import_batches').update({
+                status: 'completed', finished_at: new Date().toISOString(),
+                rows_read: g.rows.length,
+                rows_inserted: d.inserted || 0, rows_updated: d.updated || 0
+              }).eq('id', batchId).then(function () {});
+            }
+          }
+          setCell(i, 'res', g.result);
+          refreshTotals();
+          next();
+        });
+      }).catch(function (e) {
+        g.done = true;
+        setCell(i, 'prog', '<span style="color:var(--danger)">failed</span>');
+        setCell(i, 'res', '<span style="color:var(--danger)">' + esc(e.message) +
+          '<br>Nothing was loaded from this batch — it can be tried again on its own.</span>');
+        next();
       });
-    });
+    })();
   }
 
   /* ---------------- the uploader download ---------------- */
@@ -1123,10 +1168,10 @@ upload_token = (shown on the download screen)</pre>
     });
     $('loadBtn').addEventListener('click', startLoad);
     $('clearBtn').addEventListener('click', function () {
-      queue = []; $('uploadState').textContent = ''; drawQueue();
+      groups = []; $('uploadState').textContent = ''; drawGroups();
     });
     window.addEventListener('beforeunload', function (e) {
-      if (queue.some(function (q) { return q.ready && !q.done; }) && $('loadBtn').disabled) {
+      if (groups.some(function (g) { return !g.done; }) && $('loadBtn').disabled) {
         e.preventDefault(); e.returnValue = '';
       }
     });
