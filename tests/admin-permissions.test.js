@@ -17,7 +17,7 @@
 const H = require('./harness');
 const DATA = require('./fixtures/permissions-data.json');
 
-const ACTION_COLUMNS = ['view', 'create', 'edit', 'approve', 'delete'];
+const ACTION_COLUMNS = ['view', 'create', 'edit', 'approve', 'cancel'];
 
 const OWNER = {
   id: 'u-owner', name: 'Raghbir Singh', is_owner: true, roles: ['owner'],

@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1789110669';</script>
+<script>window.__BUILD_VERSION__ = '1789660543';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -4986,9 +4986,16 @@
     km_tracker: 'Km Tracker',
     vendor_master: 'Vendor Master',
     vendor_data_bank: 'Vendor Data Bank',
+    admin_permissions: 'Who Can Do What',
+    admin_users: 'Logins',
+    admin_settings: 'Company Settings',
+    admin_audit: 'Audit Trail',
   };
-  const ACTION_ORDER = ['view', 'create', 'edit', 'approve', 'delete'];
-  const ACTION_LABELS = { view: 'View', create: 'Create', edit: 'Edit', approve: 'Approve', delete: 'Delete' };
+  // The locked five. There is no Delete column and there never should be:
+  // nothing in this ERP is deleted, wrong entries are cancelled, and the
+  // cancellation is itself an event. See migration 48.
+  const ACTION_ORDER = ['view', 'create', 'edit', 'approve', 'cancel'];
+  const ACTION_LABELS = { view: 'See', create: 'Add', edit: 'Change', approve: 'Approve', cancel: 'Cancel' };
   const AVATAR_COLORS = ['#2563a8', '#0f766e', '#7c3aed', '#b45309', '#be123c', '#4d7c0f', '#0369a1', '#9333ea'];
 
   let selectedPermEmployeeId = null;

@@ -30,7 +30,22 @@ import urllib.error
 
 from flask import Flask, request, jsonify
 
-import busy_parser  # Raghbir's parser, used unchanged
+import busy_parser  # Raghbir's parser. ONE file, imported, never copied.
+
+# The service used to keep its own copy of the parser next to app.py. The two
+# drifted: the copy here was months behind the real one and nothing said so.
+# Now the image is built from busy/ and imports the single file. This check is
+# the belt to that braces -- if the container is ever built against a parser
+# too old to name itself, it says so instead of quietly loading rows that
+# cannot be traced back to what read them.
+PARSER_VERSION = getattr(busy_parser, "PARSER_VERSION", None)
+if not PARSER_VERSION:
+    raise RuntimeError(
+        "The parser in this image has no PARSER_VERSION. That means it is an "
+        "old copy, not busy/busy_parser.py. Build from busy/ with "
+        "busy/Dockerfile. Nothing will be parsed by a parser that cannot say "
+        "which one it is."
+    )
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 512 * 1024 * 1024  # a Busy year file is tens of MB
@@ -173,6 +188,9 @@ def health():
         "ok": have_mdb and bool(SUPABASE_URL) and bool(SERVICE_KEY),
         "mdbtools": have_mdb,
         "configured": bool(SUPABASE_URL) and bool(SERVICE_KEY),
+        # Which parser this container is actually running, so a stale image can
+        # be spotted from outside without opening it.
+        "parser_version": PARSER_VERSION,
     })
 
 
@@ -240,6 +258,10 @@ def do_import():
         batch = rest("POST", "busy_import_batches", {
             "company": company, "fy": fy,
             "source_file": upload.filename, "status": "draft",
+            # busy_import_fy sets this from the rows themselves, which is the
+            # authority. Writing it here too means a batch that fails BEFORE
+            # the import still says which parser was about to read the file.
+            "parser_version": PARSER_VERSION,
         })
         batch_id = batch[0]["id"] if batch else None
 

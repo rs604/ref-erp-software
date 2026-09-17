@@ -77,9 +77,16 @@ SUPABASE_SERVICE_KEY  the service_role key from Supabase ▸ Settings ▸ API
 
 **Google Cloud Run** — simplest, and free for this amount of use:
 
+**The build context is `busy/`, not this folder.** There is one parser file in
+this project — `busy/busy_parser.py` — and the service imports it rather than
+keeping a copy. It kept a copy once, the two drifted, and the copy in here was
+months behind with nothing saying so. That is the version skew migration 45
+exists to catch, so it is now impossible to build. Run these from the **repo
+root**:
+
 ```
 gcloud run deploy busy-parse \
-  --source . \
+  --source busy/ \
   --region asia-south1 \
   --allow-unauthenticated \
   --memory 1Gi \
@@ -112,9 +119,19 @@ update public.busy_sync_settings set parse_service_url = 'https://…' where id 
 curl https://YOUR-SERVICE/health
 ```
 
-Expect `{"ok": true, "mdbtools": true, "configured": true}`. If `mdbtools` is
-false the image built wrong; if `configured` is false the environment variables
-are missing.
+Expect something like:
+
+```
+{"ok": true, "mdbtools": true, "configured": true,
+ "parser_version": "2026.09.17-mdbtools"}
+```
+
+If `mdbtools` is false the image built wrong. If `configured` is false the
+environment variables are missing. **Check `parser_version` against the one in
+`busy/busy_parser.py`** — that is how you tell a stale container from outside,
+without opening it. If the container was built against a parser too old to name
+itself, the service refuses to start at all rather than loading rows that cannot
+be traced back to what read them.
 
 ---
 

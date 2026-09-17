@@ -1,32 +1,32 @@
 {
  "permissions": [
   {
+   "id": "ed6d4e41-fca6-431a-99c1-cb53093b22b2",
+   "key": "admin.audit",
+   "category": "Admin",
+   "sub_head": "admin_audit",
+   "action": "view"
+  },
+  {
    "id": "f65edd44-21cb-4da3-b001-c2f8ab9f00a7",
    "key": "admin.permissions",
    "category": "Admin",
-   "sub_head": "admin",
-   "action": "edit"
-  },
-  {
-   "id": "bb18ac4e-78e9-4b40-aec3-d937dc727394",
-   "key": "admin.users",
-   "category": "Admin",
-   "sub_head": "admin",
+   "sub_head": "admin_permissions",
    "action": "edit"
   },
   {
    "id": "54c52d9e-ca30-4d70-b3be-b56d0506404e",
    "key": "admin.settings",
    "category": "Admin",
-   "sub_head": "admin",
+   "sub_head": "admin_settings",
    "action": "edit"
   },
   {
-   "id": "ed6d4e41-fca6-431a-99c1-cb53093b22b2",
-   "key": "admin.audit",
+   "id": "bb18ac4e-78e9-4b40-aec3-d937dc727394",
+   "key": "admin.users",
    "category": "Admin",
-   "sub_head": "admin",
-   "action": "view"
+   "sub_head": "admin_users",
+   "action": "edit"
   },
   {
    "id": "bebfecd7-44c9-4304-980c-30097790e29e",
@@ -43,18 +43,18 @@
    "action": "view"
   },
   {
+   "id": "852d2cfc-779d-41fc-bb41-83f5e471dd3e",
+   "key": "holidays.delete",
+   "category": "HRMS",
+   "sub_head": "holidays",
+   "action": "cancel"
+  },
+  {
    "id": "18b05fbf-554c-4206-b851-12f51ca55dc9",
    "key": "holidays.create",
    "category": "HRMS",
    "sub_head": "holidays",
    "action": "create"
-  },
-  {
-   "id": "852d2cfc-779d-41fc-bb41-83f5e471dd3e",
-   "key": "holidays.delete",
-   "category": "HRMS",
-   "sub_head": "holidays",
-   "action": "delete"
   },
   {
    "id": "cc13afab-6941-4437-9b5e-c1f99b28bae5",
@@ -337,18 +337,18 @@
    "action": "view"
   },
   {
+   "id": "7dd4db3c-3743-4372-9835-61f1fdade6da",
+   "key": "employee_master.delete",
+   "category": "Masters",
+   "sub_head": "employee_master",
+   "action": "cancel"
+  },
+  {
    "id": "07a16f2f-0e7b-42ef-9d83-8ac706b1a618",
    "key": "employee_master.create",
    "category": "Masters",
    "sub_head": "employee_master",
    "action": "create"
-  },
-  {
-   "id": "7dd4db3c-3743-4372-9835-61f1fdade6da",
-   "key": "employee_master.delete",
-   "category": "Masters",
-   "sub_head": "employee_master",
-   "action": "delete"
   },
   {
    "id": "f276d4d0-ab5b-40de-95c2-efdd16b0c0e4",
@@ -400,18 +400,18 @@
    "action": "approve"
   },
   {
+   "id": "e7fc934b-3d5b-4e3e-8adc-bf5c8d603de0",
+   "key": "vendor_master.delete",
+   "category": "Masters",
+   "sub_head": "vendor_master",
+   "action": "cancel"
+  },
+  {
    "id": "94c4c5b4-65ae-4b7c-90f3-b6abaf2452eb",
    "key": "vendor_master.create",
    "category": "Masters",
    "sub_head": "vendor_master",
    "action": "create"
-  },
-  {
-   "id": "e7fc934b-3d5b-4e3e-8adc-bf5c8d603de0",
-   "key": "vendor_master.delete",
-   "category": "Masters",
-   "sub_head": "vendor_master",
-   "action": "delete"
   },
   {
    "id": "86daf4c0-560e-4f9e-b33c-b9e210a9d668",

@@ -1,0 +1,6 @@
+# The uploader is a Windows program for the office PC. It has no business
+# inside the parse service's image.
+uploader/
+parse-service/README.md
+**/__pycache__/
+**/*.pyc
