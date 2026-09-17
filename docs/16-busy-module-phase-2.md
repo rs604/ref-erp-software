@@ -177,3 +177,22 @@ and not live. If it has never synced it says so in red.
 - The uploader `.exe`, the setup instructions screen, and the download screen
 - The one-time history load of 22,732 rows
 - Both need things this container does not have
+
+---
+
+## Drift check — the repo and the database agree
+
+Run at the end of this phase, comparing every applied migration against its file
+by fingerprint:
+
+| | |
+|---|---|
+| Migrations applied to Mumbai | **37** |
+| Files matching the applied SQL exactly | **37** |
+| Applied but missing a file | **0** |
+| Files whose text differs | **0** |
+| Files in the repo not applied | 1 — `18_create_login_for_party`, known and explained in doc 15 |
+
+I nearly repeated the Phase C mistake in this phase: `34_busy_monthly_totals` was
+applied and pushed without its file. Caught by this check and added. **Worth
+running this check at the end of every phase from now on.**
