@@ -224,6 +224,40 @@ Only for the screens genuinely used on one — raising a request, approving.
 
 ---
 
+## THE PATTERN THIS PROJECT KEEPS FINDING
+
+**Nobody is asking the wrong questions at the moment nobody is looking.**
+
+Five times now, the same shape. Every one of them sat at a boundary — the
+place where one thing hands over to another, which belongs to neither and so
+gets checked by neither.
+
+| What was measured | What was actually being measured |
+|---|---|
+| "every click moves the page" | the test driver scrolling to what it clicked |
+| "the tab order is broken" | a date box swallowing three Tabs of its own |
+| "the screen draws 200 rows when asked for 25" | the stub ignoring the page size the screen sent |
+| "nothing is shaded as a close match" | an empty search box, where nothing can be close |
+| "most rows have no quantity" | a sample read as though it were the data |
+
+And the same shape again in the code itself, not the tests: `busy_search` was
+called with seven arguments when it takes eight, and it worked, because the
+missing one had a default. A default was standing in for an argument nobody
+meant to leave out. Nothing was wrong at either end — the caller looked fine,
+the function looked fine. Only the join between them was wrong, and nothing
+was looking at the join.
+
+**So: test the test.** Before trusting a check that passes, break the thing on
+purpose and watch the check fail. A check that has never failed has not been
+shown to work — it has only been shown to be quiet. `tests/check-rpc-calls.js`
+was verified this way: the argument was removed again, the check failed, the
+argument was put back.
+
+And when a boundary is found to be unguarded, guard it permanently rather than
+fixing the one crossing of it.
+
+---
+
 ## What to put in every build prompt from now on
 
 > Before reporting a screen done, run the tests in `docs/23-screen-tests.md`
