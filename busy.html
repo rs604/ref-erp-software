@@ -249,20 +249,35 @@
         </div>
 
         <div class="card">
-          <div style="font-weight:600; margin-bottom:8px;">GST</div>
+          <div style="font-weight:600; margin-bottom:8px;">GST — what was computed, and what was paid</div>
+          <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">
+            Both figures come from the GST ledger itself. <strong>Paid</strong> is money that
+            actually left the bank on a payment voucher. <strong>Computed</strong> is the monthly
+            journal working out the liability. If the two drift apart over time, input credit is
+            not all being claimed.
+          </div>
+          <div class="kpis" id="gstPaidKpis"></div>
+          <div class="tbl-wrap" style="max-height:none; margin-top:12px">
+            <table class="tbl">
+              <thead><tr>
+                <th style="width:44px">Sr.</th><th style="width:88px">Date</th><th style="width:74px">FY</th>
+                <th style="width:120px">What</th><th style="width:86px">Vch No</th>
+                <th>Ledger</th><th style="width:130px">Amount</th>
+              </tr></thead>
+              <tbody id="gstRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:600; margin-bottom:8px;">GST on invoices — estimate only</div>
           <div class="note" style="margin-bottom:10px;">
-            <strong>Estimate only, not a bill.</strong> Some input credit is not eligible, and
+            <strong>An estimate, not a bill.</strong> Some input credit is not eligible, and
             reversals, reverse charge and credit notes all change the figure. Your accountant works
             that out at filing. This screen does not know any of it, so it is never labelled payable.
+            The figures above, from the GST ledger, are the real ones.
           </div>
           <div class="kpis" id="gstKpis"></div>
-          <div class="note" style="margin-top:10px; border-left-color:var(--danger); background:var(--danger-bg);">
-            <strong>GST actually paid is not shown yet.</strong> It lives in the payment vouchers
-            (Busy type 19), and the parser currently reads only the item lines of bills, challans
-            and orders. Showing what was really paid needs the parser extended to read those
-            vouchers — a decision for Raghbir, since the parser is proven and not to be rewritten
-            casually.
-          </div>
         </div>
       </div>
 
@@ -533,6 +548,7 @@
   function loadReports() {
     $('kpis').innerHTML = '<div class="loading">Adding up…</div>';
     $('yoyRows').innerHTML = '';
+    loadGst();
     REF.supabase().rpc('busy_monthly_totals', { p_company: firm }).then(function (res) {
       if (res.error) { $('kpis').innerHTML = '<div class="loading">' + esc(res.error.message) + '</div>'; return; }
       buildReports(res.data || []);
@@ -612,6 +628,59 @@
       '<div class="kpi"><div class="k">Input tax on purchases, this FY</div><div class="v">' + moneyShort(inp) + '</div></div>' +
       '<div class="kpi"><div class="k">Difference — indicative only</div><div class="v">' + moneyShort(out - inp) + '</div>' +
       '<div style="font-size:11.5px; color:var(--muted)">not a payable figure</div></div>';
+  }
+
+  /* ------- GST from the ledger: computed against actually paid ------- */
+  function loadGst() {
+    $('gstPaidKpis').innerHTML = '<div class="loading">Looking…</div>';
+    $('gstRows').innerHTML = '';
+    REF.supabase().rpc('busy_gst_ledger', { p_company: firm }).then(function (res) {
+      if (res.error) {
+        $('gstPaidKpis').innerHTML = '<div class="loading">' + esc(res.error.message) + '</div>';
+        return;
+      }
+      var rows = res.data || [];
+      if (!rows.length) {
+        $('gstPaidKpis').innerHTML =
+          '<div class="kpi" style="grid-column:1/-1"><div class="k">No GST ledger entries</div>' +
+          '<div style="font-size:12.5px; color:var(--muted); margin-top:4px">' +
+          'This firm has no postings to the GST ledger in the data held. For RS Industries that ' +
+          'is correct, not a fault.</div></div>';
+        $('gstRows').innerHTML =
+          '<tr><td colspan="7" class="loading">Nothing to show.</td></tr>';
+        return;
+      }
+
+      var paid = rows.filter(function (r) { return r.vch_type === '19'; })
+                     .reduce(function (a, r) { return a + Number(r.net_amount || 0); }, 0);
+      var computed = rows.filter(function (r) { return r.vch_type === '16'; })
+                         .reduce(function (a, r) { return a + Number(r.credit || 0); }, 0);
+      var gap = computed - paid;
+
+      $('gstPaidKpis').innerHTML =
+        '<div class="kpi"><div class="k">Actually paid</div><div class="v">' + moneyShort(paid) +
+        '</div><div style="font-size:11.5px; color:var(--muted)">' +
+        rows.filter(function (r) { return r.vch_type === '19'; }).length + ' payments</div></div>' +
+        '<div class="kpi"><div class="k">Computed in the journals</div><div class="v">' +
+        moneyShort(computed) + '</div><div style="font-size:11.5px; color:var(--muted)">' +
+        rows.filter(function (r) { return r.vch_type === '16'; }).length + ' monthly workings</div></div>' +
+        '<div class="kpi"><div class="k">Difference</div><div class="v ' +
+        (Math.abs(gap) > 1 ? 'down' : '') + '">' + moneyShort(gap) + '</div>' +
+        '<div style="font-size:11.5px; color:var(--muted)">computed less paid</div></div>';
+
+      $('gstRows').innerHTML = rows.slice().reverse().map(function (r, i) {
+        var isPay = r.vch_type === '19';
+        var amt = isPay ? Number(r.net_amount || 0) : Number(r.credit || 0);
+        return '<tr><td>' + (i + 1) + '</td><td>' + dmy(r.vch_date) + '</td>' +
+          '<td>' + esc(r.fy) + '</td>' +
+          '<td>' + (isPay
+            ? '<span class="pill pill-amber">paid</span>'
+            : '<span class="pill pill-grey">computed</span>') + '</td>' +
+          '<td>' + esc(r.vch_no || '') + '</td>' +
+          '<td class="l">' + esc(r.ledger) + '</td>' +
+          '<td class="r">' + money(amt) + '</td></tr>';
+      }).join('');
+    });
   }
 
   /* ---------------- wiring ---------------- */
