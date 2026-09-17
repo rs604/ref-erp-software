@@ -4,6 +4,7 @@
 set -e
 export NODE_PATH="${NODE_PATH:-/opt/node22/lib/node_modules}"
 fail=0
+node tests/check-rpc-calls.js || fail=1
 for t in tests/*.test.js; do
   node "$t" || fail=1
 done

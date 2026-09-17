@@ -1,0 +1,144 @@
+{
+ "_refresh": "see tests/check-rpc-calls.js",
+ "_taken_from": "public schema of refcon-erp, 17 Sep 2026",
+ "functions": {
+  "busy_compact": {
+   "args": [
+    "p_text"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_gst_ledger": {
+   "args": [
+    "p_company"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_import_fy": {
+   "args": [
+    "p_batch_id",
+    "p_company",
+    "p_fy",
+    "p_rows"
+   ],
+   "total": 4,
+   "with_defaults": 0
+  },
+  "busy_import_rows": {
+   "args": [
+    "p_batch_id",
+    "p_rows"
+   ],
+   "total": 2,
+   "with_defaults": 0
+  },
+  "busy_monthly_totals": {
+   "args": [
+    "p_company"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_normalise": {
+   "args": [
+    "p_text"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_numbers": {
+   "args": [
+    "p_text"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_search": {
+   "args": [
+    "p_company",
+    "p_query",
+    "p_party",
+    "p_doc_type",
+    "p_date_from",
+    "p_date_to",
+    "p_limit",
+    "p_offset"
+   ],
+   "total": 8,
+   "with_defaults": 7
+  },
+  "create_login_for_party": {
+   "args": [
+    "p_party_id",
+    "p_login_email",
+    "p_password"
+   ],
+   "total": 3,
+   "with_defaults": 0
+  },
+  "current_party_id": {
+   "args": [],
+   "total": 0,
+   "with_defaults": 0
+  },
+  "current_salary": {
+   "args": [
+    "p_party_id",
+    "p_on"
+   ],
+   "total": 2,
+   "with_defaults": 1
+  },
+  "has_permission": {
+   "args": [
+    "p_key"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "is_owner": {
+   "args": [],
+   "total": 0,
+   "with_defaults": 0
+  },
+  "job_secret": {
+   "args": [
+    "p_key"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "list_public_tables": {
+   "args": [],
+   "total": 0,
+   "with_defaults": 0
+  },
+  "next_human_number": {
+   "args": [
+    "p_series_key"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "prune_backup_runs": {
+   "args": [],
+   "total": 0,
+   "with_defaults": 0
+  },
+  "replace_attachment": {
+   "args": [
+    "p_old_id",
+    "p_file_name",
+    "p_mime_type",
+    "p_size_bytes",
+    "p_storage_bucket",
+    "p_storage_path",
+    "p_checksum"
+   ],
+   "total": 7,
+   "with_defaults": 1
+  }
+ }
+}

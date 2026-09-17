@@ -11,6 +11,15 @@
 -- DO NOT RUN THIS UNTIL _shared/auth.ts ACCEPTS BOTH SPELLINGS AND
 -- hr-actions AND hrms-actions HAVE BEEN DEPLOYED WITH IT.
 --
+-- 17 Sep 2026: BLOCKED, and not urgent. Neither deploy route is open from
+-- the build environment -- its network policy refuses supabase.com,
+-- api.supabase.com and app.supabase.com alike, so the CLI, the management
+-- API and the dashboard are all out of reach. The remaining route would be
+-- retyping 130 KB of live HR code through a chat window, twice, which is a
+-- real risk taken for a naming tidy-up. This waits for a better route.
+-- Nothing is broken meanwhile: the column headings on screen already read
+-- Cancel, and only the internal key still spells it delete.
+--
 -- The order that leaves no window:
 --   1. deploy hr-actions and hrms-actions   (either spelling accepted)
 --   2. run this migration                   (the keys move)
