@@ -1,0 +1,783 @@
+{
+ "permissions": [
+  {
+   "id": "f65edd44-21cb-4da3-b001-c2f8ab9f00a7",
+   "key": "admin.permissions",
+   "category": "Admin",
+   "sub_head": "admin",
+   "action": "edit"
+  },
+  {
+   "id": "bb18ac4e-78e9-4b40-aec3-d937dc727394",
+   "key": "admin.users",
+   "category": "Admin",
+   "sub_head": "admin",
+   "action": "edit"
+  },
+  {
+   "id": "54c52d9e-ca30-4d70-b3be-b56d0506404e",
+   "key": "admin.settings",
+   "category": "Admin",
+   "sub_head": "admin",
+   "action": "edit"
+  },
+  {
+   "id": "ed6d4e41-fca6-431a-99c1-cb53093b22b2",
+   "key": "admin.audit",
+   "category": "Admin",
+   "sub_head": "admin",
+   "action": "view"
+  },
+  {
+   "id": "bebfecd7-44c9-4304-980c-30097790e29e",
+   "key": "busy_data.import",
+   "category": "Busy Data",
+   "sub_head": "busy_data",
+   "action": "create"
+  },
+  {
+   "id": "e01dd3e2-beb3-4d6f-a843-deed57855099",
+   "key": "busy_data.view",
+   "category": "Busy Data",
+   "sub_head": "busy_data",
+   "action": "view"
+  },
+  {
+   "id": "18b05fbf-554c-4206-b851-12f51ca55dc9",
+   "key": "holidays.create",
+   "category": "HRMS",
+   "sub_head": "holidays",
+   "action": "create"
+  },
+  {
+   "id": "852d2cfc-779d-41fc-bb41-83f5e471dd3e",
+   "key": "holidays.delete",
+   "category": "HRMS",
+   "sub_head": "holidays",
+   "action": "delete"
+  },
+  {
+   "id": "cc13afab-6941-4437-9b5e-c1f99b28bae5",
+   "key": "holidays.edit",
+   "category": "HRMS",
+   "sub_head": "holidays",
+   "action": "edit"
+  },
+  {
+   "id": "afe8114c-6138-4003-bfa6-2109d8bf125c",
+   "key": "holidays.view",
+   "category": "HRMS",
+   "sub_head": "holidays",
+   "action": "view"
+  },
+  {
+   "id": "40d59c90-e95f-4afb-a3ca-85920238d87a",
+   "key": "loans_advances.approve",
+   "category": "HRMS",
+   "sub_head": "loans_advances",
+   "action": "approve"
+  },
+  {
+   "id": "a91c8b7b-f2a1-4be8-bbb0-c596f9fd99ef",
+   "key": "loans_advances.create",
+   "category": "HRMS",
+   "sub_head": "loans_advances",
+   "action": "create"
+  },
+  {
+   "id": "c474b7c6-b45c-4f12-ad3f-56304542f296",
+   "key": "loans_advances.edit",
+   "category": "HRMS",
+   "sub_head": "loans_advances",
+   "action": "edit"
+  },
+  {
+   "id": "1b11c638-074d-4d2f-b745-0a53c49aa06e",
+   "key": "loans_advances.view",
+   "category": "HRMS",
+   "sub_head": "loans_advances",
+   "action": "view"
+  },
+  {
+   "id": "d44c8121-650e-4ecc-9783-811ac164282d",
+   "key": "payroll.finalise",
+   "category": "HRMS",
+   "sub_head": "payroll",
+   "action": "approve"
+  },
+  {
+   "id": "ac174073-9da1-4bf1-bd1d-b2ad0bf9fffc",
+   "key": "payroll.create",
+   "category": "HRMS",
+   "sub_head": "payroll",
+   "action": "create"
+  },
+  {
+   "id": "c68e4836-b6d5-4ae2-9a76-7760b8ab747b",
+   "key": "payroll.edit",
+   "category": "HRMS",
+   "sub_head": "payroll",
+   "action": "edit"
+  },
+  {
+   "id": "02c7d429-3e80-4f4c-88a8-968adb9e06ce",
+   "key": "payroll.view",
+   "category": "HRMS",
+   "sub_head": "payroll",
+   "action": "view"
+  },
+  {
+   "id": "65d1db84-6617-475c-b1cd-ded4117cd7cc",
+   "key": "goods_receipt.create",
+   "category": "Inventory & Purchase",
+   "sub_head": "goods_receipt",
+   "action": "create"
+  },
+  {
+   "id": "6b31f3bd-79e2-48e5-b265-36c48992713d",
+   "key": "goods_receipt.view",
+   "category": "Inventory & Purchase",
+   "sub_head": "goods_receipt",
+   "action": "view"
+  },
+  {
+   "id": "d5cf64a6-0c71-46cc-8d1c-f3761839d4e2",
+   "key": "laser_drawing.create",
+   "category": "Inventory & Purchase",
+   "sub_head": "laser_drawing",
+   "action": "create"
+  },
+  {
+   "id": "7c3f7c36-3724-4adf-bb28-977828c5a49d",
+   "key": "laser_drawing.view",
+   "category": "Inventory & Purchase",
+   "sub_head": "laser_drawing",
+   "action": "view"
+  },
+  {
+   "id": "c6eb4a56-ca5b-4fde-ac3a-e84c1600bf31",
+   "key": "purchase_invoice.create",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_invoice",
+   "action": "create"
+  },
+  {
+   "id": "bc6151e0-6b40-4fe7-9e15-853dcf807b35",
+   "key": "purchase_invoice.edit",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_invoice",
+   "action": "edit"
+  },
+  {
+   "id": "e135d2b7-9a33-42f7-b229-5225cbb797cc",
+   "key": "purchase_invoice.view",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_invoice",
+   "action": "view"
+  },
+  {
+   "id": "431c4597-f5b6-4cca-937c-19990387521b",
+   "key": "purchase_order.approve",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_order",
+   "action": "approve"
+  },
+  {
+   "id": "37385745-5f5a-46eb-bcd1-5f480beaaf18",
+   "key": "purchase_order.create",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_order",
+   "action": "create"
+  },
+  {
+   "id": "0fb483cb-ec0f-42dc-9366-5e3e2bda7f96",
+   "key": "purchase_order.edit",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_order",
+   "action": "edit"
+  },
+  {
+   "id": "ef911286-96b6-4d62-af87-898b7f41c367",
+   "key": "purchase_order.view",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_order",
+   "action": "view"
+  },
+  {
+   "id": "bb540d50-23f5-41de-8687-5fb6a0f117ea",
+   "key": "purchase_request.cancel",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_request",
+   "action": "cancel"
+  },
+  {
+   "id": "68c71c20-abf5-40f9-a474-365da6f7f582",
+   "key": "purchase_request.create",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_request",
+   "action": "create"
+  },
+  {
+   "id": "5840b558-cf2c-44ae-a72f-e7827a6fe2d7",
+   "key": "purchase_request.edit",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_request",
+   "action": "edit"
+  },
+  {
+   "id": "0321ce8a-c8aa-4eef-bd92-b99426499cb7",
+   "key": "purchase_request.view",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_request",
+   "action": "view"
+  },
+  {
+   "id": "e836327c-65dc-4ed3-9527-f777cecabb33",
+   "key": "purchase_return.create",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_return",
+   "action": "create"
+  },
+  {
+   "id": "5c45f492-7ce1-411e-a0a4-c82cc0a4cc60",
+   "key": "purchase_return.view",
+   "category": "Inventory & Purchase",
+   "sub_head": "purchase_return",
+   "action": "view"
+  },
+  {
+   "id": "6b648949-b752-44e4-896d-b251dcc03e8b",
+   "key": "quotation.create",
+   "category": "Inventory & Purchase",
+   "sub_head": "quotation",
+   "action": "create"
+  },
+  {
+   "id": "1c2355bb-5dba-4ad3-a094-b3729496ef3d",
+   "key": "quotation.edit",
+   "category": "Inventory & Purchase",
+   "sub_head": "quotation",
+   "action": "edit"
+  },
+  {
+   "id": "5c890746-ce60-44cf-822f-58c3db7a2f59",
+   "key": "quotation.view",
+   "category": "Inventory & Purchase",
+   "sub_head": "quotation",
+   "action": "view"
+  },
+  {
+   "id": "648b74cd-3c45-4bb5-bd1e-26a691793eae",
+   "key": "short_close.approve",
+   "category": "Inventory & Purchase",
+   "sub_head": "short_close",
+   "action": "approve"
+  },
+  {
+   "id": "3e0df6c7-ee39-4c96-9b57-7752738f11dc",
+   "key": "vendor_data_bank.create",
+   "category": "Inventory & Purchase",
+   "sub_head": "vendor_data_bank",
+   "action": "create"
+  },
+  {
+   "id": "737d63ea-8c2b-4c2f-983b-20996ceb7571",
+   "key": "vendor_data_bank.edit",
+   "category": "Inventory & Purchase",
+   "sub_head": "vendor_data_bank",
+   "action": "edit"
+  },
+  {
+   "id": "6de188f5-67f0-4e7b-b9fe-ba57a86f89d2",
+   "key": "vendor_data_bank.view",
+   "category": "Inventory & Purchase",
+   "sub_head": "vendor_data_bank",
+   "action": "view"
+  },
+  {
+   "id": "501e2cc6-ee35-4b08-936b-be192181eedf",
+   "key": "vendor_payment.approve",
+   "category": "Inventory & Purchase",
+   "sub_head": "vendor_payment",
+   "action": "approve"
+  },
+  {
+   "id": "93e01801-8200-44cd-b02b-68d43b00cc6d",
+   "key": "vendor_payment.create",
+   "category": "Inventory & Purchase",
+   "sub_head": "vendor_payment",
+   "action": "create"
+  },
+  {
+   "id": "d866f436-71a6-49a5-ad2b-9872fd10102b",
+   "key": "vendor_payment.view",
+   "category": "Inventory & Purchase",
+   "sub_head": "vendor_payment",
+   "action": "view"
+  },
+  {
+   "id": "c3da66a9-b5a3-4adb-8d47-9e7083325a1d",
+   "key": "km_tracker.approve",
+   "category": "Km Tracker",
+   "sub_head": "km_tracker",
+   "action": "approve"
+  },
+  {
+   "id": "17f84e90-dba1-4360-b14e-c1f414425e2b",
+   "key": "km_tracker.edit",
+   "category": "Km Tracker",
+   "sub_head": "km_tracker",
+   "action": "edit"
+  },
+  {
+   "id": "b5050550-716a-409b-9dea-48f2cb5c29c9",
+   "key": "km_tracker.view",
+   "category": "Km Tracker",
+   "sub_head": "km_tracker",
+   "action": "view"
+  },
+  {
+   "id": "07a16f2f-0e7b-42ef-9d83-8ac706b1a618",
+   "key": "employee_master.create",
+   "category": "Masters",
+   "sub_head": "employee_master",
+   "action": "create"
+  },
+  {
+   "id": "7dd4db3c-3743-4372-9835-61f1fdade6da",
+   "key": "employee_master.delete",
+   "category": "Masters",
+   "sub_head": "employee_master",
+   "action": "delete"
+  },
+  {
+   "id": "f276d4d0-ab5b-40de-95c2-efdd16b0c0e4",
+   "key": "employee_master.edit",
+   "category": "Masters",
+   "sub_head": "employee_master",
+   "action": "edit"
+  },
+  {
+   "id": "98b69e6a-b000-4a5d-93dd-f10df88f9bd8",
+   "key": "employee_master.view",
+   "category": "Masters",
+   "sub_head": "employee_master",
+   "action": "view"
+  },
+  {
+   "id": "42718836-ee83-4748-8bb1-c29380b74925",
+   "key": "item_master.approve",
+   "category": "Masters",
+   "sub_head": "item_master",
+   "action": "approve"
+  },
+  {
+   "id": "df2097bb-61cd-4800-bb78-ac480f62a29d",
+   "key": "item_master.create",
+   "category": "Masters",
+   "sub_head": "item_master",
+   "action": "create"
+  },
+  {
+   "id": "79948a04-16a1-4b89-b02a-8ae6bb4c3438",
+   "key": "item_master.edit",
+   "category": "Masters",
+   "sub_head": "item_master",
+   "action": "edit"
+  },
+  {
+   "id": "b721117f-0f77-450a-ab21-da9adc747900",
+   "key": "item_master.view",
+   "category": "Masters",
+   "sub_head": "item_master",
+   "action": "view"
+  },
+  {
+   "id": "8b1ac2fe-a467-4939-99ae-cdc169bea5d7",
+   "key": "vendor_master.approve",
+   "category": "Masters",
+   "sub_head": "vendor_master",
+   "action": "approve"
+  },
+  {
+   "id": "94c4c5b4-65ae-4b7c-90f3-b6abaf2452eb",
+   "key": "vendor_master.create",
+   "category": "Masters",
+   "sub_head": "vendor_master",
+   "action": "create"
+  },
+  {
+   "id": "e7fc934b-3d5b-4e3e-8adc-bf5c8d603de0",
+   "key": "vendor_master.delete",
+   "category": "Masters",
+   "sub_head": "vendor_master",
+   "action": "delete"
+  },
+  {
+   "id": "86daf4c0-560e-4f9e-b33c-b9e210a9d668",
+   "key": "vendor_master.edit",
+   "category": "Masters",
+   "sub_head": "vendor_master",
+   "action": "edit"
+  },
+  {
+   "id": "9f5a7f32-6d31-4600-b5d9-81e663c3d9b5",
+   "key": "vendor_master.view",
+   "category": "Masters",
+   "sub_head": "vendor_master",
+   "action": "view"
+  }
+ ],
+ "employees": [
+  {
+   "id": "u-owner",
+   "name": "Raghbir Singh",
+   "employee_code": "EMP-0001",
+   "role": "owner",
+   "status": "active",
+   "departments": {
+    "name": "Management"
+   },
+   "designations": {
+    "name": "Owner"
+   },
+   "mobile_number": "9800000000",
+   "erp_login_enabled": true,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-00",
+   "name": "Amrit Kaur",
+   "employee_code": "EMP-0001",
+   "role": "staff",
+   "status": "suspended",
+   "departments": {
+    "name": "Fabrication"
+   },
+   "designations": {
+    "name": "Supervisor"
+   },
+   "mobile_number": "9811110000",
+   "erp_login_enabled": false,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-01",
+   "name": "Baldev Sharma",
+   "employee_code": "EMP-0002",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Accounts"
+   },
+   "designations": {
+    "name": "Accountant"
+   },
+   "mobile_number": "9811110001",
+   "erp_login_enabled": true,
+   "login_mode": "single"
+  },
+  {
+   "id": "e-02",
+   "name": "Charan Gill",
+   "employee_code": "EMP-0003",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Stores"
+   },
+   "designations": {
+    "name": "Storekeeper"
+   },
+   "mobile_number": "9811110002",
+   "erp_login_enabled": true,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-03",
+   "name": "Davinder Rai",
+   "employee_code": "EMP-0004",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Design"
+   },
+   "designations": {
+    "name": "Draughtsman"
+   },
+   "mobile_number": "9811110003",
+   "erp_login_enabled": false,
+   "login_mode": "single"
+  },
+  {
+   "id": "e-04",
+   "name": "Eknoor Bedi",
+   "employee_code": "EMP-0005",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Erection"
+   },
+   "designations": {
+    "name": "Fitter"
+   },
+   "mobile_number": "9811110004",
+   "erp_login_enabled": true,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-05",
+   "name": "Farhan Qureshi",
+   "employee_code": "EMP-0006",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Fabrication"
+   },
+   "designations": {
+    "name": "Supervisor"
+   },
+   "mobile_number": "9811110005",
+   "erp_login_enabled": true,
+   "login_mode": "single"
+  },
+  {
+   "id": "e-06",
+   "name": "Gurpreet Sandhu",
+   "employee_code": "EMP-0007",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Accounts"
+   },
+   "designations": {
+    "name": "Accountant"
+   },
+   "mobile_number": "9811110006",
+   "erp_login_enabled": false,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-07",
+   "name": "Harjit Bains",
+   "employee_code": "EMP-0008",
+   "role": "staff",
+   "status": "suspended",
+   "departments": {
+    "name": "Stores"
+   },
+   "designations": {
+    "name": "Storekeeper"
+   },
+   "mobile_number": "9811110007",
+   "erp_login_enabled": true,
+   "login_mode": "single"
+  },
+  {
+   "id": "e-08",
+   "name": "Inder Chadha",
+   "employee_code": "EMP-0009",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Design"
+   },
+   "designations": {
+    "name": "Draughtsman"
+   },
+   "mobile_number": "9811110008",
+   "erp_login_enabled": true,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-09",
+   "name": "Jaspal Dhillon",
+   "employee_code": "EMP-0010",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Erection"
+   },
+   "designations": {
+    "name": "Fitter"
+   },
+   "mobile_number": "9811110009",
+   "erp_login_enabled": false,
+   "login_mode": "single"
+  },
+  {
+   "id": "e-10",
+   "name": "Kiran Malhotra",
+   "employee_code": "EMP-0011",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Fabrication"
+   },
+   "designations": {
+    "name": "Supervisor"
+   },
+   "mobile_number": "9811110010",
+   "erp_login_enabled": true,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-11",
+   "name": "Lovepreet Sodhi",
+   "employee_code": "EMP-0012",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Accounts"
+   },
+   "designations": {
+    "name": "Accountant"
+   },
+   "mobile_number": "9811110011",
+   "erp_login_enabled": true,
+   "login_mode": "single"
+  },
+  {
+   "id": "e-12",
+   "name": "Manjit Grewal",
+   "employee_code": "EMP-0013",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Stores"
+   },
+   "designations": {
+    "name": "Storekeeper"
+   },
+   "mobile_number": "9811110012",
+   "erp_login_enabled": false,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-13",
+   "name": "Navjot Ahluwalia",
+   "employee_code": "EMP-0014",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Design"
+   },
+   "designations": {
+    "name": "Draughtsman"
+   },
+   "mobile_number": "9811110013",
+   "erp_login_enabled": true,
+   "login_mode": "single"
+  },
+  {
+   "id": "e-14",
+   "name": "Onkar Sethi",
+   "employee_code": "EMP-0015",
+   "role": "staff",
+   "status": "suspended",
+   "departments": {
+    "name": "Erection"
+   },
+   "designations": {
+    "name": "Fitter"
+   },
+   "mobile_number": "9811110014",
+   "erp_login_enabled": true,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-15",
+   "name": "Pardeep Virk",
+   "employee_code": "EMP-0016",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Fabrication"
+   },
+   "designations": {
+    "name": "Supervisor"
+   },
+   "mobile_number": "9811110015",
+   "erp_login_enabled": false,
+   "login_mode": "single"
+  },
+  {
+   "id": "e-16",
+   "name": "Rohit Anand",
+   "employee_code": "EMP-0017",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Accounts"
+   },
+   "designations": {
+    "name": "Accountant"
+   },
+   "mobile_number": "9811110016",
+   "erp_login_enabled": true,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-17",
+   "name": "Simran Kohli",
+   "employee_code": "EMP-0018",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Stores"
+   },
+   "designations": {
+    "name": "Storekeeper"
+   },
+   "mobile_number": "9811110017",
+   "erp_login_enabled": true,
+   "login_mode": "single"
+  },
+  {
+   "id": "e-18",
+   "name": "Tejinder Bhatia",
+   "employee_code": "EMP-0019",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Design"
+   },
+   "designations": {
+    "name": "Draughtsman"
+   },
+   "mobile_number": "9811110018",
+   "erp_login_enabled": false,
+   "login_mode": "multiple"
+  },
+  {
+   "id": "e-19",
+   "name": "Usha Menon",
+   "employee_code": "EMP-0020",
+   "role": "staff",
+   "status": "active",
+   "departments": {
+    "name": "Erection"
+   },
+   "designations": {
+    "name": "Fitter"
+   },
+   "mobile_number": "9811110019",
+   "erp_login_enabled": true,
+   "login_mode": "single"
+  }
+ ],
+ "grants": [
+  {
+   "employee_id": "e-01",
+   "permission_id": "f65edd44-21cb-4da3-b001-c2f8ab9f00a7"
+  },
+  {
+   "employee_id": "e-01",
+   "permission_id": "e01dd3e2-beb3-4d6f-a843-deed57855099"
+  },
+  {
+   "employee_id": "e-03",
+   "permission_id": "afe8114c-6138-4003-bfa6-2109d8bf125c"
+  }
+ ]
+}

@@ -1232,8 +1232,10 @@
       apiHR({ action: 'get_my_erp_requests' }),
     ]);
 
-    const pending = pendingRes.success ? pendingRes.requests : [];
-    const myRequests = myRes.success ? myRes.requests : [];
+    // A reply that says success but carries no list used to crash this screen
+    // on .length. Caught by the screen tests; see docs/23-screen-tests.md.
+    const pending = (pendingRes.success && pendingRes.requests) || [];
+    const myRequests = (myRes.success && myRes.requests) || [];
 
     const html = `
       <div class="panel panel-no-clip">
@@ -5018,27 +5020,33 @@
     return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
   }
 
+  // ---- Permission grid ----------------------------------------------------
+  // This grid used to rebuild itself completely after every single click. That
+  // is what threw the page back to the top: replacing the panel's innerHTML
+  // destroys the two scrolling divs, so the browser has nowhere to put the old
+  // scroll position and starts again at zero. Focus went with it.
+  //
+  // Now a click touches only what it changed:
+  //   a cell checkbox    -> its own box, and the category box above it
+  //   a category box     -> the cells under it, in that column
+  //   a column header    -> that column only
+  //   Grant/Revoke All   -> every box, but still no HTML is rebuilt
+  //   search or a filter -> the employee list only; the grid is left alone
+  //   picking a person   -> the grid only; the employee list keeps its place
+  //
+  // Nothing below writes innerHTML on the whole panel except the first draw.
+  // Handlers are bound once, to the two containers, so a partial redraw never
+  // leaves a dead button behind.
+
   function selectPermEmployee(id) {
     selectedPermEmployeeId = id;
     const grants = permissionsData.grants.filter(g => g.employee_id === id).map(g => g.permission_id);
     pendingGrantedIds = new Set(grants);
     permDirty = false;
-    renderAdminPanel();
   }
 
-  function renderAdminPanel() {
-    if (!permissionsData) return;
-    const { permissions, employees, grants } = permissionsData;
-
-    if (!selectedPermEmployeeId && employees.length > 0) {
-      const first = employees.find(e => e.role !== 'owner') || employees[0];
-      selectPermEmployee(first.id);
-      return; // selectPermEmployee re-calls renderAdminPanel
-    }
-
-    const deptNames = [...new Set(employees.map(e => e.departments?.name).filter(Boolean))].sort();
-
-    const filteredEmployees = employees.filter(e => {
+  function permFilteredEmployees() {
+    return permissionsData.employees.filter(e => {
       if (permStatusFilter !== 'all' && e.status !== permStatusFilter) return false;
       if (permDeptFilter !== 'all' && e.departments?.name !== permDeptFilter) return false;
       if (permSearchQuery) {
@@ -5047,13 +5055,203 @@
       }
       return true;
     });
+  }
 
+  function permEmpRowHtml(e) {
+    const isSel = e.id === selectedPermEmployeeId;
+    const hasAccess = permissionsData.grants.some(g => g.employee_id === e.id) || e.role === 'owner';
+    return `<button type="button" class="perm-emp-row ${isSel ? 'active' : ''}" data-id="${e.id}" style="width:100%; display:flex; align-items:center; gap:10px; padding:10px 14px; border:none; border-bottom:1px solid var(--border); background:${isSel ? 'var(--steel-dark)' : '#fff'}; color:${isSel ? '#fff' : 'var(--ink)'}; cursor:pointer; text-align:left;">
+        <div style="width:32px; height:32px; border-radius:50%; background:${avatarColor(e.name)}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; flex-shrink:0;">${initials(e.name)}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.name}</div>
+          <div style="font-size:11px; opacity:0.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.designations?.name || '—'} · ${e.departments?.name || '—'}</div>
+        </div>
+        <span class="perm-emp-access" style="font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:4px; white-space:nowrap; background:${hasAccess ? (isSel ? 'rgba(255,255,255,0.2)' : 'var(--green-bg)') : (isSel ? 'rgba(255,255,255,0.1)' : 'var(--surface-sunken)')}; color:${hasAccess ? (isSel ? '#fff' : 'var(--green)') : (isSel ? 'rgba(255,255,255,0.6)' : 'var(--muted)')};">${hasAccess ? 'HAS ACCESS' : 'NO ACCESS'}</span>
+      </button>`;
+  }
+
+  // Redraws the employee list only. Its own scroll position is put back, so a
+  // filter change does not send a long list to the top for no reason.
+  function renderPermEmployeeList() {
+    const box = document.getElementById('permEmpListScroll');
+    if (!box) return;
+    const keepScroll = box.scrollTop;
+    const list = permFilteredEmployees();
+    box.innerHTML = list.length === 0
+      ? '<div class="empty-state" style="padding:16px;">No matches.</div>'
+      : list.map(permEmpRowHtml).join('');
+    box.scrollTop = keepScroll;
+  }
+
+  // Swaps one row's highlight for another, and refreshes a badge that has just
+  // been saved. A row whose appearance has not changed is left alone entirely,
+  // so at most two rows in the list are ever rewritten.
+  function permUpdateSelectedRow() {
+    document.querySelectorAll('#permEmpListScroll .perm-emp-row').forEach(row => {
+      const e = permissionsData.employees.find(x => String(x.id) === String(row.dataset.id));
+      if (!e) return;
+      const wasActive = row.classList.contains('active');
+      const isActive = String(e.id) === String(selectedPermEmployeeId);
+      const hasAccess = permissionsData.grants.some(g => g.employee_id === e.id) || e.role === 'owner';
+      const badge = row.querySelector('.perm-emp-access');
+      const badgeSame = badge && badge.textContent === (hasAccess ? 'HAS ACCESS' : 'NO ACCESS');
+      if (wasActive === isActive && badgeSame) return;
+      row.outerHTML = permEmpRowHtml(e);
+    });
+  }
+
+  function permDetailHtml() {
+    const { permissions, employees } = permissionsData;
     const selectedEmp = employees.find(e => e.id === selectedPermEmployeeId);
+    if (!selectedEmp) return '<div class="empty-state">Select an employee.</div>';
     const categories = [...new Set(permissions.map(p => p.category))];
 
-    const empHasAccess = (empId) => grants.some(g => g.employee_id === empId);
+    return `
+      <div id="permDetailStickyHeader" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; padding:16px 0; background:#fff; position:sticky; top:0; z-index:20;">
+        <div>
+          <div style="font-size:16px; font-weight:700;">${selectedEmp.name}</div>
+          <div style="font-size:12.5px; color:var(--muted); margin-top:2px;">${selectedEmp.designations?.name || '—'} · ${selectedEmp.departments?.name || '—'} · ${selectedEmp.mobile_number || ''}</div>
+        </div>
+        ${selectedEmp.role !== 'owner' ? `
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-outline" id="permGrantAllBtn">Grant All</button>
+          <button class="btn btn-sm btn-outline" id="permRevokeAllBtn" style="color:var(--danger); border-color:#efd2cf;">Revoke All</button>
+          <button class="btn btn-sm" id="permSaveBtn" ${permDirty ? '' : 'disabled'}>Save</button>
+        </div>` : ''}
+      </div>
 
-    let html = `<div class="panel panel-no-clip">
+      ${selectedEmp.role !== 'owner' && selectedEmp.erp_login_enabled ? `
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); margin-bottom:12px;">
+        <span style="font-size:12.5px; font-weight:600; color:var(--ink);">Login Mode:</span>
+        <select id="permLoginModeSelect" style="font-size:12.5px; padding:6px 10px; border-radius:6px; border:1px solid var(--border);">
+          <option value="single" ${selectedEmp.login_mode === 'single' ? 'selected' : ''}>Single device only</option>
+          <option value="multiple" ${selectedEmp.login_mode === 'multiple' ? 'selected' : ''}>Multiple devices allowed</option>
+        </select>
+        <span style="font-size:11px; color:var(--muted);">Logging in on a new device will sign out the old one if set to single.</span>
+      </div>` : ''}
+
+      ${selectedEmp.role === 'owner' ? `
+        <div class="empty-state">
+          <strong>${selectedEmp.name}</strong> is the Owner — automatic full access to everything, cannot be restricted. No permissions to manage here.
+        </div>
+      ` : `
+        <table class="ledger perm-grid-table">
+            <thead><tr>
+              <th style="text-align:left;">Module / Sub-head</th>
+              ${ACTION_ORDER.map(a => `<th class="perm-col-header" data-action="${a}" tabindex="0" role="button" style="text-align:center; cursor:pointer;" title="Click to toggle all in this column">${ACTION_LABELS[a]}<br/><span style="font-size:10px; font-weight:500; color:var(--muted); text-transform:none;">all</span></th>`).join('')}
+            </tr></thead>
+            <tbody>
+              ${categories.map(cat => {
+                const catPerms = permissions.filter(p => p.category === cat);
+                const subHeads = [...new Set(catPerms.map(p => p.sub_head))];
+
+                let rowsHtml = `<tr class="perm-category-row" data-category="${cat}">
+                  <td style="font-weight:700; color:var(--steel);">${cat}</td>
+                  ${ACTION_ORDER.map(a => {
+                    const idsForAction = catPerms.filter(p => p.action === a).map(p => p.id);
+                    if (idsForAction.length === 0) return `<td style="text-align:center; color:var(--border);">—</td>`;
+                    const on = idsForAction.filter(id => pendingGrantedIds.has(id)).length;
+                    return `<td style="text-align:center;"><input type="checkbox" class="perm-category-checkbox" data-category="${cat}" data-action="${a}" ${on === idsForAction.length ? 'checked' : ''} style="width:auto;" /></td>`;
+                  }).join('')}
+                </tr>`;
+
+                subHeads.forEach(sh => {
+                  const shPerms = catPerms.filter(p => p.sub_head === sh);
+                  rowsHtml += `<tr>
+                    <td style="padding-left:28px;">${SUB_HEAD_LABELS[sh] || sh}</td>
+                    ${ACTION_ORDER.map(a => {
+                      const perm = shPerms.find(p => p.action === a);
+                      if (!perm) return `<td style="text-align:center; color:var(--border);">—</td>`;
+                      return `<td style="text-align:center;"><input type="checkbox" class="perm-cell-checkbox" data-permission-id="${perm.id}" data-category="${cat}" data-action="${a}" ${pendingGrantedIds.has(perm.id) ? 'checked' : ''} style="width:auto;" /></td>`;
+                    }).join('')}
+                  </tr>`;
+                });
+
+                return rowsHtml;
+              }).join('')}
+            </tbody>
+          </table>
+        <div class="msg" id="permMsg"></div>
+      `}
+    `;
+  }
+
+  // Redraws the right-hand grid only, for a genuine change of person. The
+  // employee list on the left is untouched and keeps its scroll.
+  function renderPermDetail() {
+    const area = document.getElementById('permDetailScrollArea');
+    if (!area) return;
+    area.innerHTML = permDetailHtml();
+    area.scrollTop = 0; // a different person is a different page of content
+    permPositionGridHeader();
+    permRefreshAllCategoryBoxes();
+  }
+
+  // The table's column headers freeze directly below the sticky name/buttons row.
+  function permPositionGridHeader() {
+    const h = document.getElementById('permDetailStickyHeader');
+    if (!h) return;
+    const top = h.offsetHeight;
+    document.querySelectorAll('.perm-grid-table thead th').forEach(th => { th.style.top = top + 'px'; });
+  }
+
+  // ---- state sync: these touch .checked only, never innerHTML ----
+
+  function permRefreshCategoryBox(cat, action) {
+    document.querySelectorAll('.perm-category-checkbox').forEach(box => {
+      if (box.dataset.category !== cat || box.dataset.action !== action) return;
+      const ids = permissionsData.permissions
+        .filter(p => p.category === cat && p.action === action).map(p => p.id);
+      const on = ids.filter(id => pendingGrantedIds.has(id)).length;
+      box.checked = ids.length > 0 && on === ids.length;
+      // Half a category ticked is neither on nor off. Say so, rather than
+      // showing an empty box that quietly hides the ticks underneath it.
+      box.indeterminate = on > 0 && on < ids.length;
+    });
+  }
+
+  function permRefreshAllCategoryBoxes() {
+    document.querySelectorAll('.perm-category-checkbox').forEach(box => {
+      const ids = permissionsData.permissions
+        .filter(p => p.category === box.dataset.category && p.action === box.dataset.action)
+        .map(p => p.id);
+      const on = ids.filter(id => pendingGrantedIds.has(id)).length;
+      box.checked = ids.length > 0 && on === ids.length;
+      box.indeterminate = on > 0 && on < ids.length;
+    });
+  }
+
+  function permRefreshCells(match) {
+    document.querySelectorAll('.perm-cell-checkbox').forEach(cb => {
+      if (match && !match(cb)) return;
+      cb.checked = pendingGrantedIds.has(cb.dataset.permissionId);
+    });
+  }
+
+  function permRefreshSaveButton() {
+    const b = document.getElementById('permSaveBtn');
+    if (b) b.disabled = !permDirty;
+  }
+
+  function permMarkDirty() {
+    permDirty = true;
+    permRefreshSaveButton();
+  }
+
+  // ---- the full draw: runs once, on load ----
+
+  function renderAdminPanel() {
+    if (!permissionsData) return;
+    const { employees } = permissionsData;
+
+    if (!selectedPermEmployeeId && employees.length > 0) {
+      const first = employees.find(e => e.role !== 'owner') || employees[0];
+      selectPermEmployee(first.id);
+    }
+
+    const deptNames = [...new Set(employees.map(e => e.departments?.name).filter(Boolean))].sort();
+
+    document.getElementById('adminPanelContent').innerHTML = `<div class="panel panel-no-clip">
       <div class="panel-header"><span class="panel-title">Roles &amp; Permissions</span></div>
       <div style="display:flex; min-height:600px;">
 
@@ -5074,194 +5272,144 @@
               </select>
             </div>
           </div>
-          <div style="flex:1; overflow-y:auto;">
-            ${filteredEmployees.length === 0 ? '<div class="empty-state" style="padding:16px;">No matches.</div>' : filteredEmployees.map(e => `
-              <button type="button" class="perm-emp-row ${e.id === selectedPermEmployeeId ? 'active' : ''}" data-id="${e.id}" style="width:100%; display:flex; align-items:center; gap:10px; padding:10px 14px; border:none; border-bottom:1px solid var(--border); background:${e.id === selectedPermEmployeeId ? 'var(--steel-dark)' : '#fff'}; color:${e.id === selectedPermEmployeeId ? '#fff' : 'var(--ink)'}; cursor:pointer; text-align:left;">
-                <div style="width:32px; height:32px; border-radius:50%; background:${avatarColor(e.name)}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; flex-shrink:0;">${initials(e.name)}</div>
-                <div style="flex:1; min-width:0;">
-                  <div style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.name}</div>
-                  <div style="font-size:11px; opacity:0.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.designations?.name || '—'} · ${e.departments?.name || '—'}</div>
-                </div>
-                <span style="font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:4px; white-space:nowrap; background:${empHasAccess(e.id) ? (e.id === selectedPermEmployeeId ? 'rgba(255,255,255,0.2)' : 'var(--green-bg)') : (e.id === selectedPermEmployeeId ? 'rgba(255,255,255,0.1)' : 'var(--surface-sunken)')}; color:${empHasAccess(e.id) ? (e.id === selectedPermEmployeeId ? '#fff' : 'var(--green)') : (e.id === selectedPermEmployeeId ? 'rgba(255,255,255,0.6)' : 'var(--muted)')};">${empHasAccess(e.id) || e.role === 'owner' ? 'HAS ACCESS' : 'NO ACCESS'}</span>
-              </button>`).join('')}
-          </div>
+          <div id="permEmpListScroll" style="flex:1; overflow-y:auto;"></div>
         </div>
 
         <!-- RIGHT: selected employee's permission grid -->
-        <div id="permDetailScrollArea" style="flex:1; padding:0 20px; min-width:0; height:600px; overflow-y:auto; overflow-x:hidden;">
-          ${!selectedEmp ? '<div class="empty-state">Select an employee.</div>' : `
-            <div id="permDetailStickyHeader" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; padding:16px 0; background:#fff; position:sticky; top:0; z-index:20;">
-              <div>
-                <div style="font-size:16px; font-weight:700;">${selectedEmp.name}</div>
-                <div style="font-size:12.5px; color:var(--muted); margin-top:2px;">${selectedEmp.designations?.name || '—'} · ${selectedEmp.departments?.name || '—'} · ${selectedEmp.mobile_number || ''}</div>
-              </div>
-              ${selectedEmp.role !== 'owner' ? `
-              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <button class="btn btn-sm btn-outline" id="permGrantAllBtn">Grant All</button>
-                <button class="btn btn-sm btn-outline" id="permRevokeAllBtn" style="color:var(--danger); border-color:#efd2cf;">Revoke All</button>
-                <button class="btn btn-sm" id="permSaveBtn" ${permDirty ? '' : 'disabled'}>Save</button>
-              </div>` : ''}
-            </div>
+        <div id="permDetailScrollArea" style="flex:1; padding:0 20px; min-width:0; height:600px; overflow-y:auto; overflow-x:hidden;"></div>
 
-            ${selectedEmp.role !== 'owner' && selectedEmp.erp_login_enabled ? `
-            <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); margin-bottom:12px;">
-              <span style="font-size:12.5px; font-weight:600; color:var(--ink);">Login Mode:</span>
-              <select id="permLoginModeSelect" style="font-size:12.5px; padding:6px 10px; border-radius:6px; border:1px solid var(--border);">
-                <option value="single" ${selectedEmp.login_mode === 'single' ? 'selected' : ''}>Single device only</option>
-                <option value="multiple" ${selectedEmp.login_mode === 'multiple' ? 'selected' : ''}>Multiple devices allowed</option>
-              </select>
-              <span style="font-size:11px; color:var(--muted);">Logging in on a new device will sign out the old one if set to single.</span>
-            </div>` : ''}
-
-            ${selectedEmp.role === 'owner' ? `
-              <div class="empty-state">
-                <strong>${selectedEmp.name}</strong> is the Owner — automatic full access to everything, cannot be restricted. No permissions to manage here.
-              </div>
-            ` : `
-              <table class="ledger perm-grid-table">
-                  <thead><tr>
-                    <th style="text-align:left;">Module / Sub-head</th>
-                    ${ACTION_ORDER.map(a => `<th class="perm-col-header" data-action="${a}" style="text-align:center; cursor:pointer;" title="Click to toggle all in this column">${ACTION_LABELS[a]}<br/><span style="font-size:10px; font-weight:500; color:var(--muted); text-transform:none;">all</span></th>`).join('')}
-                  </tr></thead>
-                  <tbody>
-                    ${categories.map(cat => {
-                      const catPerms = permissions.filter(p => p.category === cat);
-                      const subHeads = [...new Set(catPerms.map(p => p.sub_head))];
-                      const catPermIds = catPerms.map(p => p.id);
-
-                      // Category header row: its own select-all checkboxes per action, toggling every sub-head under it at once
-                      let rowsHtml = `<tr class="perm-category-row" data-category="${cat}">
-                        <td style="font-weight:700; color:var(--steel);">${cat}</td>
-                        ${ACTION_ORDER.map(a => {
-                          const idsForAction = catPerms.filter(p => p.action === a).map(p => p.id);
-                          if (idsForAction.length === 0) return `<td style="text-align:center; color:var(--border);">—</td>`;
-                          const allChecked = idsForAction.every(id => pendingGrantedIds.has(id));
-                          return `<td style="text-align:center;"><input type="checkbox" class="perm-category-checkbox" data-category="${cat}" data-action="${a}" ${allChecked ? 'checked' : ''} style="width:auto;" /></td>`;
-                        }).join('')}
-                      </tr>`;
-
-                      // Sub-head rows nested under the category
-                      subHeads.forEach(sh => {
-                        const shPerms = catPerms.filter(p => p.sub_head === sh);
-                        rowsHtml += `<tr>
-                          <td style="padding-left:28px;">${SUB_HEAD_LABELS[sh] || sh}</td>
-                          ${ACTION_ORDER.map(a => {
-                            const perm = shPerms.find(p => p.action === a);
-                            if (!perm) return `<td style="text-align:center; color:var(--border);">—</td>`;
-                            return `<td style="text-align:center;"><input type="checkbox" class="perm-cell-checkbox" data-permission-id="${perm.id}" data-category="${cat}" data-action="${a}" ${pendingGrantedIds.has(perm.id) ? 'checked' : ''} style="width:auto;" /></td>`;
-                          }).join('')}
-                        </tr>`;
-                      });
-
-                      return rowsHtml;
-                    }).join('')}
-                  </tbody>
-                </table>
-              <div class="msg" id="permMsg"></div>
-            `}
-          `}
-        </div>
       </div>
     </div>`;
 
-    document.getElementById('adminPanelContent').innerHTML = html;
+    renderPermEmployeeList();
+    document.getElementById('permDetailScrollArea').innerHTML = permDetailHtml();
+    permPositionGridHeader();
+    permRefreshAllCategoryBoxes();
+    permBindAdminPanel();
+  }
 
-    // Freeze the table's column headers directly below the sticky employee-info/buttons row,
-    // within the right panel's own scroll region
-    const permStickyHeader = document.getElementById('permDetailStickyHeader');
-    if (permStickyHeader) {
-      const h = permStickyHeader.offsetHeight;
-      document.querySelectorAll('.perm-grid-table thead th').forEach(th => { th.style.top = h + 'px'; });
-    }
+  // ---- handlers: bound once, to the containers, so a partial redraw cannot
+  // ---- leave a button wired to nothing.
 
-    document.getElementById('permSearchInput').addEventListener('input', (ev) => {
+  function permBindAdminPanel() {
+    const searchEl = document.getElementById('permSearchInput');
+    searchEl.addEventListener('input', (ev) => {
       permSearchQuery = ev.target.value;
-      renderAdminPanel();
-      const el = document.getElementById('permSearchInput');
-      el.focus();
-      el.setSelectionRange(el.value.length, el.value.length);
+      renderPermEmployeeList();          // the box itself is never redrawn, so
+    });                                  // the caret stays where it was
+    document.getElementById('permDeptFilterSelect').addEventListener('change', (ev) => {
+      permDeptFilter = ev.target.value; renderPermEmployeeList();
     });
-    document.getElementById('permDeptFilterSelect').addEventListener('change', (ev) => { permDeptFilter = ev.target.value; renderAdminPanel(); });
-    document.getElementById('permStatusFilterSelect').addEventListener('change', (ev) => { permStatusFilter = ev.target.value; renderAdminPanel(); });
-
-    document.querySelectorAll('.perm-emp-row').forEach(btn => {
-      btn.addEventListener('click', () => selectPermEmployee(btn.dataset.id));
+    document.getElementById('permStatusFilterSelect').addEventListener('change', (ev) => {
+      permStatusFilter = ev.target.value; renderPermEmployeeList();
     });
 
-    document.querySelectorAll('.perm-cell-checkbox').forEach(cb => {
-      cb.addEventListener('change', (ev) => {
-        const pid = ev.target.dataset.permissionId;
-        if (ev.target.checked) pendingGrantedIds.add(pid); else pendingGrantedIds.delete(pid);
-        permDirty = true;
-        renderAdminPanel();
-      });
+    document.getElementById('permEmpListScroll').addEventListener('click', (ev) => {
+      const row = ev.target.closest('.perm-emp-row');
+      if (!row) return;
+      if (String(row.dataset.id) === String(selectedPermEmployeeId)) return;
+      selectPermEmployee(row.dataset.id);
+      permUpdateSelectedRow();
+      renderPermDetail();
     });
 
-    document.querySelectorAll('.perm-category-checkbox').forEach(cb => {
-      cb.addEventListener('change', (ev) => {
-        const cat = ev.target.dataset.category;
-        const action = ev.target.dataset.action;
-        const permIds = permissions.filter(p => p.category === cat && p.action === action).map(p => p.id);
-        if (ev.target.checked) permIds.forEach(id => pendingGrantedIds.add(id));
-        else permIds.forEach(id => pendingGrantedIds.delete(id));
-        permDirty = true;
-        renderAdminPanel();
-      });
-    });
+    const area = document.getElementById('permDetailScrollArea');
 
-    document.querySelectorAll('.perm-col-header').forEach(th => {
-      th.addEventListener('click', () => {
-        const action = th.dataset.action;
-        const permIdsForAction = permissions.filter(p => p.action === action).map(p => p.id);
-        const allChecked = permIdsForAction.every(id => pendingGrantedIds.has(id));
-        if (allChecked) permIdsForAction.forEach(id => pendingGrantedIds.delete(id));
-        else permIdsForAction.forEach(id => pendingGrantedIds.add(id));
-        permDirty = true;
-        renderAdminPanel();
-      });
-    });
+    area.addEventListener('change', async (ev) => {
+      const t = ev.target;
 
-    document.getElementById('permLoginModeSelect')?.addEventListener('change', async (ev) => {
-      const res = await apiPermissions({ action: 'set_login_mode', employee_id: selectedPermEmployeeId, login_mode: ev.target.value });
-      if (res.success) {
-        selectedEmp.login_mode = ev.target.value;
-        const empInList = permissionsData.employees.find(e => e.id === selectedPermEmployeeId);
-        if (empInList) empInList.login_mode = ev.target.value;
+      if (t.classList.contains('perm-cell-checkbox')) {
+        const pid = t.dataset.permissionId;
+        if (t.checked) pendingGrantedIds.add(pid); else pendingGrantedIds.delete(pid);
+        permMarkDirty();
+        permRefreshCategoryBox(t.dataset.category, t.dataset.action);
+        return; // the box the user clicked is already in the right state
+      }
+
+      if (t.classList.contains('perm-category-checkbox')) {
+        const cat = t.dataset.category, action = t.dataset.action;
+        const ids = permissionsData.permissions
+          .filter(p => p.category === cat && p.action === action).map(p => p.id);
+        if (t.checked) ids.forEach(id => pendingGrantedIds.add(id));
+        else ids.forEach(id => pendingGrantedIds.delete(id));
+        t.indeterminate = false;
+        permMarkDirty();
+        permRefreshCells(cb => cb.dataset.category === cat && cb.dataset.action === action);
+        return;
+      }
+
+      if (t.id === 'permLoginModeSelect') {
+        const res = await apiPermissions({ action: 'set_login_mode', employee_id: selectedPermEmployeeId, login_mode: t.value });
+        if (res.success) {
+          const emp = permissionsData.employees.find(e => e.id === selectedPermEmployeeId);
+          if (emp) emp.login_mode = t.value;
+        }
       }
     });
 
-    document.getElementById('permGrantAllBtn')?.addEventListener('click', () => {
-      permissions.forEach(p => pendingGrantedIds.add(p.id));
-      permDirty = true;
-      renderAdminPanel();
-    });
-    document.getElementById('permRevokeAllBtn')?.addEventListener('click', () => {
-      pendingGrantedIds.clear();
-      permDirty = true;
-      renderAdminPanel();
+    // The column header is a button in everything but name, so Enter and Space
+    // work on it and it can be reached by Tab.
+    area.addEventListener('keydown', (ev) => {
+      const th = ev.target.closest('.perm-col-header');
+      if (!th || (ev.key !== 'Enter' && ev.key !== ' ')) return;
+      ev.preventDefault();
+      th.click();
     });
 
-    document.getElementById('permSaveBtn')?.addEventListener('click', async () => {
-      const btn = document.getElementById('permSaveBtn');
-      const msg = document.getElementById('permMsg');
-      setButtonLoading(btn, true, 'Saving');
-      const res = await apiPermissions({
-        action: 'bulk_set_permissions',
-        employee_id: selectedPermEmployeeId,
-        permission_ids: [...pendingGrantedIds],
-      });
-      if (res.success) {
-        permissionsData.grants = permissionsData.grants.filter(g => g.employee_id !== selectedPermEmployeeId)
-          .concat([...pendingGrantedIds].map(pid => ({ employee_id: selectedPermEmployeeId, permission_id: pid })));
-        permDirty = false;
-        renderAdminPanel();
-        setTimeout(() => {
-          const m = document.getElementById('permMsg');
-          if (m) { m.className = 'msg success'; m.textContent = 'Saved.'; setTimeout(() => { m.className = 'msg'; m.textContent = ''; }, 1800); }
-        }, 50);
-      } else {
-        setButtonLoading(btn, false);
-        if (msg) { msg.className = 'msg error'; msg.textContent = res.error || 'Failed to save.'; }
+    area.addEventListener('click', async (ev) => {
+      const th = ev.target.closest('.perm-col-header');
+      if (th) {
+        const action = th.dataset.action;
+        const ids = permissionsData.permissions.filter(p => p.action === action).map(p => p.id);
+        const allOn = ids.every(id => pendingGrantedIds.has(id));
+        if (allOn) ids.forEach(id => pendingGrantedIds.delete(id));
+        else ids.forEach(id => pendingGrantedIds.add(id));
+        permMarkDirty();
+        permRefreshCells(cb => cb.dataset.action === action);
+        document.querySelectorAll('.perm-category-checkbox').forEach(box => {
+          if (box.dataset.action === action) permRefreshCategoryBox(box.dataset.category, action);
+        });
+        return;
+      }
+
+      if (ev.target.closest('#permGrantAllBtn')) {
+        permissionsData.permissions.forEach(p => pendingGrantedIds.add(p.id));
+        permMarkDirty(); permRefreshCells(); permRefreshAllCategoryBoxes();
+        return;
+      }
+
+      if (ev.target.closest('#permRevokeAllBtn')) {
+        pendingGrantedIds.clear();
+        permMarkDirty(); permRefreshCells(); permRefreshAllCategoryBoxes();
+        return;
+      }
+
+      const saveBtn = ev.target.closest('#permSaveBtn');
+      if (saveBtn) {
+        const msg = document.getElementById('permMsg');
+        setButtonLoading(saveBtn, true, 'Saving');
+        const res = await apiPermissions({
+          action: 'bulk_set_permissions',
+          employee_id: selectedPermEmployeeId,
+          permission_ids: [...pendingGrantedIds],
+        });
+        setButtonLoading(saveBtn, false);
+        if (res.success) {
+          permissionsData.grants = permissionsData.grants.filter(g => g.employee_id !== selectedPermEmployeeId)
+            .concat([...pendingGrantedIds].map(pid => ({ employee_id: selectedPermEmployeeId, permission_id: pid })));
+          permDirty = false;
+          permRefreshSaveButton();
+          // Only the one badge in the list can have changed. Saving must not
+          // cost the reader their place in either column.
+          permUpdateSelectedRow();
+          if (msg) {
+            msg.className = 'msg success'; msg.textContent = 'Saved.';
+            setTimeout(() => { const m = document.getElementById('permMsg'); if (m) { m.className = 'msg'; m.textContent = ''; } }, 1800);
+          }
+        } else {
+          permRefreshSaveButton();
+          if (msg) { msg.className = 'msg error'; msg.textContent = res.error || 'Failed to save.'; }
+        }
       }
     });
   }
