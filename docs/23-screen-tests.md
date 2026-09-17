@@ -51,6 +51,49 @@ forgets the position. Redraw only the row that changed.
 
 ---
 
+## 1b. THE SCREEN HAS TO SPEAK TO THE PERSON USING IT
+
+Two rules, both learned the same way: the screen knew something and did not say
+it.
+
+### A screen must never spin for ever
+
+| State | Expected |
+|---|---|
+| Something is loading | Say so, and say what |
+| It is taking more than a few seconds | **Say that too.** A person cannot tell a slow screen from a broken one, and will sit looking at either |
+| It failed | Say **what** failed, in plain words, and offer a way out — try again, or go back |
+| It finished with nothing | Say what nothing means here, and what to do about it. *"No history loaded yet — use Load history"*, not a blank table |
+| Before the sign-in check returns | **Something must already be on the screen.** A page that is `display:none` until a call returns is a white page with no end |
+
+A spinner with no end tells the person nothing at all. Every load ends one of
+three ways — rows, nothing, or a fault — and each of the three has to be said
+out loud.
+
+**Watch the synchronous throw.** `something().then(...).catch(...)` cannot catch
+a `something()` that throws *before* returning its promise. The catch was never
+attached. That is how a page ends up blank with an uncaught error nobody sees.
+
+**Report as:** `every load ends in words · 6 of 6 guarded · slow after 8s says so`
+
+### A rule that only exists in a comment protects nobody
+
+**Every rule we have decided must be findable on the screen where it matters,
+not only in the code.** A comment protects the person who wrote it. The person
+using the screen cannot see it.
+
+If the code says *"a batch must hold the whole year or the rest is marked
+deleted"*, the screen says it too, next to the button that does it. If a year
+can never be corrected once frozen, the screen says why. If a rate is flagged,
+the screen says what it was measured against.
+
+Test it by reading the screen's own words back: every rule that could cost
+somebody real money should be findable without opening a file.
+
+**Report as:** `4 rules that matter · 4 stated on screen · 0 only in comments`
+
+---
+
 ## 2. THE KEYBOARD
 
 Every form. Every one of these.
@@ -186,6 +229,13 @@ Only for the screens genuinely used on one — raising a request, approving.
 > Before reporting a screen done, run the tests in `docs/23-screen-tests.md`
 > against it in a real browser. Report the result as a list: what was tested,
 > what passed, what did not. "It works" is not a report.
+>
+> Confirm something in the ERP actually reaches the screen. A page nothing links
+> to is a page that does not exist.
+>
+> Where a fault could silently return, close it off so it cannot — a constraint,
+> a unique index, a check. Making a fault impossible is worth more than fixing
+> the one instance of it.
 
 ---
 

@@ -276,6 +276,18 @@ const record = (name, ok, detail) => results.push({ name, ok, detail: detail || 
     record('the Owner shows no grid to tick, and says why', grid === 0 && saysWhy);
   }
 
+  /* ---- the menu must actually reach the screens ---- */
+  {
+    const busyLink = await page.locator('a.nav-item[href="busy.html"]').count();
+    const position = await page.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('#sidebarNav > .nav-item'));
+      return items.findIndex(n => n.getAttribute('href') === 'busy.html');
+    });
+    record('the ERP menu actually reaches Busy Data', busyLink === 1);
+    record('Busy Data is the second item in the main menu, straight after Home',
+      position === 1, `at position ${position + 1}`);
+  }
+
   record('no script errors anywhere in the run', pageErrors.length === 0, pageErrors.slice(0, 3).join(' | '));
 
   await browser.close();
