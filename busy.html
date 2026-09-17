@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<title>REF ERP — Busy Data</title>
+<script>window.__BUILD_VERSION__ = '1789110669';</script>
+<script>
+(function () {
+  function checkVersion() {
+    fetch('version.txt?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.text(); })
+      .then(function (v) {
+        v = v.trim();
+        if (v && v !== window.__BUILD_VERSION__) {
+          window.location.href = window.location.pathname + '?_v=' + Date.now();
+        }
+      })
+      .catch(function () { setTimeout(checkVersion, 8000); });
+  }
+  checkVersion();
+  setInterval(checkVersion, 60000);
+  window.addEventListener('focus', checkVersion);
+  window.addEventListener('online', checkVersion);
+})();
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  :root {
+    --ink:#1a2229; --paper:#f4f6f8; --surface:#ffffff; --surface-sunken:#eef1f4;
+    --border:#d8dee5; --steel:#2d4a5e; --steel-dark:#1f3547; --steel-tint:#e7edf1;
+    --amber:#b7791f; --amber-bg:#fbf1de; --green:#2f7a52; --green-bg:#e7f3ec;
+    --slate:#5b6b7a; --slate-bg:#eaedf0; --danger:#a13d33; --danger-bg:#fbeceb;
+    --muted:#6b7684; --match:#fdf3c7; --sidebar-w:232px;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink);
+         font-family:'IBM Plex Sans',system-ui,sans-serif; font-size:13px; }
+  .app-shell { display:flex; min-height:100vh; }
+
+  .sidebar { width:var(--sidebar-w); flex:0 0 var(--sidebar-w); background:var(--steel-dark);
+             color:#dfe7ed; display:flex; flex-direction:column; }
+  .sidebar-brand { padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.08);
+                   display:flex; align-items:baseline; gap:6px; }
+  .sidebar-brand .name { font-weight:700; font-size:16px; color:#fff; letter-spacing:.5px; }
+  .sidebar-brand .tag { font-size:11px; color:#9fb4c4; }
+  .sidebar-nav { padding:8px 0; flex:1; overflow:auto; }
+  .nav-section-label { font-size:10px; text-transform:uppercase; letter-spacing:.8px;
+                       color:#7f97a8; padding:12px 16px 4px; }
+  .nav-item { display:block; width:100%; text-align:left; background:none; border:0;
+              color:#dfe7ed; padding:7px 16px; font-size:13px; cursor:pointer;
+              font-family:inherit; }
+  .nav-item.level-2 { padding-left:28px; font-size:12.5px; color:#bfd0dc; }
+  .nav-item:hover { background:rgba(255,255,255,.06); }
+  .nav-item.active { background:var(--steel); color:#fff; font-weight:600;
+                     box-shadow:inset 3px 0 0 var(--amber); }
+  .sidebar-footer { padding:10px 16px; font-size:11px; color:#7f97a8;
+                    border-top:1px solid rgba(255,255,255,.08); }
+
+  .main { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .topbar { background:var(--surface); border-bottom:1px solid var(--border);
+            padding:10px 18px; display:flex; align-items:center;
+            justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .topbar-title { font-weight:600; font-size:15px; }
+  .topbar-sub { font-size:11.5px; color:var(--muted); }
+  .firm-chip { font-weight:700; font-size:12px; padding:4px 10px; border-radius:3px;
+               border:1px solid var(--border); }
+  .firm-REF { background:var(--steel-tint); color:var(--steel-dark); }
+  .firm-RS  { background:var(--amber-bg);  color:var(--amber); }
+  .sync-stamp { font-size:11.5px; color:var(--muted); }
+  .content { padding:16px 18px 60px; }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:4px;
+          padding:14px; margin-bottom:14px; }
+  .note { background:var(--slate-bg); border-left:3px solid var(--slate);
+          padding:10px 12px; font-size:12.5px; color:#3c4a57; border-radius:3px;
+          margin-bottom:14px; }
+
+  label.fl { display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.5px;
+             color:var(--muted); margin-bottom:3px; }
+  input.f, select.f { height:30px; width:100%; border:1px solid var(--border);
+                      border-radius:3px; padding:0 8px; font-size:13px;
+                      font-family:inherit; background:#fff; color:var(--ink); }
+  input.f:focus, select.f:focus { outline:2px solid var(--steel-tint); border-color:var(--steel); }
+  .filters { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;
+             gap:12px 20px; align-items:end; }
+  .btn { height:30px; padding:0 14px; border-radius:3px; border:1px solid var(--steel);
+         background:var(--steel); color:#fff; font-size:13px; cursor:pointer;
+         font-family:inherit; }
+  .btn-outline { background:#fff; color:var(--steel); }
+  .btn:disabled { opacity:.5; cursor:default; }
+
+  table.tbl { width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.tbl th { background:var(--steel-tint); color:#000; font-weight:700;
+                 text-align:center; padding:7px 8px; border:1px solid var(--border);
+                 white-space:nowrap; position:sticky; top:0; z-index:1; }
+  table.tbl td { padding:6px 8px; border:1px solid var(--border); text-align:center;
+                 vertical-align:top; }
+  table.tbl td.l { text-align:left; }
+  table.tbl td.r { text-align:right; font-variant-numeric:tabular-nums; }
+  table.tbl tbody tr:nth-child(even) { background:#fafbfc; }
+  table.tbl tbody tr.fuzzy { background:var(--match); }
+  mark { background:var(--match); padding:0 1px; }
+  .desc { color:#3c4a57; font-size:12px; }
+  .pill { display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:10px;
+          border:1px solid transparent; white-space:nowrap; }
+  .pill-amber { background:var(--amber-bg); color:var(--amber); border-color:#e6d2a8; }
+  .pill-grey  { background:var(--slate-bg); color:var(--slate); }
+  .tbl-wrap { overflow:auto; max-height:62vh; border:1px solid var(--border); border-radius:4px; }
+  .rowcount { font-size:12px; color:var(--muted); margin:8px 2px; }
+
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+  .kpi { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:12px; }
+  .kpi .k { font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
+  .kpi .v { font-size:19px; font-weight:600; font-variant-numeric:tabular-nums; margin-top:3px; }
+  .up { color:var(--green); } .down { color:var(--danger); }
+
+  .shortcut-hint { position:fixed; right:12px; bottom:8px; font-size:11px; color:var(--muted); }
+  .loading { padding:20px; text-align:center; color:var(--muted); }
+
+  @media (max-width:860px) {
+    .app-shell { flex-direction:column; }
+    .sidebar { width:100%; flex:none; }
+    .sidebar-nav { display:flex; overflow-x:auto; padding:4px; }
+    .nav-item { white-space:nowrap; width:auto; }
+    .nav-section-label, .sidebar-footer { display:none; }
+    .filters { grid-template-columns:1fr 1fr; }
+    .tbl-wrap { max-height:none; }
+    .shortcut-hint { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell" id="shell" style="display:none">
+  <div class="sidebar">
+    <div class="sidebar-brand"><div class="name">REF</div><div class="tag">ERP · Busy Data</div></div>
+    <nav class="sidebar-nav" id="nav">
+      <div class="nav-section-label">Raghbir Erectors &amp; Fabricators</div>
+      <button class="nav-item level-2 active" data-firm="REF" data-view="price">Price History</button>
+      <button class="nav-item level-2" data-firm="REF" data-view="challans">Challans</button>
+      <button class="nav-item level-2" data-firm="REF" data-view="reports">Reports</button>
+      <div class="nav-section-label">RS Industries</div>
+      <button class="nav-item level-2" data-firm="RS" data-view="price">Price History</button>
+      <button class="nav-item level-2" data-firm="RS" data-view="challans">Challans</button>
+      <button class="nav-item level-2" data-firm="RS" data-view="reports">Reports</button>
+    </nav>
+    <div class="sidebar-footer">Imported from Busy. Read only.</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="pageTitle">Price History</div>
+        <div class="topbar-sub" id="pageSub">Every past rate, newest first</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span class="firm-chip firm-REF" id="firmChip">REF</span>
+        <span class="sync-stamp" id="syncStamp">checking…</span>
+        <a class="btn btn-outline" href="admin.html" style="line-height:28px; text-decoration:none;">Back to ERP</a>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="note" id="topNote">
+        This is a copy of what Busy holds, as at the last sync — not live. Nothing here can be
+        edited. <strong>Raghbir Erectors &amp; Fabricators</strong> only: RS Industries
+        is a separate firm and never appears on this screen.
+      </div>
+
+      <!-- ---------------- price history / challans ---------------- -->
+      <div id="view-search">
+        <div id="challanNote" class="note" style="display:none; border-left-color:var(--amber); background:var(--amber-bg);">
+          Whether a challan was returnable is <strong>not a field in Busy</strong>. It was typed into
+          the description in free words — "MATERIAL SEND FOR CUTTING", "SEND FOR REPAIRING",
+          "TOOLS RETURNING BACK AFTER" — differently every time. So a pending-returnables list
+          cannot honestly be built from this data. It is searchable though: type
+          <em>repairing</em> to see every item ever sent out for repair.
+        </div>
+
+        <div class="card">
+          <div class="filters">
+            <div>
+              <label class="fl" for="q">Search — party, item or description</label>
+              <input class="f" id="q" placeholder="e.g.  pipe 80x40x2.5  ·  aggarwal  ·  repairing" autocomplete="off" />
+            </div>
+            <div>
+              <label class="fl" for="docType">Document type</label>
+              <select class="f" id="docType">
+                <option value="">All</option>
+                <option>Purchase Bill</option>
+                <option>Sales Invoice</option>
+                <option>Delivery Challan</option>
+                <option>Purchase Order</option>
+                <option>Sales Order</option>
+              </select>
+            </div>
+            <div><label class="fl" for="from">From</label><input class="f" type="date" id="from" /></div>
+            <div><label class="fl" for="to">To</label><input class="f" type="date" id="to" /></div>
+            <div>
+              <label class="fl" for="pageSize">Show</label>
+              <select class="f" id="pageSize">
+                <option>10</option><option selected>25</option><option>50</option>
+                <option>100</option><option>200</option><option value="2000">All</option>
+              </select>
+            </div>
+            <div><button class="btn" id="goBtn">Search</button></div>
+          </div>
+          <div style="font-size:11.5px; color:var(--muted); margin-top:9px;">
+            Type the size exactly as it appears — <strong>80X40X2.5 and 80X40X3 are different pipes</strong>,
+            so a number must match before anything is offered. Spacing and capitals do not matter,
+            and the words can be in any order.
+          </div>
+        </div>
+
+        <div class="rowcount" id="rowCount"></div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th style="width:44px">Sr.</th><th style="width:88px">Date</th>
+              <th style="width:74px">FY</th><th style="width:110px">Type</th>
+              <th style="width:86px">Vch No</th><th>Party</th><th>Item</th>
+              <th>Description</th><th style="width:88px">Qty</th>
+              <th style="width:110px">Rate</th><th style="width:110px">Amount</th>
+            </tr></thead>
+            <tbody id="rows"><tr><td colspan="11" class="loading">Type something, or press Search to see everything.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ---------------- reports ---------------- -->
+      <div id="view-reports" style="display:none">
+        <div class="kpis" id="kpis"></div>
+        <div class="card" style="margin-top:14px">
+          <div style="font-weight:600; margin-bottom:8px;">This year against last year, same months</div>
+          <div class="tbl-wrap" style="max-height:none">
+            <table class="tbl">
+              <thead><tr>
+                <th style="width:44px">Sr.</th><th>Month</th>
+                <th>Sales this year</th><th>Sales last year</th><th>Difference</th>
+                <th>Purchases this year</th><th>Purchases last year</th><th>Difference</th>
+              </tr></thead>
+              <tbody id="yoyRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:600; margin-bottom:8px;">GST</div>
+          <div class="note" style="margin-bottom:10px;">
+            <strong>Estimate only, not a bill.</strong> Some input credit is not eligible, and
+            reversals, reverse charge and credit notes all change the figure. Your accountant works
+            that out at filing. This screen does not know any of it, so it is never labelled payable.
+          </div>
+          <div class="kpis" id="gstKpis"></div>
+          <div class="note" style="margin-top:10px; border-left-color:var(--danger); background:var(--danger-bg);">
+            <strong>GST actually paid is not shown yet.</strong> It lives in the payment vouchers
+            (Busy type 19), and the parser currently reads only the item lines of bills, challans
+            and orders. Showing what was really paid needs the parser extended to read those
+            vouchers — a decision for Raghbir, since the parser is proven and not to be rewritten
+            casually.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="shortcut-hint">Ctrl+/ for shortcuts</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app-config.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var firm = 'REF';
+  var view = 'price';
+  var lastQuery = '';
+
+  var inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+  var inr2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function money(n) { return (n === null || n === undefined) ? '' : '₹' + inr2.format(n); }
+  function moneyShort(n) { return '₹' + inr.format(Math.round(n || 0)); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function dmy(iso) {
+    if (!iso) return '';
+    var p = String(iso).slice(0, 10).split('-');
+    return p[2] + '/' + p[1] + '/' + p[0].slice(2);
+  }
+  /* Highlight the letters actually typed, on an exact match. */
+  function hi(text, q) {
+    var t = esc(text);
+    if (!q) return t;
+    var needle = q.trim();
+    if (!needle) return t;
+    var i = t.toUpperCase().indexOf(needle.toUpperCase());
+    if (i === -1) return t;
+    return t.slice(0, i) + '<mark>' + t.slice(i, i + needle.length) + '</mark>' + t.slice(i + needle.length);
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  var FIRM_NAME = { REF: 'Raghbir Erectors & Fabricators', RS: 'RS Industries' };
+
+  function setFirm(f) {
+    firm = f;
+    var other = (f === 'REF') ? 'RS' : 'REF';
+    $('firmChip').textContent = FIRM_NAME[f];
+    $('firmChip').className = 'firm-chip firm-' + f;
+    $('topNote').innerHTML =
+      'This is a copy of what Busy holds, as at the last sync — not live. Nothing here can be ' +
+      'edited. <strong>' + esc(FIRM_NAME[f]) + '</strong> only: ' + esc(FIRM_NAME[other]) +
+      ' is a separate firm and never appears on this screen.';
+    loadSync();
+  }
+
+  function setView(v) {
+    view = v;
+    $('view-search').style.display  = (v === 'reports') ? 'none' : '';
+    $('view-reports').style.display = (v === 'reports') ? '' : 'none';
+    $('challanNote').style.display  = (v === 'challans') ? '' : 'none';
+    $('pageTitle').textContent =
+      v === 'price' ? 'Price History' : v === 'challans' ? 'Challans' : 'Reports';
+    $('pageSub').textContent =
+      v === 'price' ? 'Every past rate, newest first'
+      : v === 'challans' ? 'Material sent out and brought in'
+      : 'Sales and purchases, month by month';
+    if (v === 'challans') { $('docType').value = 'Delivery Challan'; }
+    else if (v === 'price' && $('docType').value === 'Delivery Challan') { $('docType').value = ''; }
+    if (v === 'reports') loadReports(); else run();
+  }
+
+  function loadSync() {
+    REF.supabase().from('busy_last_sync').select('*').eq('company', firm)
+      .then(function (res) {
+        var row = res.data && res.data[0];
+        if (!row || !row.last_success_at) {
+          $('syncStamp').textContent = 'never synced';
+          $('syncStamp').style.color = 'var(--danger)';
+          return;
+        }
+        var d = new Date(row.last_success_at);
+        $('syncStamp').textContent = 'as at ' +
+          d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) + ', ' +
+          d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        $('syncStamp').style.color = '';
+      })
+      .catch(function () { $('syncStamp').textContent = 'sync time unknown'; });
+  }
+
+  function run() {
+    var q = $('q').value.trim();
+    lastQuery = q;
+    var limit = parseInt($('pageSize').value, 10) || 25;
+    $('rows').innerHTML = '<tr><td colspan="11" class="loading">Looking…</td></tr>';
+
+    REF.supabase().rpc('busy_search', {
+      p_company: firm,
+      p_query: q || null,
+      p_doc_type: $('docType').value || null,
+      p_date_from: $('from').value || null,
+      p_date_to: $('to').value || null,
+      p_limit: limit,
+      p_offset: 0
+    }).then(function (res) {
+      if (res.error) {
+        $('rows').innerHTML = '<tr><td colspan="11" class="loading">' +
+          esc(res.error.message) + '</td></tr>';
+        $('rowCount').textContent = '';
+        return;
+      }
+      render(res.data || [], q, limit);
+    });
+  }
+
+  function render(rows, q, limit) {
+    if (!rows.length) {
+      $('rows').innerHTML = '<tr><td colspan="11" class="loading">' +
+        (q ? 'Nothing matches “' + esc(q) + '”. If you typed a size, check the numbers — they must match exactly.'
+           : 'Nothing here yet. The history has not been loaded.') + '</td></tr>';
+      $('rowCount').textContent = '';
+      return;
+    }
+    var html = rows.map(function (r, i) {
+      var rateCell;
+      if (r.is_lump_sum) {
+        rateCell = '<span class="pill pill-grey" title="Billed as one job, so there is no rate per piece">no rate · one job</span>';
+      } else if (r.rate === null || Number(r.rate) === 0) {
+        rateCell = '';
+      } else if (r.is_extreme_rate) {
+        rateCell = money(r.rate) + '<br><span class="pill pill-amber" title="Far above the usual rate for this item — often tonnes billed as kilograms">' +
+          'usually ' + money(r.median_rate) + '</span>';
+      } else {
+        rateCell = money(r.rate);
+      }
+      return '<tr class="' + (r.match_tier === 3 && q ? 'fuzzy' : '') + '">' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td>' + dmy(r.vch_date) + '</td>' +
+        '<td>' + esc(r.fy) + '</td>' +
+        '<td>' + esc(r.doc_type) + '</td>' +
+        '<td>' + esc(r.vch_no) + '</td>' +
+        '<td class="l">' + hi(r.party, q) + '</td>' +
+        '<td class="l">' + hi(r.item, q) + '</td>' +
+        '<td class="l desc">' + hi(r.description, q) + '</td>' +
+        '<td class="r">' + (r.qty ? inr2.format(r.qty) : '') + '</td>' +
+        '<td class="r">' + rateCell + '</td>' +
+        '<td class="r">' + money(r.amount) + '</td>' +
+        '</tr>';
+    }).join('');
+    $('rows').innerHTML = html;
+    var fuzzy = rows.filter(function (r) { return r.match_tier === 3 && q; }).length;
+    $('rowCount').textContent = rows.length + ' row' + (rows.length === 1 ? '' : 's') +
+      (rows.length === limit ? ' (showing the first ' + limit + ' — choose a bigger number to see more)' : '') +
+      (fuzzy ? ' · ' + fuzzy + ' shaded yellow are close matches, not exact' : '');
+  }
+
+  /* ---------------- reports ---------------- */
+  function loadReports() {
+    $('kpis').innerHTML = '<div class="loading">Adding up…</div>';
+    $('yoyRows').innerHTML = '';
+    REF.supabase().rpc('busy_monthly_totals', { p_company: firm }).then(function (res) {
+      if (res.error) { $('kpis').innerHTML = '<div class="loading">' + esc(res.error.message) + '</div>'; return; }
+      buildReports(res.data || []);
+    });
+  }
+
+  function fyOf(d) {
+    var dt = new Date(d);
+    return dt.getMonth() >= 3 ? dt.getFullYear() : dt.getFullYear() - 1;
+  }
+
+  function buildReports(rows) {
+    if (!rows.length) {
+      $('kpis').innerHTML = '<div class="loading">Nothing loaded yet.</div>';
+      return;
+    }
+    var fys = rows.map(function (r) { return fyOf(r.month_start); });
+    var thisFy = Math.max.apply(null, fys), lastFy = thisFy - 1;
+
+    function total(fy, type) {
+      return rows.filter(function (r) { return fyOf(r.month_start) === fy && r.doc_type === type; })
+                 .reduce(function (a, r) { return a + Number(r.line_amount || 0); }, 0);
+    }
+    var salesNow = total(thisFy, 'Sales Invoice'), salesPrev = total(lastFy, 'Sales Invoice');
+    var buyNow  = total(thisFy, 'Purchase Bill'), buyPrev  = total(lastFy, 'Purchase Bill');
+
+    function kpi(k, v, extra) {
+      return '<div class="kpi"><div class="k">' + k + '</div><div class="v">' + v + '</div>' +
+             (extra || '') + '</div>';
+    }
+    function delta(now, prev) {
+      if (!prev) return '';
+      var pc = Math.round(((now - prev) / prev) * 100);
+      return '<div style="font-size:11.5px" class="' + (pc >= 0 ? 'up' : 'down') + '">' +
+             (pc >= 0 ? '+' : '') + pc + '% against last year</div>';
+    }
+    $('kpis').innerHTML =
+      kpi('Sales, FY ' + thisFy + '-' + String(thisFy + 1).slice(2), moneyShort(salesNow), delta(salesNow, salesPrev)) +
+      kpi('Purchases, FY ' + thisFy + '-' + String(thisFy + 1).slice(2), moneyShort(buyNow), delta(buyNow, buyPrev)) +
+      kpi('Sales, FY ' + lastFy + '-' + String(lastFy + 1).slice(2), moneyShort(salesPrev)) +
+      kpi('Purchases, FY ' + lastFy + '-' + String(lastFy + 1).slice(2), moneyShort(buyPrev));
+
+    var names = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+    function monthTotal(fy, monthIdx, type) {
+      var real = (monthIdx + 3) % 12;
+      return rows.filter(function (r) {
+        var d = new Date(r.month_start);
+        return fyOf(r.month_start) === fy && d.getMonth() === real && r.doc_type === type;
+      }).reduce(function (a, r) { return a + Number(r.line_amount || 0); }, 0);
+    }
+    $('yoyRows').innerHTML = names.map(function (m, i) {
+      var sN = monthTotal(thisFy, i, 'Sales Invoice'), sP = monthTotal(lastFy, i, 'Sales Invoice');
+      var pN = monthTotal(thisFy, i, 'Purchase Bill'), pP = monthTotal(lastFy, i, 'Purchase Bill');
+      function diff(a, b) {
+        if (!a && !b) return '';
+        var d = a - b;
+        return '<span class="' + (d >= 0 ? 'up' : 'down') + '">' +
+               (d >= 0 ? '+' : '−') + inr.format(Math.abs(Math.round(d))) + '</span>';
+      }
+      return '<tr><td>' + (i + 1) + '</td><td class="l">' + m + '</td>' +
+        '<td class="r">' + (sN ? moneyShort(sN) : '') + '</td>' +
+        '<td class="r">' + (sP ? moneyShort(sP) : '') + '</td>' +
+        '<td class="r">' + diff(sN, sP) + '</td>' +
+        '<td class="r">' + (pN ? moneyShort(pN) : '') + '</td>' +
+        '<td class="r">' + (pP ? moneyShort(pP) : '') + '</td>' +
+        '<td class="r">' + diff(pN, pP) + '</td></tr>';
+    }).join('');
+
+    /* GST — estimate only, and said so on the screen. Tax is counted once
+       per voucher by the server, never once per item line. */
+    var out = rows.filter(function (r) { return fyOf(r.month_start) === thisFy && r.doc_type === 'Sales Invoice'; })
+                  .reduce(function (a, r) { return a + Number(r.voucher_tax || 0); }, 0);
+    var inp = rows.filter(function (r) { return fyOf(r.month_start) === thisFy && r.doc_type === 'Purchase Bill'; })
+                  .reduce(function (a, r) { return a + Number(r.voucher_tax || 0); }, 0);
+    $('gstKpis').innerHTML =
+      '<div class="kpi"><div class="k">Output tax on sales, this FY</div><div class="v">' + moneyShort(out) + '</div></div>' +
+      '<div class="kpi"><div class="k">Input tax on purchases, this FY</div><div class="v">' + moneyShort(inp) + '</div></div>' +
+      '<div class="kpi"><div class="k">Difference — indicative only</div><div class="v">' + moneyShort(out - inp) + '</div>' +
+      '<div style="font-size:11.5px; color:var(--muted)">not a payable figure</div></div>';
+  }
+
+  /* ---------------- wiring ---------------- */
+  document.getElementById('nav').addEventListener('click', function (e) {
+    var b = e.target.closest('.nav-item');
+    if (!b) return;
+    Array.prototype.forEach.call(document.querySelectorAll('.nav-item'), function (n) {
+      n.classList.remove('active');
+    });
+    b.classList.add('active');
+    setFirm(b.dataset.firm);
+    setView(b.dataset.view);
+  });
+
+  $('goBtn').addEventListener('click', run);
+  $('q').addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+  ['docType', 'from', 'to', 'pageSize'].forEach(function (id) {
+    $(id).addEventListener('change', function () { if (view !== 'reports') run(); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey && e.key === '/') {
+      e.preventDefault();
+      alert('Enter — search\nTab — next box\nEsc — clear the search box\n\n' +
+            'Type the size exactly. 80X40X2.5 and 80X40X3 are different pipes.');
+    }
+    if (e.key === 'Escape' && document.activeElement === $('q')) { $('q').value = ''; run(); }
+  });
+
+  REF.requireSession().then(function (user) {
+    if (!user) return;
+    if (!REF.can(user, 'busy_data.view')) {
+      document.body.innerHTML =
+        '<div style="padding:40px; font-family:inherit">' +
+        '<h3 style="margin:0 0 6px">Busy Data is not open to you</h3>' +
+        '<p style="color:#6b7684">Only Raghbir, his brother and the accountant see this. ' +
+        'Ask Raghbir if you need it.</p>' +
+        '<p><a href="admin.html">Back to the ERP</a></p></div>';
+      return;
+    }
+    $('shell').style.display = '';
+    setFirm('REF');
+    setView('price');
+    $('q').focus();
+  }).catch(function (err) {
+    document.body.innerHTML = '<div style="padding:40px">' + esc(err.message || 'Could not open.') +
+      ' <a href="index.html">Sign in</a></div>';
+  });
+})();
+</script>
+</body>
+</html>

@@ -102,10 +102,15 @@ ones, so the load is safe to repeat.
 - So the import converts it **explicitly**, never by an automatic cast. Tested:
   `04/01/15` → 2015-04-01 and `04/25/15` → 2015-04-25
 
-**2. "Some rows have zero quantity" is actually most of them**
-- The build prompt calls this a minor quirk — cancelled or adjustment entries
-- In the 200-row sample: **1 row is a true blank. 148 have no quantity but real
-  money** — ₹6,05,210 for an MTB CONVEYOR, ₹29,000 for a belt conveyor
+**2. Rows with no quantity are 6% of the data, not most of it**
+
+> **Corrected 17 Sep 2026.** My original figure here came from the 200-row
+> sample and said "most of them". Raghbir checked all 22,732 rows: it is
+> **1,406 rows, about 6%**. The sample happened to be the worst year.
+> The conclusion below was right; the size of it was not.
+
+- **1,400 carry real money with no quantity** — ₹6,05,210 for an MTB CONVEYOR,
+  ₹9,25,447 for J S Engineers. **Only 6 rows are truly blank**
 - These are **lump-sum bills** — a complete machine sold as one job, not by the
   piece. They are real history and must not be hidden
 - The parser forces rate to 0 when quantity is 0, so on a screen they would look
@@ -113,16 +118,19 @@ ones, so the load is safe to repeat.
 - Added `is_lump_sum`, so a screen can say **"no rate — billed as one job"**
   instead of showing ₹0 as though it were a price
 
-**3. Not one row in the sample has a description**
-- The whole module rests on searching description text, because every steel line
-  just says "PIPE"
-- **All 200 sample rows have an empty description.** The sample is one company
-  and one year (REF, 2015-16), so this may simply be a year where nothing was
-  described
-- Search is built and tested against descriptions, using the pipe example from
-  the build prompt
-- **But it has not been proven against a real year that has them.** Worth
-  checking early in the first load rather than after all twelve years
+**3. Descriptions are on 37% of rows overall, and rising**
+
+> **Corrected 17 Sep 2026.** I reported "not one row has a description",
+> which was true of the sample and wrong about the data. Raghbir checked all
+> 22,732 rows.
+
+- **37% overall.** 2023-24 is 58%; recent years run 41-45%
+- My sample was REF 2015-16, where **1 row in 409** has one — the worst year in
+  the set
+- **Descriptions are there on the years that matter for prices**, which is what
+  the module depends on
+- Search is built and tested using the pipe example from the build prompt, but
+  still worth checking against a real described year early in the load
 
 ---
 
@@ -148,14 +156,12 @@ cannot be verified without the real files
 
 ---
 
-## One thing to decide
+## The extreme-rate threshold — settled 17 Sep
 
-- The prompt says to flag extreme rates rather than hide them
-- I made the threshold a setting — `extreme_rate_threshold`, currently **₹50,000**
-- That is my guess, not your number. A 1-tonne hoist at ₹83,000 is a genuine
-  price and would be flagged today
-- Tell me a better number, or say to flag on something smarter than a flat rupee
-  figure
+- A flat ₹50,000 was the wrong test, as Raghbir pointed out: a gear box at
+  ₹47,621 and a hoist at ₹83,000 are both normal prices
+- Replaced in migration 30 with **a multiple of the median rate for the same
+  item**, default 10x. See `docs/16-busy-module-phase-2.md`
 
 ---
 
