@@ -1,5 +1,21 @@
 # Busy Data — no parse service, and where the parser should run
 
+> ## REVERSED, 17 Sep 2026, same day
+>
+> **The headline of this document is wrong.** `access-parser` was tested on one
+> file and worked. Tested on all 24 it reads **9 and fails on 15** — every year
+> before 2024, with *"Could not find overflow record data page overflow pointer"*.
+> Older Access files spread records across overflow pages, which the library
+> cannot follow. **mdbtools reads all 24.**
+>
+> The container is back and `parse_service_url` is a live setting again. See
+> `docs/22-mdbtools-stays.md`.
+>
+> What still stands from this document: **Option B and the version-skew
+> reasoning**, the **whole-year batch rule**, the **rows-file route** on the
+> upload screen, and the **CSV reader tests**. Those are all unchanged and still
+> correct.
+
 **Date:** 17 Sep 2026 · **Status:** applied to Mumbai, pushed
 **Migration 44 · `busy/parse-service/` removed · upload screen reworked**
 

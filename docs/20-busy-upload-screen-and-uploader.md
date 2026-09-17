@@ -15,17 +15,23 @@ here, and are now built.
 
 ## The obstacle turned out not to exist
 
-> **Superseded 17 Sep 2026, same day.** I built a container because mdbtools is a
-> Linux program and a Supabase edge function cannot have one. Raghbir then tested
-> **`access-parser`**, a pure-Python library, against a real file — 87 tables,
-> Tran1 3,591 rows, read in 6 seconds, identical output. **No system package, no
-> Dockerfile, no container, no Cloud Run.**
->
-> `busy/parse-service/` has been removed, and the upload screen no longer sends
-> files anywhere: it reads the parser's output in the browser and loads it
-> straight into the database. See `docs/21-no-parse-service.md`.
+> **This section was briefly withdrawn and then reinstated, both on 17 Sep 2026.**
+> `access-parser` looked like it removed the need for a container, but it was
+> tested on one file. On all 24 it reads 9 and fails on 15. **mdbtools stays and
+> the container is correct.** See `docs/22-mdbtools-stays.md`.
 
-The rest of this document still stands.
+**The parser cannot run as a Supabase edge function.** Edge functions run Deno in
+a sandbox and cannot have `mdb-export` installed, and reading a `.bds` file needs
+it. So the parser runs as a **small container** — Cloud Run, Fly.io, or any cheap
+box that runs Docker.
+
+That is in `busy/parse-service/`, with a Dockerfile that installs mdbtools and a
+README with the exact Cloud Run command. Deploy it in `asia-south1` so the rows do
+not cross the country twice. Then:
+
+```sql
+update public.busy_sync_settings set parse_service_url = 'https://…' where id = 1;
+```
 
 ---
 
@@ -126,5 +132,6 @@ fails for the number of days in settings.
 
 ## What is left
 
-1. **The rows file** from the updated parser — then the load can run
-2. **Build the `.exe`** on any Windows machine, upload it, set the version
+1. **The rows file** from the mdbtools parser — then the load can run today
+2. **Deploy the parse service**, before the first daily sync
+3. **Build the `.exe`** on any Windows machine, upload it, set the version
