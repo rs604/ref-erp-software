@@ -224,6 +224,40 @@ Only for the screens genuinely used on one — raising a request, approving.
 
 ---
 
+## ANYTHING THAT BELONGS TO A SET GETS CHECKED AGAINST THE SET
+
+Not once. **On every run.**
+
+Three of these in a single day, and all the same fault:
+
+| The thing | The set it belonged to | What it had drifted into |
+|---|---|---|
+| `busy.html` | the pages that sign a person in | no menu link, opened to nothing, and loaded the Supabase library from a different address at an unpinned version — so one day it did not load and the page refused to open |
+| `hr-actions` | the code in the repository | deployed and running, six lines ahead of the repo copy, with nothing saying so |
+| `zz-storage-cleanup` | the code in the repository | live in the project and not in the repo at all |
+
+In every case **nothing was wrong with the thing itself**, and nothing was
+wrong with the rest of the set. Only the gap between them was wrong, and a gap
+belongs to nobody, so nobody was looking at it.
+
+A set is anything where "they should all do this the same way" is true:
+
+- the pages that sign a person in — same library, same version, same no-cache
+  instructions, same build number, same reload check
+- the code that is deployed, against the code in the repository
+- the migration files, against the migrations the database has actually run
+- the calls to a database function, against what that function takes
+
+**Work out what the set is, then check membership automatically.** Do not keep
+a list by hand — a hand-kept list is one more thing that drifts. Decide
+membership from a property of the thing itself: `tests/check-page-set.js` calls
+a page a member if it loads `app-config.js`, so a new page joins the set by
+existing, and cannot be forgotten.
+
+**Report as:** `5 pages · 7 shared things · all agree`
+
+---
+
 ## THE PATTERN THIS PROJECT KEEPS FINDING
 
 **Nobody is asking the wrong questions at the moment nobody is looking.**
