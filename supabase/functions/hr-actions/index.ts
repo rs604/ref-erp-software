@@ -43,6 +43,12 @@
 //     now a real Supabase Auth user, made by `create_employee_login`,
 //     with a random password nobody ever sees; the person gets in
 //     through the "forgotten password" link.
+//
+//  8. THE WORDS THE SCREEN USES. The form still says "Monthly",
+//     "Married", "S/o"; the database keeps 'monthly', 'married',
+//     'father'. Every such value is translated on the way in and
+//     translated back on the way out, and a word neither side knows is
+//     refused by name -- see the vocabularies section below.
 // ============================================================
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -216,7 +222,7 @@ function legacyGuardianRelation(relation: unknown, gender: unknown): string | nu
 const DROPDOWN_TABLES: Record<string, { table: string; extra: string[] }> = {
   branches:            { table: "branches",            extra: [] },
   departments:         { table: "departments",         extra: [] },
-  designations:        { table: "designations",        extra: [] },
+  designations:        { table: "designations",         extra: [] },
   employee_categories: { table: "employee_categories", extra: [] },
   relationships:       { table: "relationships",       extra: [] },
   holiday_types:       { table: "holiday_types",       extra: [] },

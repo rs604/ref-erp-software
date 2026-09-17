@@ -134,35 +134,11 @@ export async function authenticate(req: Request): Promise<Caller> {
 }
 
 /** Throws unless the caller holds this permission. Owner holds everything. */
-/* ---- TRANSITIONAL, AND IT COMES OUT AGAIN -----------------------------
-   Three permission keys are being renamed, because nothing in this ERP is
-   ever deleted -- a wrong entry is cancelled, and the cancellation is
-   itself an event. A Delete column contradicted that, so it is gone, and
-   the keys that sat under it follow.
-
-   The rename cannot land in the database and in these functions at the same
-   instant. Whichever goes first, there is a moment where the two disagree,
-   and in that moment somebody trying to suspend an employee is told they do
-   not have permission on a screen that is theirs.
-
-   So for the length of the change, EITHER SPELLING is accepted. Deploy this
-   first; rename the keys second; then this map comes out and only the new
-   spelling remains. It is deliberately a map and not a quiet `||` so that
-   the thing to delete is obvious and dated.
-
-   Added 17 Sep 2026. Removed in the same day's second deploy.           */
-const RENAMED_2026_09: Record<string, string> = {
-  "employee_master.delete": "employee_master.cancel",
-  "holidays.delete": "holidays.cancel",
-  "vendor_master.delete": "vendor_master.cancel",
-};
-
 export function requirePermission(caller: Caller, key: string): void {
   if (caller.isOwner) return;
-  if (caller.permissions.includes(key)) return;
-  const renamed = RENAMED_2026_09[key];
-  if (renamed && caller.permissions.includes(renamed)) return;
-  throw new AuthError("You do not have permission to do that.", 403);
+  if (!caller.permissions.includes(key)) {
+    throw new AuthError("You do not have permission to do that.", 403);
+  }
 }
 
 /** Throws unless the caller is currently working here. */
