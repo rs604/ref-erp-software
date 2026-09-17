@@ -355,9 +355,89 @@ async function openBusy(server, browser, user) {
     record('a row that came back says so rather than vanishing', /came back/.test(restored));
   }
 
-  /* ============ 10. PERMISSIONS ARE REAL ============ */
   record('no script errors anywhere in the owner run', errors.length === 0, errors.slice(0, 3).join(' | '));
   await page.close();
+
+  /* ============ 1b. THE SCREEN HAS TO SPEAK ============
+     These are the checks that were missing when the live screen opened to a
+     blank white page and stayed there. Each one puts the screen in a state
+     that used to be silent, and reads back what a person would see. */
+
+  // Nothing loaded into the database yet -- the real state before the first
+  // upload. A table with no rows must say what to do, not sit there.
+  {
+    const { page: p, errors: e } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.evaluate(() => {
+      Object.keys(window.__TEST_DATA__).forEach(k => { window.__TEST_DATA__[k] = () => []; });
+    });
+    await p.click('#goBtn');
+    await p.waitForTimeout(300);
+    const t = (await p.locator('#rows').innerText()).replace(/\s+/g, ' ').trim();
+    record('an empty history says what to do next, rather than sitting empty',
+      /No history loaded yet/.test(t) && /Load history/.test(t), t.slice(0, 90));
+    record('no script errors with an empty database', e.length === 0, e.slice(0, 2).join(' | '));
+    await p.close();
+  }
+
+  // Before the sign-in check answers, there must already be something on screen.
+  {
+    const p = await browser.newPage({ viewport: { width: 1200, height: 700 } });
+    await p.route('**/app-config.js', r => r.fulfill({ contentType: 'text/javascript', body:
+      `window.REF = { requireSession: function () { return new Promise(function(){}); },
+        can: function(){return true;}, supabase: function(){return {};}, goToLogin: function(){} };` }));
+    await p.route('**cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/javascript', body: 'window.supabase={};' }));
+    await p.goto(server.url + '/busy.html', { waitUntil: 'domcontentloaded' });
+    await p.waitForTimeout(600);
+    const early = (await p.locator('body').innerText()).replace(/\s+/g, ' ').trim();
+    record('the screen says something before the sign-in check has answered',
+      /Opening Busy Data/.test(early), early.slice(0, 70));
+
+    await p.waitForTimeout(9000);
+    const late = (await p.locator('#boot').innerText()).replace(/\s+/g, ' ').trim();
+    record('a sign-in check that never answers says so, instead of spinning for ever',
+      /taking longer than it should/i.test(late), late.slice(0, 90));
+    record('and it offers a way out', await p.locator('#bootRetry').isVisible());
+    await p.close();
+  }
+
+  // A synchronous throw. .then().catch() cannot catch this, which is how the
+  // page ended up blank with an error nobody could see.
+  {
+    const p = await browser.newPage({ viewport: { width: 1200, height: 700 } });
+    const e = [];
+    p.on('pageerror', x => e.push(x.message));
+    await p.route('**/app-config.js', r => r.fulfill({ contentType: 'text/javascript', body:
+      `window.REF = { requireSession: function () { throw new Error('The Supabase library did not load. Check the connection and reload.'); },
+        can: function(){return true;}, supabase: function(){ throw new Error('no lib'); }, goToLogin: function(){} };` }));
+    await p.route('**cdn.jsdelivr.net/**', r => r.abort());
+    await p.goto(server.url + '/busy.html', { waitUntil: 'domcontentloaded' });
+    await p.waitForTimeout(800);
+    const t = (await p.locator('body').innerText()).replace(/\s+/g, ' ').trim();
+    record('a failure thrown before any promise exists is still shown to the person',
+      /could not open/i.test(t) && /Supabase library did not load/.test(t), t.slice(0, 90));
+    record('that failure is caught rather than left as an uncaught error',
+      e.length === 0, e.slice(0, 2).join(' | '));
+    await p.close();
+  }
+
+  // Every table load must end in words, never in a permanent "Looking...".
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_search'] = () => ({ error: { message: 'connection lost' } });
+    });
+    await p.click('#goBtn');
+    await p.waitForTimeout(400);
+    const t = (await p.locator('#rows').innerText()).replace(/\s+/g, ' ').trim();
+    record('a load that fails says what failed, in the table itself',
+      /Could not load the history/.test(t) && /connection lost/.test(t), t.slice(0, 90));
+    record('it does not leave "Looking…" on the screen', !/Looking/.test(t));
+    await p.close();
+  }
+
+  /* ============ 10. PERMISSIONS ARE REAL ============ */
 
   {
     const { page: p2, errors: e2 } = await openBusy(server, browser, CLERK);
