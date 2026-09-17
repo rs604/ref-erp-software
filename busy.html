@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789660543';</script>
+<script>window.__BUILD_VERSION__ = '1789661346';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -358,6 +358,14 @@
             which reads it with mdbtools and sends the rows back.
             <strong>Nothing is loaded until you press the button.</strong>
           </div>
+          <div class="note" style="border-left-color:var(--danger); background:#fdf2f0; margin-top:10px;">
+            <strong>Send a whole year at a time. Never part of one.</strong>
+            A year is compared against what you send, so anything missing from the
+            batch is marked as deleted in Busy. Send half a year and the other half
+            is marked gone. The rows are split into one batch per firm and year for
+            you, so a file holding several years is safe — a file holding half of one
+            is not.
+          </div>
           <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <button class="btn" id="loadBtn" disabled>Load these files</button>
             <button class="btn btn-outline" id="clearBtn">Clear the list</button>
@@ -514,10 +522,17 @@ upload_token = (shown on the download screen)</pre>
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
   }
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  /* 15 Sep 2026, never 15/09/26. A date written entirely in numbers has to be
+     decoded, and half the world decodes it the other way round. The month in
+     letters cannot be read wrongly. The rest of this page already did it this
+     way; the search table was the one place that did not. */
   function dmy(iso) {
     if (!iso) return '';
     var p = String(iso).slice(0, 10).split('-');
-    return p[2] + '/' + p[1] + '/' + p[0].slice(2);
+    var m = MONTHS[parseInt(p[1], 10) - 1];
+    if (!m) return '';
+    return parseInt(p[2], 10) + ' ' + m + ' ' + p[0];
   }
   /* Highlight the letters actually typed, on an exact match. */
   function hi(text, q) {

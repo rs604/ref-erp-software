@@ -42,13 +42,64 @@ function serve() {
 
 /* The stub that stands in for app-config.js. `user` is who the browser
    believes is signed in; `handlers` answers REF.call by function name. */
-function refStub(user, handlerSrc) {
+function refStub(user, handlerSrc, dataSrc) {
   return `
 window.__TEST_CALLS__ = [];
 window.__TEST_HANDLERS__ = ${handlerSrc};
+/* Stands in for the Supabase client. Every builder method returns the same
+   object, so any chain the screen writes -- .from(t).select().eq().order()
+   .limit() -- works without the harness having to know which methods exist.
+   Awaiting it resolves with whatever the test put under that table or
+   function name. Nothing leaves the browser. */
+window.__TEST_DATA__ = ${dataSrc || '{}'};
+window.__TEST_DB_CALLS__ = [];
+function __stubResult(name, args) {
+  window.__TEST_DB_CALLS__.push({ name: name, args: args });
+  var v = window.__TEST_DATA__[name];
+  if (typeof v === 'function') v = v(args);
+  if (v === undefined) return { data: [], error: null };
+  if (v && v.error) return { data: null, error: v.error };
+  return { data: v, error: null };
+}
+function __stubBuilder(name, args) {
+  var single = false;
+  var box = {};
+  var proxy = new Proxy(box, {
+    get: function (t, prop) {
+      if (prop === 'then') {
+        return function (resolve, reject) {
+          var r = __stubResult(name, args);
+          if (single) r = { data: (r.data && r.data[0]) || null, error: r.error };
+          return Promise.resolve(r).then(resolve, reject);
+        };
+      }
+      if (prop === 'catch') return function (f) { return Promise.resolve(__stubResult(name, args)).catch(f); };
+      if (prop === 'single' || prop === 'maybeSingle') {
+        return function () { single = true; return proxy; };
+      }
+      return function () { return proxy; };
+    }
+  });
+  return proxy;
+}
+window.__TEST_SUPABASE__ = {
+  from: function (t) { return __stubBuilder('table:' + t, null); },
+  rpc: function (fn, params) { return __stubBuilder('rpc:' + fn, params); },
+  storage: {
+    from: function (b) {
+      return {
+        createSignedUrl: function () {
+          return Promise.resolve({ data: { signedUrl: 'blob:stub-download' }, error: null });
+        },
+        list: function () { return Promise.resolve({ data: [], error: null }); }
+      };
+    }
+  },
+  auth: { getSession: function () { return Promise.resolve({ data: { session: { access_token: 'stub' } } }); } }
+};
 window.REF = {
   URL: 'http://stub.invalid', KEY: 'stub',
-  supabase: function () { throw new Error('no supabase in tests'); },
+  supabase: function () { return window.__TEST_SUPABASE__; },
   toLoginEmail: function (v) { return String(v || '').toLowerCase(); },
   signIn: function () { return Promise.resolve({}); },
   signOut: function () { return Promise.resolve({}); },
@@ -69,7 +120,7 @@ window.REF = {
 }
 
 async function open(server, page, opts) {
-  const stub = refStub(opts.user, opts.handlers);
+  const stub = refStub(opts.user, opts.handlers, opts.data);
   // app-config.js is replaced, so no test can reach the real project.
   await page.route('**/app-config.js', r => r.fulfill({ contentType: 'text/javascript', body: stub }));
   // Nothing external is fetched during a test run.
