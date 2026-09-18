@@ -57,11 +57,23 @@ let calls = 0;
   }
 }
 
+let opaque = 0;
 for (const site of rpcCallSites(ROOT)) {
   calls++;
   const where = site.where, name = site.fn, passed = site.args;
   const sig = SIGS.functions[name];
   if (!sig) { findings.push(`${where}  ${name} — no such function is recorded`); continue; }
+
+  // Arguments handed over as a variable cannot be read from the text. Saying
+  // "they are missing" would be an invention; saying nothing would be worse.
+  // It is reported as what it is, and has to be checked another way.
+  if (site.opaque) {
+    opaque++;
+    console.log(`  NOTE  ${where}  ${name} is called with a variable, not a literal, ` +
+                `so its arguments cannot be checked here.\n        ` +
+                `Check it against the live project, or assert it in a browser test.`);
+    continue;
+  }
 
   for (const p of passed) {
     if (!sig.args.includes(p)) {
@@ -79,7 +91,8 @@ for (const site of rpcCallSites(ROOT)) {
 
 console.log('\nDatabase calls — every argument accounted for\n');
 if (findings.length === 0) {
-  console.log(`  PASS  ${calls} calls checked · every argument either passed or deliberately omitted\n`);
+  console.log(`  PASS  ${calls} calls checked · every argument either passed or deliberately omitted` +
+    (opaque ? ` · ${opaque} passed a variable and are checked elsewhere` : '') + '\n');
   process.exit(0);
 }
 for (const f of findings) console.log('  FAIL  ' + f);

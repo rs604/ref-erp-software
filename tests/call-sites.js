@@ -57,12 +57,23 @@ function rpcCallSites(root) {
   const out = [];
   for (const file of sourceFiles(root)) {
     const src = fs.readFileSync(file, 'utf8');
-    const re = /\.rpc\(\s*['"]([A-Za-z0-9_]+)['"]\s*(,\s*\{)?/g;
+    // The second argument is either an object literal, nothing at all, or
+    // something this cannot read -- a variable, or Object.assign(...). That
+    // last case is NOT "no arguments": it is arguments that cannot be checked
+    // from here, and saying so is the difference between a useful check and a
+    // check that invents findings.
+    const re = /\.rpc\(\s*['"]([A-Za-z0-9_]+)['"]\s*(,)?\s*([{A-Za-z_)])?/g;
     let m;
     while ((m = re.exec(src))) {
       const line = src.slice(0, m.index).split('\n').length;
-      const args = m[2] ? argsOfCall(src, src.indexOf('{', m.index + m[0].length - 1)) : [];
-      out.push({ where: path.relative(root, file) + ':' + line, fn: m[1], args });
+      const where = path.relative(root, file) + ':' + line;
+      if (!m[2] || m[3] === ')') { out.push({ where, fn: m[1], args: [] }); continue; }
+      if (m[3] === '{') {
+        const brace = src.indexOf('{', m.index + m[0].length - 1);
+        out.push({ where, fn: m[1], args: argsOfCall(src, brace) });
+      } else {
+        out.push({ where, fn: m[1], args: null, opaque: true });
+      }
     }
   }
   return out;

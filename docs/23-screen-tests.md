@@ -140,6 +140,37 @@ happens to be is how people learn not to trust a key.
 **Report as:** `14 keyboard rules · 13 passed · Enter saved the form on the
 vendor screen`
 
+### A shortcut is tested by pressing it, and by proving the PAGE answered it
+
+Not that the key was pressed. Not that a handler exists. **That the page
+handled it and the browser did not.**
+
+| What to record | Why |
+|---|---|
+| The page's handler fired | The key reached the page at all |
+| `defaultPrevented` is true | The browser was stopped doing its own thing with it |
+| The right thing happened on screen | A handler that fires and does nothing is not a shortcut |
+
+Press it for real — `keyboard.press('Control+Slash')` — never a dispatched
+`KeyboardEvent`. A dispatched event proves your own handler runs; it says
+nothing about whether the browser would have taken the key first.
+
+**One listener, in the capture phase**, for every key the ERP owns. Capture
+runs before any handler on any element inside the page, so nothing closer to
+the key can swallow it. Bubble-phase listeners scattered across a screen are
+how a shortcut works in one box and not in another.
+
+**An `alert()` is the browser's own panel.** It is drawn by the browser, titled
+with the web address, and looks like nothing else in the ERP. Ctrl+/ opened one
+for a week and read as the browser having stolen the key. The ERP's own
+shortcut list is a panel on the page.
+
+**Keys the browser will not give up** — never lock these to anything:
+`F12` (developer tools), `F11` (full screen), `F1` (browser help), `Ctrl+N`,
+`Ctrl+T`, `Ctrl+W`. `F6` moves focus into the browser's own toolbar on Windows
+and is unreliable. Where a key cannot be caught on every machine, pick another
+one rather than ship a shortcut that works on one desk and not the next.
+
 ---
 
 ## 3. WHAT IS MANDATORY IS ACTUALLY MANDATORY
@@ -184,6 +215,35 @@ the deciding was wasted.**
 - Ctrl+Up reaches the top, Ctrl+Down the bottom
 - Sorting a column keeps the filters
 - An empty result says something useful, not a blank screen
+
+---
+
+## 5a. A PAGE SIZE IS NOT PAGINATION
+
+`25 · 50 · 100 · All` lets somebody choose how many rows to look at. It does
+not let them see row 51. That screen shipped looking complete, and the gap only
+appeared when somebody tried to reach the second page.
+
+Every list that can hold more rows than it shows has:
+
+| Control | Expected |
+|---|---|
+| Previous | **Disabled** on the first page, never hidden |
+| Where you are | `Page 2 of 8 · rows 26–50 of 200`. The total, not just the page |
+| Next | **Disabled** on the last page, never hidden |
+| Page Up / Page Down | The same two moves from the keyboard |
+| A new search | Goes back to page 1. Never strands somebody on a page that no longer exists |
+| Changing the page size | Also page 1 — it is a different list |
+
+Disabled rather than hidden, so where you are is always on the screen. A
+control that disappears at the edge leaves the reader guessing whether there
+is more.
+
+**Test it by actually reaching page 2**, and by reading which rows arrived. A
+pager that draws the right numbers and fetches the same rows is not a pager.
+Check the offset the database was asked for, not only what the screen drew.
+
+**Report as:** `page 1 started at V1000, page 2 at V1025 · offset 25 · Page 8 of 8 reachable`
 
 ---
 
