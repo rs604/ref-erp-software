@@ -287,6 +287,23 @@ Only for the screens genuinely used on one — raising a request, approving.
 
 ---
 
+## IF THE INPUT CHANGES DURING AN INVESTIGATION, SAY SO
+
+While one question was being investigated, the parser producing the data was
+swapped underneath it. It happened to be harmless — both versions produced the
+same 47,635 rows, which is the only reason the conclusion was safe — but that
+was luck, not method.
+
+**Whenever the thing being measured changes while you are measuring it, say so
+before reporting a conclusion**, and say whether it could have affected the
+answer. A conclusion drawn across two different inputs is two half-conclusions
+unless somebody checks they agree.
+
+This applies to the file being parsed, the code being tested, the database
+being queried, and the page being clicked.
+
+---
+
 ## A CHANGE THAT SPANS TWO PLACES HAPPENS IN THREE STEPS
 
 The database, the deployed pages and the deployed functions do not change at
