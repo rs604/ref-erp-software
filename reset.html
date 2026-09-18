@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>Refcon ERP — Set Your Password</title>
-<script>window.__BUILD_VERSION__ = '1789754131';</script>
+<script>window.__BUILD_VERSION__ = '1789755258';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -81,9 +81,26 @@
     input { font-size: 16px; min-height: 44px; }
     input { scroll-margin-top: 80px; scroll-margin-bottom: 120px; }
   }
+
+  /* ---- WHAT A COLD ARRIVAL SEES ----
+     Opened straight at this address with no session, this page showed
+     NOTHING -- a blank white screen while the redirect to sign-in happened,
+     and a blank white screen for ever if it did not. Found by opening every
+     page cold, which nobody had ever done because we all arrive through
+     other pages. Something is on screen from the first paint now. */
+  .boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+          background:#f4f6f8; z-index:200; padding:20px; text-align:center; }
+  .boot-title { font-size:16px; font-weight:600; color:#1a2229; }
+  .boot-sub { font-size:13.5px; color:#55606b; margin-top:6px; line-height:1.5; }
 </style>
 </head>
 <body>
+<div id="boot" class="boot">
+  <div>
+    <div class="boot-title" id="bootTitle">Opening the ERP…</div>
+    <div class="boot-sub" id="bootSub">Checking who you are.</div>
+  </div>
+</div>
 <!-- The ERP's menu, the same one every other page carries. It appears only for
      someone who is already signed in AND is not being forced through a first
      password change: a menu on the forced screen would be a way to walk past
@@ -142,20 +159,49 @@
   var msgBox = document.getElementById('msgBox');
   var isFirstLogin = new URLSearchParams(window.location.search).get('first') === '1';
 
+
+  /* Shown until we know who this is. A person who is not signed in is told
+     so and sent on; they never sit looking at a blank page, and they never
+     see the working screen behind it either. */
+  function bootSay(title, sub) {
+    var b = document.getElementById('boot');
+    if (!b) return;
+    b.style.display = 'flex';
+    document.getElementById('bootTitle').textContent = title;
+    document.getElementById('bootSub').innerHTML = sub;
+  }
+  function bootDone() {
+    var b = document.getElementById('boot');
+    if (b) b.style.display = 'none';
+  }
+
   if (isFirstLogin) {
     document.getElementById('heading').textContent = 'Choose Your Password';
     document.getElementById('subtitle').textContent =
       'This is your first sign-in. Set a password before you go any further.';
-  } else {
+  }
+
+  /* A stranger who opens this address directly used to be shown a
+     "Set Your Password" form. The server would have refused it, but inviting
+     an action that cannot work is its own fault. Nobody had opened this page
+     cold, because nobody ever arrives here except through signing in. */
+  REF.requireSession({ allowStarterPassword: true }).then(function (user) {
+    if (!user) {
+      bootSay('Taking you to the sign-in page…', 'One moment.');
+      return;
+    }
+    bootDone();
     // Changing a password by choice: the person is already in the ERP, so the
-    // menu belongs here like anywhere else. On the forced screen it does not,
-    // which is why this is the only page that asks before mounting it.
-    REF.requireSession({ allowStarterPassword: true }).then(function (user) {
-      if (!user) return;
+    // menu belongs here like anywhere else. On the FORCED screen it does not,
+    // because it would be a way past the thing this screen exists to make
+    // them do.
+    if (!isFirstLogin) {
       document.getElementById('resetBar').style.display = '';
       REFNav.mount({ page: 'reset.html', user: user });
-    }).catch(function () { /* not signed in: no menu, which is correct */ });
-  }
+    }
+  }).catch(function () {
+    bootSay('Taking you to the sign-in page…', 'One moment.');
+  });
 
   function show(kind, text) { msgBox.className = 'msg ' + kind; msgBox.textContent = text; }
 

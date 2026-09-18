@@ -604,6 +604,23 @@ nothing sideways · 44px everywhere · nothing under 12px`
 
 ---
 
+## ABSENT OR GREYED — TWO DIFFERENT REASONS, TWO DIFFERENT ANSWERS
+
+| Why it is not usable | What the menu does |
+|---|---|
+| **This person may not see it** | **absent.** A greyed row still tells them the screen exists, and who may see what is not their business |
+| **It is not built yet** | **greyed, visible, not clickable.** Everyone sees it |
+
+In Raghbir's words: *"A menu that grows a new item every week looks
+unfinished; a menu that is complete with some items greyed looks like a
+plan."*
+
+Getting these the same way round is a real fault in both directions. Greying
+a permission leaks what exists. Hiding an unbuilt screen hides the shape of
+the ERP from the person paying for it.
+
+---
+
 ## EVERY SCREEN CAN BE REACHED, AND CAN REACH BACK
 
 Raghbir asked for the menu to work on a phone. There was no menu. Three of the
@@ -646,6 +663,56 @@ this**, and try that way at least once. The answers so far —
 | opening a screen from its own page | arriving at it from another page |
 
 **Report as:** `5 pages · every page reaches every other · 380px and desk`
+
+### A PAGE SWEEP DOES NOT SEE INSIDE A PAGE
+
+`admin.html` holds nine screens behind one address. A screen that could only
+be opened from inside another one would have exactly the fault the whole ERP
+had — reachable only if you already knew the way — and no sweep of the five
+pages would find it.
+
+So the check is made against the page's own markup: every `view-*` in
+`admin.html` must have an entry in the menu, and every menu entry must point
+at a screen that exists. Both directions, because a menu pointing at nothing
+is the same class of lie.
+
+A form field that appears when a box is ticked is not a screen. Twenty-one of
+those turned up on the first pass — bank details, MSME numbers, ESI and PF
+fields, loan instalment fields — and they are correct: they belong to the form
+they are in.
+
+---
+
+## OPEN EVERY PAGE COLD
+
+> "A page I have never opened normally, that nobody has ever checked, sitting
+> on a live site."
+
+A **cold open** is a brand-new browser with nothing stored, arriving straight
+at the address. Not a link from another page, not a tab that already has a
+session. Run it at **380px and at desk width**, and **signed in and with no
+session at all** — four openings per page.
+
+This is the only check that sees what a stranger sees, and the only one that
+sees a page nobody ever visits directly. It found three:
+
+| Page | What a stranger actually saw |
+|---|---|
+| `admin.html` | **a blank white screen.** Nothing at all, while the redirect to sign-in happened — and for ever if it did not |
+| `submit.html` | the whole odometer form, fields and all, rendered before the redirect |
+| `reset.html` | a **"Set Your Password" form**. The server would have refused it, but inviting an action that cannot work is its own fault |
+
+All three now say *"Taking you to the sign-in page… One moment."* from the
+first paint, which is what `busy.html` already did.
+
+**Three things to assert on a cold open with no session:**
+
+1. The page **says what is happening**. A blank page is a failure, not a
+   redirect in progress.
+2. The working screen is **not rendered behind it**.
+3. **No company data** appears anywhere on it.
+
+**Report as:** `5 pages × 2 widths × signed in and not · 108 checks`
 
 ---
 

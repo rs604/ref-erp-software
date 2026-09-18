@@ -105,7 +105,9 @@ window.REF = {
   signOut: function () { return Promise.resolve({}); },
   sendPasswordReset: function () { return Promise.resolve({}); },
   changePassword: function () { return Promise.resolve({}); },
-  getSession: function () { return Promise.resolve({ access_token: 'stub' }); },
+  /* A cold arrival with no session at all: a null user means nobody is
+     signed in, and the pages must behave as they do for a stranger. */
+  getSession: function () { return Promise.resolve(${user ? "{ access_token: 'stub' }" : 'null'}); },
   call: function (fn, payload) {
     window.__TEST_CALLS__.push({ fn: fn, payload: payload });
     var h = window.__TEST_HANDLERS__[fn];

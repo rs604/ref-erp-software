@@ -26,9 +26,14 @@ Then a divider, then **OWNER ONLY**: Decisions · Checklist
   keep HRMS as its own module, or fold those three in elsewhere
 - Owner-only items are **absent** for everyone else, not greyed out
 - Only the open module expands. The list never gets long
-- A screen that does not exist yet is **shown to the owner** and says
-  "not built yet". It is not shown to anyone else, who would be reading a
-  roadmap instead of a menu
+- A screen that does not exist yet is **shown to everyone**, greyed and not
+  clickable, and says "not built yet". A menu that grows an item every week
+  looks unfinished; a menu that is complete with some of it greyed looks like
+  a plan. **Absent is for permissions; greyed is for not built** — two
+  different reasons, two different answers
+- **Home is the dashboard**: approvals waiting, and the state of the business
+  — what Raghbir looks at first thing. Thin today, and the menu points at it
+  either way
 
 ### One menu, one file
 

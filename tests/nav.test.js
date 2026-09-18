@@ -68,9 +68,11 @@ const READ_MENU = () => {
     pages: [...new Set(items.map(i => i.dataset.page))].sort(),
     soon: Array.from(host.querySelectorAll('.refnav-soon')).map(s => s.textContent.trim()),
     modules: Array.from(host.querySelectorAll('.refnav-item[data-toggle]')).map(i => i.textContent.trim()),
-    // Absent, never greyed: nothing a person cannot use may be sitting there
-    // disabled, because a disabled button still tells them the screen exists.
-    disabled: Array.from(host.querySelectorAll('[disabled], [aria-disabled="true"]')).length,
+    // Two different reasons, two different answers. A screen someone is not
+    // ALLOWED to see is absent. A screen nobody can see because it is not
+    // built is greyed and not clickable.
+    greyed: Array.from(host.querySelectorAll('.refnav-soon')).map(s => s.textContent.trim()),
+    clickableGreyed: Array.from(host.querySelectorAll('.refnav-soon[data-page], .refnav-soon button, .refnav-soon a')).length,
   };
 };
 
@@ -113,8 +115,11 @@ const READ_MENU = () => {
   record('a screen that is not built yet is shown and says so, not silently missing',
     first.soon.length > 0 && first.soon.every(s => /not built yet/.test(s)),
     first.soon.join(' · '));
-  record('nothing in the menu is greyed out — absent, or usable',
-    files.every(f => seen[f].disabled === 0));
+  record('a screen that is not built is greyed, on every page, not hidden',
+    files.every(f => seen[f].soon.length === first.soon.length && seen[f].soon.length > 0),
+    `${first.soon.length} greyed`);
+  record('and a greyed one cannot be clicked into',
+    files.every(f => seen[f].clickableGreyed === 0));
 
   /* ---- 3. REACH EVERY OTHER PAGE FROM EVERY PAGE, AT 380px ---- */
   for (const p of PAGES) {
@@ -231,16 +236,21 @@ const READ_MENU = () => {
     const { page } = await openAt(server, browser, PHONE, 'submit.html', null, FITTER);
     const menu = await page.evaluate(READ_MENU);
     record('a fitter sees a menu at all', !!menu, menu ? `${menu.labels.length} entries` : 'none');
-    record('a fitter cannot see Busy Data anywhere in it',
+    record('a fitter cannot see Busy Data anywhere in it — absent, because it is not theirs',
       !!menu && !menu.modules.includes('Busy Data') && !menu.labels.includes('Price History'),
       menu ? menu.modules.join(' · ') : '');
+    record('but a fitter DOES see the shape of the ERP, greyed',
+      !!menu && menu.greyed.length > 0, menu ? `${menu.greyed.length} greyed` : '');
+    record('a screen they may not see is never greyed at them — it is gone',
+      !!menu && !menu.greyed.some(g => /Price History|Vendors|Employees|Decisions/.test(g)),
+      menu ? menu.greyed.join(' · ') : '');
     record('a fitter cannot see the OWNER ONLY section',
       !!menu && !menu.labels.includes('Decisions'),
       menu ? menu.labels.join(' · ') : '');
     record('a fitter CAN still reach what they are for',
       !!menu && menu.labels.includes('Add a km reading'), menu ? menu.labels.join(' · ') : '');
-    record('nothing is greyed out for them either — it is simply absent',
-      !!menu && menu.disabled === 0);
+    record('and none of the greyed rows is clickable for them either',
+      !!menu && menu.clickableGreyed === 0);
     await page.close();
   }
 
@@ -258,6 +268,33 @@ const READ_MENU = () => {
       signin.loadsTheMenuFile && signin.hasHost, JSON.stringify(signin));
     record('but shows a signed-out stranger nothing — not one screen name',
       signin.drawsAnything === 0, `${signin.drawsAnything} entries drawn`);
+    await page.close();
+  }
+
+  /* ---- 6c. NO SCREEN INSIDE A PAGE IS REACHABLE ONLY FROM ANOTHER SCREEN ----
+     A page sweep cannot see this: admin.html holds nine screens behind one
+     address. If one of them could only be opened from inside another, it
+     would have the same fault the whole ERP had -- reachable only if you
+     already knew the way. */
+  {
+    const fs = require('fs');
+    const src = fs.readFileSync(require('path').join(H.ROOT, 'admin.html'), 'utf8');
+    const screens = [...new Set(Array.from(src.matchAll(/id="view-([a-z-]+)"/g)).map(m => m[1]))].sort();
+    const page = await browser.newPage(DESK);
+    await H.open(server, page, { file: 'admin.html', user: OWNER, handlers: HANDLERS, data: '{}' });
+    await page.waitForTimeout(1500);
+    const inMenu = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('#refnav-host .refnav-item[data-page="admin.html"]'))
+        .map(b => b.dataset.view).sort());
+    const orphans = screens.filter(v => !inMenu.includes(v));
+    record(`every screen inside admin.html has its own way in from the menu (${screens.length})`,
+      orphans.length === 0,
+      orphans.length ? 'reachable only from another screen: ' + orphans.join(', ')
+                     : screens.join(' · '));
+    // And nothing in the menu points at a screen that is not there.
+    const missing = inMenu.filter(v => !screens.includes(v));
+    record('and nothing in the menu points at a screen that does not exist',
+      missing.length === 0, missing.join(', ') || 'none');
     await page.close();
   }
 

@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1789754131';</script>
+<script>window.__BUILD_VERSION__ = '1789755258';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -748,9 +748,27 @@
     }
     table.ledger td.action-cell { justify-content: flex-end; padding-top: 10px; }
   }
+
+  /* ---- WHAT A COLD ARRIVAL SEES ----
+     Opened straight at this address with no session, this page showed
+     NOTHING -- a blank white screen while the redirect to sign-in happened,
+     and a blank white screen for ever if it did not. Found by opening every
+     page cold, which nobody had ever done because we all arrive through
+     other pages. Something is on screen from the first paint now. */
+  .boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+          background:#f4f6f8; z-index:200; padding:20px; text-align:center; }
+  .boot-title { font-size:16px; font-weight:600; color:#1a2229; }
+  .boot-sub { font-size:13.5px; color:#55606b; margin-top:6px; line-height:1.5; }
 </style>
 </head>
 <body>
+
+<div id="boot" class="boot">
+  <div>
+    <div class="boot-title" id="bootTitle">Opening the ERP…</div>
+    <div class="boot-sub" id="bootSub">Checking who you are.</div>
+  </div>
+</div>
 
 <div class="app-shell refnav-shell" id="appShell" style="display:none">
   <!-- The menu is not written here. It is nav.js, shared by every page, so a
@@ -6412,10 +6430,34 @@
   // This is the actual security fix: identity comes only from the signed session token that
   // REF holds. Nobody is logged in here — index.html does that, and anyone arriving without a
   // valid session (or still on a starter password) is sent back there by REF.requireSession.
+
+  /* Shown until we know who this is. A person who is not signed in is told
+     so and sent on; they never sit looking at a blank page, and they never
+     see the working screen behind it either. */
+  function bootSay(title, sub) {
+    var b = document.getElementById('boot');
+    if (!b) return;
+    b.style.display = 'flex';
+    document.getElementById('bootTitle').textContent = title;
+    document.getElementById('bootSub').innerHTML = sub;
+  }
+  function bootDone() {
+    var b = document.getElementById('boot');
+    if (b) b.style.display = 'none';
+  }
+
   REF.requireSession().then(function (user) {
-    if (!user) return;               // REF already redirected
+    if (!user) {                     // REF is already sending them to sign in
+      bootSay('Taking you to the sign-in page…', 'One moment.');
+      return;
+    }
+    bootDone();
     completeLogin(user);
-  }).catch(function () { REF.goToLogin(); });
+  }).catch(function (err) {
+    bootSay('The ERP could not open',
+      ((err && err.message) || 'Something went wrong before the screen could load.') +
+      '<br><br><a href="index.html">Sign in again</a>');
+  });
 </script>
 
 

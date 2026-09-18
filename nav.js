@@ -37,11 +37,14 @@
      used daily, so they are in the menu rather than unreachable. Worth
      Raghbir's decision: keep HRMS as its own module, or fold it in.
 
-     built:false is a screen that does not exist yet. It is SHOWN, and
-     says so. Listing a screen that silently does nothing would be worse
-     than not listing it; leaving it out entirely hides the shape of the
-     ERP from the person paying for it.                                  */
+     built:false is a screen that does not exist yet. It is shown to
+     EVERYONE, greyed and not clickable, because the shape of the ERP is
+     worth seeing while it is being built. That is a different question
+     from permission, which removes an entry altogether.                 */
   var MENU = [
+    // Home is the DASHBOARD: approvals waiting, and the state of the
+    // business -- what Raghbir looks at first thing. It is thin today and
+    // fills in later; the menu points at it either way.
     { label: 'Home', icon: 'home', page: 'admin.html', view: 'home' },
 
     { label: 'Busy Data', icon: 'database', children: [
@@ -143,8 +146,13 @@
     /* A screen that is not built yet says so. It is never a working-looking
        button that does nothing. */
     '.refnav-soon { display:flex; align-items:center; gap:10px; padding:9px 10px;',
-    '  font-size:13px; color:rgba(255,255,255,.38); }',
-    '.refnav-soon .tag { font-size:12px; font-style:italic; }',
+    '  font-size:13px; color:rgba(255,255,255,.34); cursor:default; }',
+    '.refnav-soon svg { width:17px; height:17px; flex:0 0 17px; opacity:.5; }',
+    '.refnav-soon .lbl { flex:1; min-width:0; }',
+    /* 12px is the floor for anything anyone has to read -- docs/23 section 9.
+       This said "not built yet" at 11.5px and the phone test caught it. */
+    '.refnav-soon .tag { font-size:12px; font-style:italic; white-space:nowrap; }',
+    '.refnav-children .refnav-soon { font-size:12.5px; padding-left:14px; }',
     '.refnav-foot { padding:12px 18px; border-top:1px solid rgba(255,255,255,.1);',
     '  font-size:12px; color:rgba(255,255,255,.45); }',
     /* The hamburger only exists where the menu cannot. */
@@ -177,21 +185,21 @@
 
   /* Absent, never greyed. Someone without the permission does not learn
      that the screen exists. */
+  /* TWO DIFFERENT REASONS, TWO DIFFERENT ANSWERS.
+
+     NOT ALLOWED  -> absent. A greyed row still tells someone the screen
+                     exists, and who may see it is not their business.
+     NOT BUILT    -> shown, greyed, not clickable. Everyone sees it. A menu
+                     that grows an item every week looks unfinished; a menu
+                     that is complete with some of it greyed looks like a
+                     plan, and that is what it is.
+
+     So `built:false` is NOT a permission question and is never filtered
+     here. Only `owner` and `perm` are. */
   function allowed(entry, user) {
     if (entry.owner && !(user && user.is_owner)) return false;
     if (entry.perm && !(window.REF && window.REF.can(user, entry.perm))) return false;
-    // A screen that does not exist yet is shown to Raghbir, because the shape
-    // of his own ERP is his to see. It is not shown to a fitter, who would be
-    // reading a roadmap instead of a menu.
-    if (entry.built === false && !(user && user.is_owner)) return false;
     return true;
-  }
-
-  /* Can this person actually DO anything in here? A module whose only
-     contents are screens that do not exist yet is a heading and nothing
-     else. */
-  function hasUsable(kids) {
-    return kids.some(function (k) { return !k.section && k.built !== false; });
   }
 
   /* A module with nothing left inside it after permissions is not shown at
@@ -211,7 +219,7 @@
   function leafHtml(leaf, opts, idx) {
     if (leaf.section) return '<div class="refnav-section">' + esc(leaf.label || leaf.section) + '</div>';
     if (leaf.built === false) {
-      return '<div class="refnav-soon"><span class="lbl">' + esc(leaf.label) +
+      return '<div class="refnav-soon" aria-disabled="true"><span class="lbl">' + esc(leaf.label) +
              '</span><span class="tag">not built yet</span></div>';
     }
     var here = (leaf.page === opts.page);
@@ -244,7 +252,6 @@
         var kids = visibleChildren(entry, user);
         var real = kids.filter(function (k) { return !k.section; });
         if (!real.length) return;
-        if (!hasUsable(real) && !(user && user.is_owner)) return;
         var id = 'refnav-kids-' + (n++);
         var openNow = real.some(function (k) { return k.page === opts.page; });
         html += '<button type="button" class="refnav-item' + (openNow ? ' open' : '') +
@@ -259,7 +266,7 @@
       }
 
       if (entry.built === false) {
-        html += '<div class="refnav-soon">' + svg(ICONS[entry.icon] || ICONS.box) +
+        html += '<div class="refnav-soon" aria-disabled="true">' + svg(ICONS[entry.icon] || ICONS.box) +
                 '<span class="lbl">' + esc(entry.label) + '</span>' +
                 '<span class="tag">not built yet</span></div>';
         return;
