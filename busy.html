@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789722583';</script>
+<script>window.__BUILD_VERSION__ = '1789723432';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -166,8 +166,10 @@
 
   /* Voucher types as tickboxes. What is chosen is on the screen, always. */
   .chips { display:flex; gap:6px; flex-wrap:wrap; }
-  .chip { display:inline-flex; align-items:center; gap:5px; cursor:pointer; user-select:none;
-          border:1px solid var(--border); border-radius:13px; padding:4px 11px;
+  /* Rectangular, 4px, like every other control in the ERP. A rounded pill is
+     for something that displays a value; this is something you tick. */
+  .chip { display:inline-flex; align-items:center; gap:6px; cursor:pointer; user-select:none;
+          border:1px solid var(--border); border-radius:4px; padding:5px 10px;
           font-size:12px; background:#fff; color:var(--muted); white-space:nowrap; }
   .chip input { margin:0; width:12px; height:12px; accent-color:var(--steel); }
   .chip:hover { border-color:var(--steel); }
@@ -194,6 +196,18 @@
   .colmenu-list input { accent-color:var(--steel); }
   .colmenu-note { font-size:11px; color:var(--muted); padding:5px 8px 2px;
                   border-top:1px solid var(--border); margin-top:4px; }
+
+  /* ---- cell selection: a border, never a fill ----------------------------
+     A fill would fight the row colours and the search highlight, and would
+     read as "this cell is different" rather than "this cell is where you
+     are". An outline says position without saying anything about the value. */
+  table.tbl td.sel {
+    outline:2px solid var(--steel);
+    outline-offset:-2px;
+    position:relative;
+  }
+  table.tbl:focus { outline:none; }
+  .tbl-wrap:focus-within { box-shadow:0 0 0 1px var(--steel-tint); }
 
   /* ---- what a match looks like ---- */
   /* The letters actually typed, picked out. Not the whole cell. */
@@ -321,7 +335,7 @@
           </div>
         </div>
 
-        <div class="rowcount" id="rowCount"></div>
+        <div class="rowcount"><span id="rowCount"></span><span id="copyNote" style="display:none; margin-left:10px; color:var(--green); font-weight:600;"></span></div>
         <div class="tbl-wrap">
           <table class="tbl">
             <thead><tr id="headRow"></tr></thead>
@@ -907,7 +921,7 @@ upload_token = (shown on the download screen)</pre>
   }
 
   /* ---- THE SEARCH: as you type ---- */
-  var typingTimer = null, runToken = 0;
+  var typingTimer = null, runToken = 0, grid = null;
 
   function runSoon() {
     clearTimeout(typingTimer);
@@ -990,6 +1004,7 @@ upload_token = (shown on the download screen)</pre>
         cols.map(function (c) { return cell[c.key]; }).join('') + '</tr>';
     }).join('');
     $('rows').innerHTML = html;
+    if (grid) grid.clear();
 
     var fuzzy = rows.filter(function (r) { return r.match_tier === 3 && q; }).length;
     $('rowCount').textContent = inr.format(rows.length) + ' row' + (rows.length === 1 ? '' : 's') +
@@ -1181,11 +1196,16 @@ upload_token = (shown on the download screen)</pre>
       ]).then(function (n) {
         function tile(label, got, want) {
           var done = (got === want);
+          var short = want - got;
+          // "16,987 of 21,307 expected" reads like progress. It was a year
+          // missing. Say the shortfall as a number, in red.
           return '<div class="kpi"><div class="k">' + label + '</div>' +
-                 '<div class="v ' + (done ? 'up' : (got > want ? 'down' : '')) + '">' +
-                 inr.format(got) + '</div>' +
-                 '<div style="font-size:11.5px; color:var(--muted)">of ' + inr.format(want) +
-                 (done ? ' · matches' : ' expected') + '</div></div>';
+                 '<div class="v ' + (done ? 'up' : 'down') + '">' + inr.format(got) + '</div>' +
+                 '<div style="font-size:11.5px; color:' + (done ? 'var(--muted)' : 'var(--danger)') + '">' +
+                 (done ? 'of ' + inr.format(want) + ' · matches'
+                       : (short > 0 ? inr.format(short) + ' SHORT of ' + inr.format(want)
+                                    : inr.format(-short) + ' MORE than the ' + inr.format(want) + ' expected')) +
+                 '</div></div>';
         }
         $('loadTotals').innerHTML =
           tile('Item rows, REF', n[0], cfg.expected_item_rows_ref || 21307) +
@@ -1368,6 +1388,7 @@ upload_token = (shown on the download screen)</pre>
 
   function finishItem(i, ok, text, progress) {
     items[i].done = true;
+    items[i].ok = ok;          // the summary at the end counts these
     items[i].result = text;
     setCell(i, 'prog', progress);
     setCell(i, 'res', text);
@@ -1523,10 +1544,26 @@ upload_token = (shown on the download screen)</pre>
           i++;
           while (i < items.length && (!items[i].ready || items[i].done)) i++;
           if (i >= items.length) {
-            $('uploadState').innerHTML =
-              '<span style="color:var(--green)">Finished. Check the three numbers above before ' +
-              'you move any file off the Busy PC.</span>';
+            // A REFUSAL THAT SCROLLED PAST IS STILL A REFUSAL. One batch was
+            // once refused in the middle of a run of twenty-four, the row said
+            // so, and the summary underneath still said "Finished" in green.
+            // The whole year was missing and nothing on the screen said which.
+            var refused = items.filter(function (it) { return it.ready && !it.ok; });
             $('clearBtn').disabled = false;
+            if (refused.length) {
+              $('uploadState').innerHTML =
+                '<span style="color:var(--danger); font-weight:600">' +
+                refused.length + ' of ' + items.filter(function (it) { return it.ready; }).length +
+                ' did NOT load: ' +
+                refused.map(function (it) { return esc(it.company + ' ' + it.fy); }).join(', ') +
+                '.</span> <span style="color:var(--danger)">Those years are not in the ERP. ' +
+                'Look at the rows above for the reason, fix it, and send those years again. ' +
+                'Do not move any file off the Busy PC.</span>';
+            } else {
+              $('uploadState').innerHTML =
+                '<span style="color:var(--green)">Finished. Check the three numbers above before ' +
+                'you move any file off the Busy PC.</span>';
+            }
             refreshTotals();
             return;
           }
@@ -1618,6 +1655,116 @@ upload_token = (shown on the download screen)</pre>
       }
     });
   })();
+
+  /* ---- CELL SELECTION, LIKE A SPREADSHEET -------------------------------
+     Anyone who works in Excel all day reaches for the arrow keys without
+     thinking. This data is READ ONLY -- selection is for reading and copying,
+     never for changing, and nothing here makes a cell editable.
+
+     The selection is an OUTLINE, not a fill: a fill would fight the row
+     colours and the search highlight, and would read as "this cell is
+     different" rather than "this cell is where you are".
+
+     Written against a table by id so the next result table in the ERP gets it
+     by calling wireGrid(). See docs/23. */
+  var GRID_TIP = 'Arrow keys move · Ctrl+C copies · Home/End ends of the row · Ctrl+Up/Down top and bottom';
+
+  function wireGrid(tbodyId) {
+    var body = $(tbodyId);
+    if (!body) return;
+    var sel = null;                       // { r, c }
+
+    function cells() {
+      return Array.prototype.filter.call(body.rows, function (r) {
+        return !r.querySelector('td.loading');   // a message row is not data
+      });
+    }
+    function paint() {
+      Array.prototype.forEach.call(body.querySelectorAll('td.sel'), function (td) {
+        td.classList.remove('sel');
+      });
+      if (!sel) return;
+      var rows = cells();
+      var row = rows[sel.r];
+      if (!row) return;
+      var td = row.cells[sel.c];
+      if (!td) return;
+      td.classList.add('sel');
+      td.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+    function move(dr, dc) {
+      var rows = cells();
+      if (!rows.length) return;
+      if (!sel) { sel = { r: 0, c: 0 }; paint(); return; }
+      var r = Math.min(Math.max(sel.r + dr, 0), rows.length - 1);
+      var wide = rows[r].cells.length;
+      var c = Math.min(Math.max(sel.c + dc, 0), wide - 1);
+      sel = { r: r, c: c };
+      paint();
+    }
+
+    body.addEventListener('click', function (e) {
+      var td = e.target.closest('td');
+      if (!td || td.classList.contains('loading')) return;
+      var rows = cells();
+      var r = rows.indexOf(td.parentNode);
+      if (r === -1) return;
+      sel = { r: r, c: td.cellIndex };
+      paint();
+      body.parentNode.focus();
+    });
+
+    // The table takes the keyboard so the arrows do not scroll the page.
+    var wrap = body.closest('.tbl-wrap');
+    if (wrap) { wrap.tabIndex = 0; wrap.title = GRID_TIP; }
+
+    (wrap || body).addEventListener('keydown', function (e) {
+      var rows = cells();
+      if (!rows.length) return;
+      var k = e.key;
+      if (k === 'ArrowLeft')  { e.preventDefault(); move(0, -1); }
+      else if (k === 'ArrowRight') { e.preventDefault(); move(0, 1); }
+      else if (k === 'ArrowUp' && !e.ctrlKey)   { e.preventDefault(); move(-1, 0); }
+      else if (k === 'ArrowDown' && !e.ctrlKey) { e.preventDefault(); move(1, 0); }
+      else if (k === 'ArrowUp' && e.ctrlKey)    { e.preventDefault(); sel = { r: 0, c: (sel || {}).c || 0 }; paint(); }
+      else if (k === 'ArrowDown' && e.ctrlKey)  { e.preventDefault(); sel = { r: rows.length - 1, c: (sel || {}).c || 0 }; paint(); }
+      else if (k === 'Home') { e.preventDefault(); sel = { r: (sel || { r: 0 }).r, c: 0 }; paint(); }
+      else if (k === 'End')  {
+        e.preventDefault();
+        var rr = (sel || { r: 0 }).r;
+        sel = { r: rr, c: rows[rr].cells.length - 1 }; paint();
+      } else if (k === 'c' && (e.ctrlKey || e.metaKey)) {
+        var td = body.querySelector('td.sel');
+        if (!td) return;
+        e.preventDefault();
+        copyText(td.innerText.trim());
+      }
+    });
+
+    // Redrawing the table throws the selection away; it is a position in a
+    // list that no longer exists.
+    return { clear: function () { sel = null; } };
+  }
+
+  function copyText(text) {
+    var done = function () {
+      var note = $('copyNote');
+      if (!note) return;
+      note.textContent = 'Copied: ' + (text.length > 40 ? text.slice(0, 40) + '…' : text);
+      note.style.display = '';
+      clearTimeout(copyText._t);
+      copyText._t = setTimeout(function () { note.style.display = 'none'; }, 1800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      done();
+    }
+  }
 
   /* ---- DATE FIELDS: the same two keys everywhere ----------------------
      T for today, Delete to clear. Dates get typed dozens of times a day and
@@ -1793,6 +1940,7 @@ upload_token = (shown on the download screen)</pre>
       }
       loadCols(); loadTypes();
       drawHead(); drawColMenu(); drawChips();
+      grid = wireGrid('rows');
       setFirm('REF');
       setView('price');
       $('q').focus();

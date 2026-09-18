@@ -199,7 +199,10 @@ const record = (name, ok, detail) => results.push({ name, ok, detail: detail || 
   /* ================= 8. AFTER SAVING ================= */
   {
     await park();
-    await page.locator('.perm-cell-checkbox').nth(2).click();
+    // Any one box will do here — what is being tested is what SAVING does,
+    // not which permission was ticked. Position in a list of equivalent
+    // controls is fine; position of a cell inside a row is not.
+    await page.locator('.perm-cell-checkbox').first().click();
     await page.evaluate(() => { document.getElementById('permDetailScrollArea').scrollTop = 240; });
     const before = await H.snapshot(page);
     await page.click('#permSaveBtn');
@@ -220,8 +223,11 @@ const record = (name, ok, detail) => results.push({ name, ok, detail: detail || 
   /* ================= picking a different person ================= */
   {
     await park();
-    // A row already on screen, and not the Owner — the Owner has no grid.
-    const target = page.locator('.perm-emp-row:not(.active)').nth(4);
+    // Named, not counted. "the fifth row that is not active" happened to miss
+    // the Owner today; a change to the fixture order would have had this test
+    // quietly checking the one person who has no grid at all.
+    const target = page.locator('.perm-emp-row:not(.active)')
+      .filter({ hasNotText: 'Raghbir Singh' }).first();
     const targetId = await target.evaluate(e => e.dataset.id);
     const { problems, before, after } = await clickAndCheck(target, null);
     const listBefore = before.scrolls['#permEmpListScroll']?.[0];
