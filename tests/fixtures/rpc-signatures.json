@@ -86,7 +86,7 @@
     "p_company",
     "p_query",
     "p_party",
-    "p_doc_type",
+    "p_doc_types",
     "p_date_from",
     "p_date_to",
     "p_limit",

@@ -53,7 +53,7 @@ async function openBusy(server, browser, user) {
   {
     await page.locator('#q').fill('pipe');
     await page.locator('#q').press('Enter');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(400);
     const calls = await page.evaluate(() => window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').length);
     record('Enter in the search box searches, and saves nothing', calls > 1, `${calls} searches so far`);
   }
@@ -68,23 +68,33 @@ async function openBusy(server, browser, user) {
     // separate segments inside it -- so the same box comes back more than
     // once. That is the browser, not the screen, so only the ORDER the boxes
     // are reached in is compared.
+    // The voucher-type tickboxes sit between the search box and the date
+    // boxes, and they are controls, so Tab reaches them. Naming them by the
+    // type they carry rather than by "INPUT".
     const seen = [];
     await page.locator('#q').focus();
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 24; i++) {
       await page.keyboard.press('Tab');
-      const id = await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName);
+      const id = await page.evaluate(() => {
+        const a = document.activeElement;
+        if (!a) return 'none';
+        if (a.dataset && a.dataset.type) return 'chip:' + a.dataset.type;
+        return a.id || a.tagName;
+      });
       if (id !== seen[seen.length - 1]) seen.push(id);
-      if (id === 'goBtn') break;
+      if (id === 'colBtn') break;
     }
-    const expected = ['docType', 'from', 'to', 'pageSize', 'goBtn'];
-    record('Tab follows the boxes across the screen, left to right',
+    const expected = ['qClear', 'chip:Sales Invoice', 'chip:Purchase Bill',
+      'chip:Delivery Challan', 'chip:Purchase Order', 'chip:Sales Order',
+      'from', 'to', 'pageSize', 'colBtn'];
+    record('Tab follows the controls across the screen, left to right',
       JSON.stringify(seen) === JSON.stringify(expected), seen.join(' -> '));
     record('Tab from the last box reaches the button rather than looping back',
-      seen[seen.length - 1] === 'goBtn');
+      seen[seen.length - 1] === 'colBtn');
   }
   {
     const back = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       await page.keyboard.press('Shift+Tab');
       const id = await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName);
       if (id !== back[back.length - 1]) back.push(id);
@@ -101,7 +111,8 @@ async function openBusy(server, browser, user) {
       window.alert = real;
       return seen;
     });
-    record('Ctrl+/ opens the shortcut list', !!hasHelp && /Enter/.test(hasHelp));
+    record('Ctrl+/ opens the shortcut list',
+      !!hasHelp && /Esc/.test(hasHelp) && /as you type/.test(hasHelp), String(hasHelp).split('\n')[0]);
   }
 
   /* ============ 1. NOTHING MOVES THAT SHOULD NOT ============ */
@@ -125,8 +136,7 @@ async function openBusy(server, browser, user) {
     let kept = 0, moved = 0, n = 0;
     const complaints = [];
     const filters = [
-      ['#docType', 'select', 'Purchase Bill'],
-      ['#pageSize', 'select', '50'],
+      ['#pageSize', 'select', '100'],
       ['#from', 'fill', '2025-04-01'],
       ['#to', 'fill', '2026-03-31'],
     ];
@@ -145,10 +155,9 @@ async function openBusy(server, browser, user) {
     record(`changed ${n} filters · ${kept} kept scroll · ${moved} moved`,
       moved === 0, complaints.slice(0, 4).join(' | '));
     // Put them back so later checks start clean.
-    await page.selectOption('#docType', '');
     await page.fill('#from', ''); await page.fill('#to', '');
-    await page.selectOption('#pageSize', '25');
-    await page.waitForTimeout(150);
+    await page.selectOption('#pageSize', '50');
+    await page.waitForTimeout(400);
   }
 
   {
@@ -187,31 +196,29 @@ async function openBusy(server, browser, user) {
     await page.evaluate(rows => {
       window.__TEST_ALL_ROWS__ = rows;
       window.__TEST_DATA__['rpc:busy_search'] = a =>
-        rows.slice(a.p_offset || 0, (a.p_offset || 0) + (a.p_limit || 25));
+        rows.slice(a.p_offset || 0, (a.p_offset || 0) + (a.p_limit || 50));
     }, DB['rpc:busy_search']);
     await page.fill('#q', '');
-    await page.click('#goBtn');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(500);
     const shown = await page.locator('#rows tr').count();
-    record('the list fills the page size asked for (25)', shown === 25, `${shown} rows`);
+    record('the list fills the page size asked for (50)', shown === 50, `${shown} rows`);
 
     const count = await page.locator('#rowCount').textContent();
     record('the row count says there are more than are shown',
-      /showing the first 25/.test(count), count.trim());
+      /the first 50/.test(count), count.trim());
 
     await page.selectOption('#pageSize', '2000');
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(700);
     const all = await page.locator('#rows tr').count();
     record('"All" draws every row without freezing the browser', all === 200, `${all} rows drawn`);
-    await page.selectOption('#pageSize', '25');
-    await page.waitForTimeout(200);
+    await page.selectOption('#pageSize', '50');
+    await page.waitForTimeout(500);
   }
   {
     // Shading only means anything against something typed. With an empty box
     // every row is an equally good answer and none is a "close" match.
     await page.fill('#q', 'pipe');
-    await page.click('#goBtn');
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(500);
     const fuzzyMarked = await page.evaluate(() => {
       const tinted = document.querySelectorAll('#rows tr.fuzzy').length;
       const bold = document.querySelectorAll('#rows mark, #rows b').length;
@@ -227,18 +234,16 @@ async function openBusy(server, browser, user) {
     // An empty result must say something useful.
     await page.evaluate(() => { window.__TEST_DATA__['rpc:busy_search'] = () => []; });
     await page.fill('#q', 'zzzz nothing');
-    await page.click('#goBtn');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(500);
     const text = (await page.locator('#rows').textContent()).trim();
     record('an empty result explains itself instead of showing a blank screen',
       text.length > 30 && /Nothing matches/.test(text), text.slice(0, 90));
     await page.evaluate(rows => {
       window.__TEST_DATA__['rpc:busy_search'] = a =>
-        rows.slice(a.p_offset || 0, (a.p_offset || 0) + (a.p_limit || 25));
+        rows.slice(a.p_offset || 0, (a.p_offset || 0) + (a.p_limit || 50));
     }, DB['rpc:busy_search']);
     await page.fill('#q', '');
-    await page.click('#goBtn');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(500);
   }
   {
     const searchedWholeDb = await page.evaluate(() => {
@@ -250,14 +255,19 @@ async function openBusy(server, browser, user) {
 
   /* ============ 7. NUMBERS AND MONEY ============ */
   {
+    // Columns can be turned on and off now, so a cell is found by its heading.
+    // Counting from the left broke the moment FY was hidden, and read every
+    // row as having no amount at all.
     const cells = await page.evaluate(() => {
-      const out = { money: [], dates: [], zeroRate: 0, lump: 0 };
+      const heads = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const at = name => heads.indexOf(name);
+      const out = { money: [], dates: [], zeroRate: 0, lump: 0, heads };
       document.querySelectorAll('#rows tr').forEach(tr => {
         const td = tr.children;
-        if (td.length < 11) return;
-        out.dates.push(td[1].textContent.trim());
-        out.money.push(td[10].textContent.trim());
-        const rate = td[9].textContent.trim();
+        if (td.length !== heads.length) return;
+        out.dates.push(td[at('Date')].textContent.trim());
+        out.money.push(td[at('Amount')].textContent.trim());
+        const rate = td[at('Rate')].textContent.trim();
         if (rate === '') out.zeroRate++;
         if (/no rate/.test(rate)) out.lump++;
       });
@@ -379,8 +389,12 @@ async function openBusy(server, browser, user) {
     await p.evaluate(() => {
       Object.keys(window.__TEST_DATA__).forEach(k => { window.__TEST_DATA__[k] = () => []; });
     });
-    await p.click('#goBtn');
-    await p.waitForTimeout(300);
+    // No Search button any more: type and clear, which is how a person makes
+    // it look again.
+    await p.locator('#q').type('x');
+    await p.waitForTimeout(500);
+    await p.locator('#q').press('Escape');
+    await p.waitForTimeout(600);
     const t = (await p.locator('#rows').innerText()).replace(/\s+/g, ' ').trim();
     record('an empty history says what to do next, rather than sitting empty',
       /No history loaded yet/.test(t) && /Load history/.test(t), t.slice(0, 90));
@@ -436,12 +450,151 @@ async function openBusy(server, browser, user) {
     await p.evaluate(() => {
       window.__TEST_DATA__['rpc:busy_search'] = () => ({ error: { message: 'connection lost' } });
     });
-    await p.click('#goBtn');
-    await p.waitForTimeout(400);
+    await p.locator('#q').type('x');
+    await p.waitForTimeout(700);
     const t = (await p.locator('#rows').innerText()).replace(/\s+/g, ' ').trim();
     record('a load that fails says what failed, in the table itself',
       /Could not load the history/.test(t) && /connection lost/.test(t), t.slice(0, 90));
     record('it does not leave "Looking…" on the screen', !/Looking/.test(t));
+    await p.close();
+  }
+
+  /* ============ THE TEN CHANGES TO PRICE HISTORY ============ */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.waitForFunction(() => document.querySelectorAll('#rows tr').length > 1);
+
+    // 1 and 2 — the two paragraphs are gone
+    const text = await p.locator('#view-search').innerText();
+    record('the "copy of what Busy holds" paragraph is gone',
+      !/copy of what Busy holds/i.test(text));
+    record('the "type the size exactly" paragraph is gone',
+      !/are different pipes/i.test(text));
+    record('the firm is still said, on the chip',
+      (await p.locator('#firmChip').innerText()).trim() === 'REF');
+
+    // 7 — voucher types are tickboxes, Sales Invoice only to begin with
+    const chips = await p.evaluate(() => Array.from(document.querySelectorAll('.chip')).map(c => ({
+      label: c.innerText.trim(), on: c.querySelector('input').checked })));
+    record(`voucher type is ${chips.length} tickboxes, not a dropdown`,
+      chips.length === 5 && await p.locator('select#docType').count() === 0);
+    record('only Sales Invoice is ticked to begin with',
+      chips.filter(c => c.on).length === 1 && chips.find(c => c.on).label === 'Sales Invoice',
+      chips.filter(c => c.on).map(c => c.label).join(', ') || 'none');
+    record('what is chosen is readable without opening anything',
+      await p.locator('.chip.on').first().isVisible());
+
+    // 3 — results as you type, not on Enter
+    const before = await p.evaluate(() => window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').length);
+    await p.locator('#q').click();
+    await p.locator('#q').type('pipe', { delay: 30 });
+    await p.waitForTimeout(120);
+    const during = await p.evaluate(() => window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').length);
+    await p.waitForTimeout(500);
+    const after = await p.evaluate(() => window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').length);
+    record('typing searches on its own, with no button pressed', after > before,
+      `${after - before} searches`);
+    record('it waits for the typing to stop rather than searching per keystroke',
+      during === before && after === before + 1,
+      `${during - before} during 4 keystrokes, ${after - before} after the pause`);
+
+    // 5 — no button that does nothing
+    record('there is no Search button left doing nothing',
+      await p.locator('#goBtn').count() === 0);
+
+    // 4 — Esc clears
+    await p.locator('#q').press('Escape');
+    await p.waitForTimeout(400);
+    record('Esc clears the search box', await p.locator('#q').inputValue() === '');
+    record('and the cursor stays in the box',
+      await p.evaluate(() => document.activeElement?.id === 'q'));
+
+    // 6 — the highlight
+    await p.evaluate(rows => {
+      window.__TEST_DATA__['rpc:busy_search'] = () => [
+        Object.assign({}, rows[0], { item: 'MS PIPE 80X40X2.5', party: 'AGGARWAL STEELS',
+                                     description: 'LOT 1', match_tier: 1 }),
+        Object.assign({}, rows[1], { item: 'MS PIPE 80X40X3', party: 'BHARAT PIPE CO',
+                                     description: 'LOT 2', match_tier: 3 }),
+      ];
+    }, DB['rpc:busy_search']);
+    await p.locator('#q').type('pipe 80x40', { delay: 10 });
+    await p.waitForTimeout(600);
+    const marks = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('#rows mark.hit')).map(m => m.textContent));
+    record('the typed letters are picked out in the results',
+      marks.length > 0, marks.slice(0, 4).join(' | '));
+    record('a word is found inside a longer one — 80x40 lights up in 80X40X2.5',
+      marks.some(m => /^80X40$/i.test(m)), marks.join(' | '));
+    const shading = await p.evaluate(() => ({
+      exactShaded: !!document.querySelector('#rows tr:nth-child(1)')?.classList.contains('fuzzy'),
+      fuzzyShaded: !!document.querySelector('#rows tr:nth-child(2)')?.classList.contains('fuzzy'),
+    }));
+    record('a close match shades the whole row, an exact one does not',
+      shading.fuzzyShaded && !shading.exactShaded,
+      `exact shaded: ${shading.exactShaded}, close shaded: ${shading.fuzzyShaded}`);
+
+    // 8 — Back to ERP on the left
+    const sides = await p.evaluate(() => {
+      const back = document.querySelector('.topbar a[href="admin.html"]').getBoundingClientRect();
+      const title = document.getElementById('pageTitle').getBoundingClientRect();
+      const chip = document.getElementById('firmChip').getBoundingClientRect();
+      return { back: back.left, title: title.left, chip: chip.left };
+    });
+    record('Back to ERP is on the LEFT of the header, before the page title',
+      sides.back < sides.title && sides.back < sides.chip,
+      `back at ${Math.round(sides.back)}, title at ${Math.round(sides.title)}`);
+
+    // 9 — the nav says REF
+    const heads = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('.nav-section-label')).map(n => n.textContent.trim()));
+    record('the left menu says REF, not the full company name',
+      heads.includes('REF') && !heads.some(h => /Raghbir Erectors/.test(h)), heads.join(' · '));
+
+    await p.close();
+  }
+
+  /* ---- 10. columns on and off, remembered ---- */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.waitForFunction(() => document.querySelectorAll('#rows tr').length > 1);
+
+    const headOf = () => p.evaluate(() =>
+      Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim()));
+
+    record('FY is hidden to begin with', !(await headOf()).includes('FY'),
+      (await headOf()).join(' · '));
+    record('every row has as many cells as there are headings',
+      await p.evaluate(() => {
+        const n = document.querySelectorAll('#headRow th').length;
+        return Array.from(document.querySelectorAll('#rows tr')).every(r => r.children.length === n);
+      }));
+
+    await p.click('#colBtn');
+    record('the columns control opens', await p.locator('#colList').isVisible());
+    const boxes = await p.locator('#colList input').count();
+    record(`every column can be turned on or off (${boxes} of them)`, boxes === 11);
+    record('the Sr. column cannot be turned off',
+      await p.locator('#colList input[data-col="sr"]').isDisabled());
+
+    await p.locator('#colList input[data-col="fy"]').check();
+    await p.waitForTimeout(600);
+    record('ticking FY brings the column back', (await headOf()).includes('FY'),
+      (await headOf()).join(' · '));
+
+    await p.locator('#colList input[data-col="desc"]').uncheck();
+    await p.waitForTimeout(600);
+    record('unticking Description takes it away', !(await headOf()).includes('Description'));
+
+    // Remembered: same browser, fresh page.
+    await p.reload({ waitUntil: 'domcontentloaded' });
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.waitForTimeout(700);
+    const kept = await headOf();
+    record('the choice is remembered on the next visit',
+      kept.includes('FY') && !kept.includes('Description'), kept.join(' · '));
     await p.close();
   }
 
