@@ -622,6 +622,103 @@ async function openBusy(server, browser, user) {
     await p.close();
   }
 
+  /* ============ START AGAIN: THE CLEAR TOOL ============ */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await p.waitForTimeout(400);
+    await p.evaluate(() => {
+      window.__CLEARED__ = [];
+      window.__TEST_DATA__['rpc:busy_clear_preview'] = () => [{
+        history_rows: 40416, ref_rows: 36336, rs_rows: 4080,
+        years: 23, change_records: 12, staged_rows: 0, batches_kept: 24 }];
+      window.__TEST_DATA__['rpc:busy_clear_history'] = a => {
+        window.__CLEARED__.push(a.p_confirm);
+        if (a.p_confirm !== 'CLEAR') return { error: { message: 'the word CLEAR has to be typed in full' } };
+        return [{ history_removed: 40416, years_removed: 23, changes_removed: 12, staged_removed: 0 }];
+      };
+    });
+
+    record('the Clear button is on the Load history screen',
+      await p.locator('#clearBusyBtn').isVisible());
+    record('nothing is asked for until it is pressed',
+      !(await p.locator('#clearConfirm').isVisible()));
+
+    await p.click('#clearBusyBtn');
+    await p.waitForTimeout(400);
+    const what = (await p.locator('#clearWhat').innerText()).replace(/\s+/g, ' ');
+    record('it names the rows it will remove', /40,416 rows/.test(what), what.slice(0, 80));
+    record('it names each firm separately',
+      /36,336 REF/.test(what) && /4,080 RS/.test(what));
+    record('it names the years and the change records',
+      /23 years/.test(what) && /12 edit and deletion records/.test(what));
+    record('it says what is KEPT, not only what goes',
+      /Kept: the record of all 24 loads/.test(what), what.slice(-90));
+
+    record('the Clear button is off until the word is typed',
+      await p.locator('#clearDoBtn').isDisabled());
+    await p.locator('#clearWord').type('clear');
+    await p.waitForTimeout(150);
+    record('the lower-case word does not enable it',
+      await p.locator('#clearDoBtn').isDisabled());
+    await p.locator('#clearWord').fill('CLEAR');
+    await p.waitForTimeout(150);
+    record('CLEAR, typed in full, enables it',
+      !(await p.locator('#clearDoBtn').isDisabled()));
+
+    // Backing out must leave everything alone.
+    await p.click('#clearCancelBtn');
+    await p.waitForTimeout(250);
+    record('Leave it alone closes the panel and clears nothing',
+      !(await p.locator('#clearConfirm').isVisible()) &&
+      (await p.evaluate(() => window.__CLEARED__.length)) === 0,
+      (await p.locator('#clearNote').innerText()).trim());
+
+    await p.click('#clearBusyBtn');
+    await p.waitForTimeout(400);
+    await p.locator('#clearWord').fill('CLEAR');
+    await p.waitForTimeout(150);
+    await p.click('#clearDoBtn');
+    await p.waitForTimeout(600);
+    const said = (await p.locator('#clearNote').innerText()).replace(/\s+/g, ' ');
+    record('it reports what it actually removed', /Cleared 40,416 rows/.test(said), said.slice(0, 90));
+    record('and says to keep the Busy files until the numbers match',
+      /keep the Busy files until the numbers match/.test(said));
+    record('only the word CLEAR was ever sent to the database',
+      (await p.evaluate(() => window.__CLEARED__)).every(c => c === 'CLEAR'));
+    record('the panel closes and the typed word is forgotten',
+      !(await p.locator('#clearConfirm').isVisible()) &&
+      (await p.locator('#clearWord').inputValue()) === '');
+    await p.close();
+  }
+
+  /* ---- an ordinary worker never sees it ---- */
+  {
+    const p2 = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await H.open(server, p2, {
+      file: 'busy.html',
+      user: { id: 'u-clerk', name: 'Amrit Kaur', is_owner: false, roles: ['staff'],
+              permissions: ['busy_data.view'], must_change_password: false },
+      handlers: HANDLERS, data: JSON.stringify(DB),
+    });
+    await p2.waitForSelector('#shell', { state: 'visible' });
+    await p2.waitForTimeout(500);
+    const reachable = await p2.evaluate(() => {
+      const b = document.getElementById('clearBusyBtn');
+      const menu = document.querySelector('#nav .nav-item[data-view="upload"]');
+      return {
+        loadHistoryInMenu: !!menu && menu.style.display !== 'none',
+        clearOnScreen: !!b && b.offsetParent !== null,
+      };
+    });
+    record('someone who is not the owner has no Load history menu item',
+      !reachable.loadHistoryInMenu);
+    record('and the Clear button is not on screen for them',
+      !reachable.clearOnScreen);
+    await p2.close();
+  }
+
   /* ============ SPLITTING: BY FIRM *AND* YEAR ============
      A rows file holding twelve years of two firms must become twenty-four
      batches, not two. If it were split by firm alone, every year's vch_code

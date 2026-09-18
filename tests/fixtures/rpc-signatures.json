@@ -2,6 +2,18 @@
  "_refresh": "see tests/check-rpc-calls.js",
  "_taken_from": "public schema of refcon-erp, 18 Sep 2026",
  "functions": {
+  "busy_clear_history": {
+   "args": [
+    "p_confirm"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_clear_preview": {
+   "args": [],
+   "total": 0,
+   "with_defaults": 0
+  },
   "busy_compact": {
    "args": [
     "p_text"
