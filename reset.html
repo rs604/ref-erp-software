@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>Refcon ERP — Set Your Password</title>
-<script>window.__BUILD_VERSION__ = '1789733473';</script>
+<script>window.__BUILD_VERSION__ = '1789740928';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -67,6 +67,16 @@
   .msg.success { display:block; background:var(--success-bg); border:1px solid #cfe6da; color:var(--success); }
   .rules { font-size:12px; color:var(--muted); line-height:1.7; margin:0 0 18px; padding-left:18px; }
   .rules li.ok { color:var(--success); }
+
+  /* ---- ON A PHONE ----
+     A password is set from wherever the person happens to be, so this screen
+     has to work on a phone. "Back to sign in" was a 14px-tall line of text:
+     a link that is only as tall as its letters is not a tap target. */
+  @media (max-width: 880px) {
+    button, .linkbtn { min-height: 44px; }
+    input { font-size: 16px; min-height: 44px; }
+    input { scroll-margin-top: 80px; scroll-margin-bottom: 120px; }
+  }
 </style>
 </head>
 <body>

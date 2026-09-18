@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Submit Reading — Vehicle KM Tracker</title>
-<script>window.__BUILD_VERSION__ = '1789733473';</script>
+<script>window.__BUILD_VERSION__ = '1789740928';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -195,6 +195,26 @@
     color: var(--primary);
     margin-bottom: 4px;
   }
+  .signout-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.4); color: #fff;
+    padding: 7px 12px; border-radius: 5px; font-size: 12.5px; cursor: pointer;
+  }
+
+  /* ---- ON A PHONE ----
+     This is one of the screens that is genuinely USED on a phone — a fitter
+     raising a request from the yard, not someone at a desk. So the rules are
+     the same ones the rest of the ERP follows: 44px to tap, nothing under
+     12px to read, 16px in a field so iOS does not zoom the page, and room
+     under a field so the keyboard does not sit on top of it. */
+  @media (max-width: 880px) {
+    button, .signout-btn, input[type="submit"] { min-height: 44px; }
+    .signout-btn { padding: 10px 14px; }
+    .topbar-sub { font-size: 12px; }
+    input, select, textarea { font-size: 16px; min-height: 44px; }
+    textarea { min-height: 88px; }
+    input, select, textarea { scroll-margin-top: 80px; scroll-margin-bottom: 120px; }
+    label { font-size: 13px; }
+  }
 </style>
 </head>
 <body>
@@ -205,7 +225,7 @@
   </div>
   <div style="display:flex; align-items:center; gap:10px;">
     <span class="topbar-sub" id="empNameDisplay"></span>
-    <button onclick="REF.signOut().then(function(){ window.location.href='index.html'; });" style="background:none; border:1px solid rgba(255,255,255,0.4); color:#fff; padding:4px 10px; border-radius:5px; font-size:11px; cursor:pointer;">Log out</button>
+    <button class="signout-btn" onclick="REF.signOut().then(function(){ window.location.href='index.html'; });">Log out</button>
   </div>
 </div>
 <div class="wrap">

@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1789733473';</script>
+<script>window.__BUILD_VERSION__ = '1789740928';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -259,6 +259,21 @@
     opacity: 0; pointer-events: none; transition: opacity 0.12s; z-index: 300;
   }
   .app-shell.nav-collapsed .sidebar .nav-item:hover::after { opacity: 1; }
+
+  /* ---- THE MENU ON A PHONE ----
+     The left nav is hidden under 880px, which is right — there is no room for
+     it. But for months there was NOTHING to bring it back, so on a phone the
+     ERP was one screen and a Log out button. This is the way back: a hamburger
+     in the top bar that slides the same menu in over the page, and a backdrop
+     that closes it. Same menu, same items, same order — not a second menu that
+     can drift away from the first. */
+  .nav-open-btn {
+    display: none;                       /* desktop has the menu already */
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--ink); cursor: pointer; flex-shrink: 0;
+    width: 44px; height: 44px; align-items: center; justify-content: center;
+  }
+  .nav-backdrop { display: none; }
 
   .nav-toggle-btn {
     background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.75);
@@ -636,7 +651,41 @@
   }
 
   @media (max-width: 880px) {
-    .sidebar { display: none; }
+    /* The menu is a drawer, not a column. It is off to the left until the
+       hamburger is pressed, and it lies OVER the page rather than squeezing
+       it, so nothing reflows when it opens. */
+    .nav-open-btn { display: inline-flex; }
+    .app-shell { position: relative; }
+    .sidebar {
+      display: flex;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 272px; max-width: 84vw; height: 100vh;
+      transform: translateX(-100%);
+      transition: transform 0.18s ease;
+      z-index: 70;
+      box-shadow: 2px 0 18px rgba(15,23,32,0.28);
+    }
+    .app-shell.nav-open .sidebar { transform: none; }
+    /* A phone never collapses the menu to icons — it is open or it is away. */
+    .app-shell.nav-collapsed .sidebar { width: 272px; max-width: 84vw; }
+    .app-shell.nav-collapsed .sidebar .nav-label,
+    .app-shell.nav-collapsed .sidebar .nav-arrow,
+    .app-shell.nav-collapsed .sidebar .nav-section-label,
+    .app-shell.nav-collapsed .sidebar .sidebar-brand .name,
+    .app-shell.nav-collapsed .sidebar .sidebar-brand .tag { display: block; }
+    .app-shell.nav-collapsed .sidebar .nav-children { display: block !important; }
+    .app-shell.nav-collapsed .sidebar .nav-item { justify-content: flex-start; }
+    .nav-toggle-btn { display: none; }     /* collapsing is a desk idea */
+
+    .nav-backdrop {
+      display: block; position: fixed; inset: 0;
+      background: rgba(15,23,32,0.45); z-index: 65;
+      opacity: 0; pointer-events: none; transition: opacity 0.18s ease;
+    }
+    .app-shell.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
+    /* Tapping a menu item on a phone is a tap, not a hover-and-click. */
+    .sidebar .nav-item { min-height: 44px; }
+
     .content { padding: 14px; }
     .topbar { padding: 12px 14px; }
     .subtabs { padding: 0 14px 0; -webkit-overflow-scrolling: touch; }
@@ -646,6 +695,41 @@
 
     /* Prevent iOS Safari from auto-zooming when tapping inputs */
     input, select, textarea { font-size: 16px !important; }
+
+    /* ---- TAP TARGETS ----
+       Measured at 380px: Log out was 68x28, Add loan 91x28, the km-tracker
+       sub-tabs 19px wide. A thumb is about 9mm across; 44px is the smallest
+       square it hits reliably. Height comes from padding so nothing is
+       stretched out of shape. */
+    .btn, .btn-sm, a.btn { min-height: 44px; }
+    .btn-sm { padding: 10px 12px; font-size: 13px; }
+    .subtab-item { min-width: 56px; min-height: 44px; padding: 13px 10px; }
+    .sidebar .nav-item { min-height: 44px; }
+    /* The documentation screen has a menu of its own, inside the page. */
+    .doc-tree-toggle, .doc-tree-leaf { min-height: 44px; }
+    select { min-height: 44px; }
+
+    /* ---- TEXT ----
+       Made bigger, never smaller. Shrinking text to fit is how a screen
+       "works" on a phone and still cannot be read. Nothing under 12px, and
+       the things a person actually reads at 13px or more. */
+    .topbar-sub, #pageSub { font-size: 12.5px; }
+    .pill-section-label, .nav-section-label, .nav-future-note,
+    .sidebar-footer, .empty-state { font-size: 12px; }
+    .msg { font-size: 13px; }
+
+    /* ---- NOTHING GOES SIDEWAYS ----
+       The documentation screen pushed the page 7px wider than the phone
+       because one long unbroken word would not wrap. A word breaks before a
+       page does. */
+    .panel-body, .content { overflow-wrap: anywhere; }
+    /* A wide table scrolls inside its own box. The page never does. */
+    .table-scroll, .pg-wrap, .grid-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ---- THE KEYBOARD MUST NOT SIT ON THE FIELD ----
+       A field near the bottom of a form disappears behind the keyboard when
+       it is tapped. scroll-margin gives the browser room to put it above. */
+    input, select, textarea { scroll-margin-top: 90px; scroll-margin-bottom: 120px; }
 
     /* Compact topbar on small screens: role text hides, name stays */
     .topbar-title { font-size: 15.5px; }
@@ -724,6 +808,7 @@
 <body>
 
 <div class="app-shell" id="appShell" style="display:none">
+  <div class="nav-backdrop" id="navBackdrop"></div>
   <div class="sidebar">
     <div class="sidebar-brand" style="display:flex; align-items:center; justify-content:space-between;">
       <div style="display:flex; align-items:baseline; gap:6px;">
@@ -811,6 +896,10 @@
   <div class="main">
     <div class="topbar">
       <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+        <button class="nav-open-btn" id="navOpenBtn" type="button"
+                aria-label="Open the menu" aria-controls="sidebarNav" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
         <div id="topbarLead" style="display:flex; align-items:center;"></div>
         <div style="min-width:0;">
           <div class="topbar-title" id="pageTitle">Km Tracker</div>
@@ -1223,6 +1312,24 @@
   document.getElementById('lightboxClose').addEventListener('click', () => document.getElementById('lightbox').classList.remove('open'));
   document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target.id === 'lightbox') e.currentTarget.classList.remove('open'); });
 
+  /* A reply that says "success" must still carry what it promised. An ABSENT
+     list is a broken reply, not an empty one, and rendering it as "nothing
+     here" is how a screen lies quietly — the same fault as a counter reading
+     zero on a full table. Three screens crashed on it instead: km-tracker,
+     vendor-master and the admin panel all did `res.<list>.filter(...)` and
+     threw, leaving a blank page with no explanation. */
+  function requireLists(res, keys, containerId) {
+    const missing = keys.filter(k => !Array.isArray(res[k]));
+    if (!missing.length) return true;
+    const el = document.getElementById(containerId);
+    if (el) el.innerHTML =
+      '<div class="panel"><div class="panel-body msg error" style="display:block;">' +
+      'The server answered but left out: ' + missing.map(escapeHtml).join(', ') +
+      '. This is not an empty screen — something is wrong. Reload the page, and ' +
+      'tell Raghbir if it keeps happening.</div></div>';
+    return false;
+  }
+
   /* A message from the server goes on screen as TEXT, never as markup. */
   function escapeHtml(v) {
     return String(v === null || v === undefined ? '' : v)
@@ -1326,6 +1433,7 @@
       document.getElementById('tab-approvals').innerHTML = `<div class="msg error" style="display:block">${data.error}</div>`;
       return;
     }
+    if (!requireLists(data, ['entries', 'vehicles', 'employees'], 'tab-approvals')) return;
     dashboardData = data;
     renderApprovals();
     renderReports();
@@ -4976,6 +5084,42 @@
   document.getElementById('navToggleBtn').addEventListener('click', () => {
     setNavCollapsed(!document.getElementById('appShell').classList.contains('nav-collapsed'));
   });
+
+  /* ---- THE MENU DRAWER ON A PHONE ----
+     Opens on the hamburger, closes on the backdrop, on Escape, and on picking
+     anything — because a menu you have to close by hand after choosing is a
+     menu that covers the thing you just chose. */
+  function setNavOpen(open) {
+    const shell = document.getElementById('appShell');
+    const btn = document.getElementById('navOpenBtn');
+    shell.classList.toggle('nav-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.setAttribute('aria-label', open ? 'Close the menu' : 'Open the menu');
+    // The page behind must not scroll under the drawer.
+    document.body.style.overflow = open ? 'hidden' : '';
+    if (open) {
+      const first = document.querySelector('#sidebarNav .nav-item');
+      if (first) first.focus();
+    }
+  }
+  function navIsOpen() {
+    return document.getElementById('appShell').classList.contains('nav-open');
+  }
+  document.getElementById('navOpenBtn').addEventListener('click', () => setNavOpen(!navIsOpen()));
+  document.getElementById('navBackdrop').addEventListener('click', () => setNavOpen(false));
+  // Picking anything closes it. Bound to the container once, so a menu item
+  // added later is covered without anyone remembering to bind it.
+  document.getElementById('sidebarNav').addEventListener('click', (e) => {
+    if (e.target.closest('.nav-item')) setNavOpen(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && navIsOpen()) { setNavOpen(false); document.getElementById('navOpenBtn').focus(); }
+  });
+  // Turning the phone sideways into a desk width must not leave the page
+  // frozen with body overflow hidden and a drawer nobody can see.
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 880 && navIsOpen()) setNavOpen(false);
+  });
   if (sessionStorage.getItem('nav_collapsed') === '1') {
     document.getElementById('appShell').classList.add('nav-collapsed');
   }
@@ -5026,6 +5170,7 @@
     showSpinner('adminPanelContent');
     const res = await apiPermissions({ action: 'get_permissions_data' });
     if (res.success) {
+      if (!requireLists(res, ['employees', 'permissions', 'grants'], 'adminPanelContent')) return;
       permissionsData = res;
     } else {
       document.getElementById('adminPanelContent').innerHTML = `<div class="panel"><div class="panel-body msg error" style="display:block;">${res.error || 'Failed to load.'}</div></div>`;
@@ -5457,7 +5602,12 @@
       return;
     }
     vendorDropdowns = ddRes;
-    vendorListData = listRes.success ? listRes.vendors : [];
+    if (!listRes.success) {
+      document.getElementById('vendorMasterContent').innerHTML = `<div class="panel"><div class="panel-body msg error" style="display:block;">${escapeHtml(listRes.error || 'The vendor list could not be read.')}</div></div>`;
+      return;
+    }
+    if (!requireLists(listRes, ['vendors'], 'vendorMasterContent')) return;
+    vendorListData = listRes.vendors;
     switchVendorView('list');
   }
 

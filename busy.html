@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789733473';</script>
+<script>window.__BUILD_VERSION__ = '1789740928';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -95,6 +95,9 @@
   .firm-REF { background:var(--steel-tint); color:var(--steel-dark); }
   .firm-RS  { background:var(--amber-bg);  color:var(--amber); }
   .sync-stamp { font-size:11.5px; color:var(--muted); }
+  /* The small caption under a number. A class, not an inline size, so a phone
+     can make every one of them bigger in one rule. */
+  .sub { font-size:11.5px; color:var(--muted); }
   .content { padding:12px 16px 16px; flex:1; overflow-y:auto; min-height:0; }
 
   .card { background:var(--surface); border:1px solid var(--border); border-radius:4px;
@@ -254,19 +257,82 @@
   .boot-sub { font-size:13px; color:var(--muted); margin-top:6px; line-height:1.5; }
   .loading { padding:20px; text-align:center; color:var(--muted); }
 
-  @media (max-width:860px) {
+  /* ---- THE MENU ON A PHONE ----
+     Same drawer as admin.html, on purpose: one way to reach the menu across
+     the whole ERP. A strip of menu items scrolling sideways above the screen
+     was what this had before, and it made the nav a different thing here from
+     everywhere else. The breakpoint is 880px in both pages for the same
+     reason. */
+  .nav-open-btn {
+    display:none; background:none; border:1px solid var(--line); border-radius:8px;
+    color:var(--ink); cursor:pointer; flex-shrink:0;
+    width:44px; height:44px; align-items:center; justify-content:center;
+  }
+  .nav-backdrop { display:none; }
+
+  @media (max-width:880px) {
     /* A phone has no room for a fixed frame; the page scrolls as one again. */
-    .app-shell { flex-direction:column; height:auto; overflow:visible; }
+    .app-shell { flex-direction:column; height:auto; overflow:visible; position:relative; }
     .main { height:auto; overflow:visible; }
     .content { overflow:visible; }
-    .sidebar { width:100%; flex:none; }
-    .sidebar-nav { display:flex; overflow-x:auto; padding:4px; }
-    .nav-item { white-space:nowrap; width:auto; }
-    .nav-section-label, .sidebar-footer { display:none; }
+
+    .nav-open-btn { display:inline-flex; }
+    .sidebar {
+      display:flex; flex-direction:column;
+      position:fixed; top:0; left:0; bottom:0;
+      width:272px; max-width:84vw; height:100vh; flex:none;
+      transform:translateX(-100%);
+      transition:transform 0.18s ease;
+      z-index:70;
+      box-shadow:2px 0 18px rgba(15,23,32,0.28);
+      overflow-y:auto;
+    }
+    .app-shell.nav-open .sidebar { transform:none; }
+    .sidebar-nav { display:block; overflow:visible; padding:10px 8px; }
+    .nav-item { width:100%; min-height:44px; white-space:normal; }
+    .sidebar-footer { display:none; }
+
+    .nav-backdrop {
+      display:block; position:fixed; inset:0;
+      background:rgba(15,23,32,0.45); z-index:65;
+      opacity:0; pointer-events:none; transition:opacity 0.18s ease;
+    }
+    .app-shell.nav-open .nav-backdrop { opacity:1; pointer-events:auto; }
+
     .filters { grid-template-columns:1fr 1fr; }
-    .searchbar-end { margin-left:0; }
-    .tbl-wrap { max-height:none; }
+    .searchbar-end { margin-left:0; width:100%; }
     .shortcut-hint { display:none; }
+
+    /* ---- TAP TARGETS ----
+       Measured at 380px: every button here was 30px tall and the little x
+       that clears the search box was 20x21. 44px is the smallest square a
+       thumb hits reliably. */
+    .btn, .btn-back, .btn-sm { height:auto; min-height:44px; padding-top:0; padding-bottom:0; }
+    .chip { min-height:44px; padding:8px 12px; }
+    .searchbox button { min-width:44px; min-height:44px; right:0; }
+    .f, .f.dt, .f.sm, select, input { min-height:44px; }
+    .nav-item { min-height:44px; }
+
+    /* ---- TEXT ----
+       Bigger, never smaller. Nothing under 12px, and the table itself at 13px
+       so a rate can be read without pinching. */
+    input, select, textarea, .f { font-size:16px; }   /* 16px: iOS will not zoom */
+    .f.dt, .f.sm { width:auto; flex:1 1 140px; }
+    table.tbl { font-size:13px; }
+    .desc { font-size:12.5px; }
+    .pill, .kpi .k, .colmenu-note, .nav-section-label,
+    .sidebar-brand .tag, .rowcount { font-size:12px; }
+    .topbar-sub, #syncStamp, .sub, .sync-stamp { font-size:12.5px; }
+
+    /* ---- THE TABLE SCROLLS IN ITS OWN BOX, NOT THE PAGE ----
+       It used to be max-height:none here, which made the whole page scroll
+       for a 200-row table and took the column headings away with it. */
+    .tbl-wrap { max-height:68vh; min-height:220px; overflow:auto; -webkit-overflow-scrolling:touch; }
+    .kpis { grid-template-columns:1fr; }
+    .pager { flex-wrap:wrap; }
+
+    /* A field tapped near the bottom must not end up under the keyboard. */
+    input, select, textarea { scroll-margin-top:80px; scroll-margin-bottom:120px; }
   }
 </style>
 </head>
@@ -287,6 +353,7 @@
 </div>
 
 <div class="app-shell" id="shell" style="display:none">
+  <div class="nav-backdrop" id="navBackdrop"></div>
   <div class="sidebar">
     <div class="sidebar-brand"><div class="name">REF</div><div class="tag">ERP · Busy Data</div></div>
     <nav class="sidebar-nav" id="nav">
@@ -311,6 +378,10 @@
   <div class="main">
     <div class="topbar">
       <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+        <button class="nav-open-btn" id="navOpenBtn" type="button"
+                aria-label="Open the menu" aria-controls="nav" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
         <a class="btn btn-outline btn-back" href="admin.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Back to ERP
@@ -493,7 +564,7 @@
             </div>
             <input type="file" id="fileInput" multiple accept=".bds,.csv,.json,.jsonl,.ndjson" style="display:none" />
           </div>
-          <div style="font-size:11.5px; color:var(--muted); margin-top:9px;">
+          <div class="sub" style="margin-top:9px;">
             The firm and the financial year are worked out for you — you never type them.
             <strong>A rows file</strong> is read here in the browser and split into one batch per
             firm and year. <strong>A <code>.bds</code> file</strong> goes to the parse service,
@@ -1234,7 +1305,7 @@ upload_token = (shown on the download screen)</pre>
     function delta(now, prev) {
       if (!prev) return '';
       var pc = Math.round(((now - prev) / prev) * 100);
-      return '<div style="font-size:11.5px" class="' + (pc >= 0 ? 'up' : 'down') + '">' +
+      return '<div class="sub ' + (pc >= 0 ? 'up' : 'down') + '">' +
              (pc >= 0 ? '+' : '') + pc + '% against last year</div>';
     }
     $('kpis').innerHTML =
@@ -1279,7 +1350,7 @@ upload_token = (shown on the download screen)</pre>
       '<div class="kpi"><div class="k">Output tax on sales, this FY</div><div class="v">' + moneyShort(out) + '</div></div>' +
       '<div class="kpi"><div class="k">Input tax on purchases, this FY</div><div class="v">' + moneyShort(inp) + '</div></div>' +
       '<div class="kpi"><div class="k">Difference — indicative only</div><div class="v">' + moneyShort(out - inp) + '</div>' +
-      '<div style="font-size:11.5px; color:var(--muted)">not a payable figure</div></div>';
+      '<div class="sub">not a payable figure</div></div>';
   }
 
   /* ------- GST from the ledger: computed against actually paid ------- */
@@ -1310,14 +1381,14 @@ upload_token = (shown on the download screen)</pre>
 
       $('gstPaidKpis').innerHTML =
         '<div class="kpi"><div class="k">Actually paid</div><div class="v">' + moneyShort(paid) +
-        '</div><div style="font-size:11.5px; color:var(--muted)">' +
+        '</div><div class="sub">' +
         rows.filter(function (r) { return r.vch_type === '19'; }).length + ' payments</div></div>' +
         '<div class="kpi"><div class="k">Computed in the journals</div><div class="v">' +
-        moneyShort(computed) + '</div><div style="font-size:11.5px; color:var(--muted)">' +
+        moneyShort(computed) + '</div><div class="sub">' +
         rows.filter(function (r) { return r.vch_type === '16'; }).length + ' monthly workings</div></div>' +
         '<div class="kpi"><div class="k">Difference</div><div class="v ' +
         (Math.abs(gap) > 1 ? 'down' : '') + '">' + moneyShort(gap) + '</div>' +
-        '<div style="font-size:11.5px; color:var(--muted)">computed less paid</div></div>';
+        '<div class="sub">computed less paid</div></div>';
 
       $('gstRows').innerHTML = rows.slice().reverse().map(function (r, i) {
         var isPay = r.vch_type === '19';
@@ -1407,7 +1478,7 @@ upload_token = (shown on the download screen)</pre>
       if (want === null || want === undefined) {
         return '<div class="kpi"><div class="k">' + esc(label) + '</div>' +
                '<div class="v">' + inr.format(got) + '</div>' +
-               '<div style="font-size:11.5px; color:var(--muted)">counted · nothing expected was set</div></div>';
+               '<div class="sub">counted · nothing expected was set</div></div>';
       }
       var done = (got === want);
       var short = want - got;
@@ -1415,7 +1486,7 @@ upload_token = (shown on the download screen)</pre>
       // missing. Say the shortfall as a number, in red.
       return '<div class="kpi"><div class="k">' + esc(label) + '</div>' +
              '<div class="v ' + (done ? 'up' : 'down') + '">' + inr.format(got) + '</div>' +
-             '<div style="font-size:11.5px; color:' + (done ? 'var(--muted)' : 'var(--danger)') + '">' +
+             '<div class="sub" style="color:' + (done ? 'var(--muted)' : 'var(--danger)') + '">' +
              (done ? 'of ' + inr.format(want) + ' · matches'
                    : (short > 0 ? inr.format(short) + ' SHORT of ' + inr.format(want)
                                 : inr.format(-short) + ' MORE than the ' + inr.format(want) + ' expected')) +
@@ -1890,7 +1961,7 @@ upload_token = (shown on the download screen)</pre>
           esc(when) + '</div></div>' +
         '<div class="kpi"><div class="k">Runs at</div><div class="v" style="font-size:15px">' +
           esc((cfg.run_at_times || []).join('  ·  ') || 'not set') + '</div>' +
-          '<div style="font-size:11.5px; color:var(--muted)">changed here, never on that PC</div></div>';
+          '<div class="sub">changed here, never on that PC</div></div>';
 
       if (cfg.uploader_storage_path) {
         REF.supabase().storage.from(cfg.uploader_bucket || 'app-downloads')
@@ -1924,6 +1995,30 @@ upload_token = (shown on the download screen)</pre>
     b.classList.add('active');
     if (b.dataset.firm) setFirm(b.dataset.firm);
     setView(b.dataset.view);
+    setNavOpen(false);      // on a phone the drawer covers what was just chosen
+  });
+
+  /* ---- THE MENU DRAWER ON A PHONE ----
+     The same behaviour as admin.html, deliberately: one way to reach the menu
+     anywhere in the ERP. Opens on the hamburger, closes on the backdrop, on
+     Escape, and on picking anything. */
+  function setNavOpen(open) {
+    var shell = $('shell'), btn = $('navOpenBtn');
+    if (!shell || !btn) return;
+    shell.classList.toggle('nav-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.setAttribute('aria-label', open ? 'Close the menu' : 'Open the menu');
+    document.body.style.overflow = open ? 'hidden' : '';
+    if (open) {
+      var first = document.querySelector('#nav .nav-item');
+      if (first) first.focus();
+    }
+  }
+  function navIsOpen() { return $('shell').classList.contains('nav-open'); }
+  $('navOpenBtn').addEventListener('click', function () { setNavOpen(!navIsOpen()); });
+  $('navBackdrop').addEventListener('click', function () { setNavOpen(false); });
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 880 && navIsOpen()) setNavOpen(false);
   });
 
   (function wireUpload() {
@@ -2215,8 +2310,9 @@ upload_token = (shown on the download screen)</pre>
   var SHORTCUTS = [
     { keys: ['Ctrl+/'],  label: 'Ctrl + /',  does: 'This list',
       run: function () { toggleShortcutPanel(); } },
-    { keys: ['Escape'],  label: 'Esc',       does: 'Close this list, or clear the search box',
+    { keys: ['Escape'],  label: 'Esc',       does: 'Close the menu or this list, or clear the search box',
       run: function () {
+        if (navIsOpen()) { setNavOpen(false); $('navOpenBtn').focus(); return; }
         if (shortcutPanelOpen()) { closeShortcutPanel(); return; }
         if (document.activeElement === $('q')) clearSearch();
       } },

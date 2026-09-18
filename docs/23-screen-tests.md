@@ -466,13 +466,76 @@ all. Run it after any migration that adds a table, a policy or a view.
 
 ## 9. THE PHONE
 
-Only for the screens genuinely used on one — raising a request, approving.
+This section was three lines for months, and in that time the ERP shipped
+with **no menu at all on a phone**. The left nav collapsed under 880px, which
+was right, and nothing was ever built to bring it back. On a phone the ERP was
+one screen and a Log out button, and no test said so.
 
-- Nothing needs a sideways scroll
-- Tapping a field does not hide it behind the keyboard
-- Buttons are big enough to hit
-- **Approvals that need care stay desk-only.** A phone screen works against
-  careful checking
+### TEST IT AT A REAL PHONE WIDTH
+
+**380 x 740, `isMobile`, `hasTouch`. Not a shrunk desktop window.** The faults
+are different, and a narrow window will pass a page a phone cannot use:
+
+| A shrunk window | A real phone |
+|---|---|
+| keeps the mouse, so hover still reveals things | there is no hover |
+| keeps `click`, so a broken tap target still works | `tap` is what fires |
+| does not match `isMobile` media features | it does |
+| lets you see 30px buttons and think them fine | a thumb is 9mm across |
+
+`tests/phone.test.js` runs the checklist below on every screen at that size.
+
+### THE CHECKLIST — run it on every screen
+
+1. **The menu opens and closes.** There is a hamburger, it is at least 44px,
+   it slides the menu in **over** the page rather than pushing it sideways,
+   and it closes on the backdrop, on Escape, **and on picking something** — a
+   menu you have to close by hand is a menu covering the answer you just asked
+   for.
+2. **Every control is reachable and big enough to tap.** 44px minimum, both
+   ways. Measured, not judged by eye: `Log out` was 68x28, `Add loan` 91x28,
+   the clear-search x 20x21, the km-tracker sub-tabs 19px wide.
+3. **Nothing overflows sideways.** The *page* never scrolls sideways. A wide
+   table scrolling inside its own box does, and that is correct — so the check
+   ignores anything inside an element that scrolls on purpose, and flags
+   everything else.
+4. **A form can be filled start to finish without the keyboard hiding a
+   field.** Every field gets `scroll-margin-bottom` so the browser keeps room
+   under it, and **16px text** so iOS does not zoom the page the moment it is
+   tapped. 15.5px zooms; 16px does not.
+5. **A table can be read.** It scrolls inside its own box, the page stays
+   still, and the column headings stay put while the rows move under them.
+   Prove the table is actually wider than the phone first, or the test passes
+   on a table that never needed to scroll.
+
+### TEXT IS MADE BIGGER, NEVER SMALLER
+
+**Do not shrink text to fit.** A screen that "works" at 10px is a screen that
+cannot be read. Nothing under 12px, and anything a person actually reads —
+table rows, field labels, messages — at 13px or more. If something does not
+fit, it is the layout that gives way, not the reading.
+
+### BE HONEST ABOUT WHICH SCREENS THESE ARE
+
+| | What it has to be |
+|---|---|
+| **Used on a phone** — raising a material request, approving, looking up a past price, checking a ledger balance before a call | good, not merely functional |
+| **Desk screens** — building a purchase order, the salary sheet, the permission grid | **reflow without breaking.** Nobody builds a PO on a phone, and pretending otherwise would ruin the desktop screen |
+
+Both must pass the checklist. Only the first has to be pleasant.
+
+**Approvals that need care stay desk-only.** A phone screen works against
+careful checking, and that is a decision, not an oversight.
+
+### ONE MENU, NOT TWO
+
+Every page in the ERP opens its menu the same way, at the same width, with the
+same markup. Busy Data used to turn its nav into a strip of items scrolling
+sideways above the screen — workable, and a different thing from everywhere
+else. A second way to reach the menu is a second thing to drift.
+
+**Report as:** `86 of 86 at 380x740 · menu opens and closes on every page ·
+nothing sideways · 44px everywhere · nothing under 12px`
 
 ---
 
