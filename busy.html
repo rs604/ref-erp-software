@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789721781';</script>
+<script>window.__BUILD_VERSION__ = '1789722583';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -30,11 +30,20 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   :root {
-    --ink:#1a2229; --paper:#f4f6f8; --surface:#ffffff; --surface-sunken:#eef1f4;
-    --border:#d8dee5; --steel:#2d4a5e; --steel-dark:#1f3547; --steel-tint:#e7edf1;
+    /* Plain enough to sit in front of for an hour. The page is white; the
+       only colour is what carries meaning. Rows alternate white and a very
+       light blue, the heading is a darker version of the same blue, and
+       nothing on the table is stronger than that. The one loud colour on the
+       screen is the search highlight, because it has to be read at a glance. */
+    --ink:#1a2229; --paper:#ffffff; --surface:#ffffff; --surface-sunken:#f6f8fa;
+    --border:#dfe4ea; --steel:#2d4a5e; --steel-dark:#1f3547; --steel-tint:#e7edf1;
+    --row-alt:#f4f8fb;            /* the light blue every other row */
+    --row-head:#dbe6ef;           /* the heading: darker than the rows, still sober */
+    --hit:#ffd21f;                /* the typed letters. Dark enough to read */
+    --hit-row:#fffbe6;            /* a close match: the faintest tint */
     --amber:#b7791f; --amber-bg:#fbf1de; --green:#2f7a52; --green-bg:#e7f3ec;
-    --slate:#5b6b7a; --slate-bg:#eaedf0; --danger:#a13d33; --danger-bg:#fbeceb;
-    --muted:#6b7684; --match:#fdf3c7; --sidebar-w:232px;
+    --slate:#5b6b7a; --slate-bg:#f0f3f6; --danger:#a13d33; --danger-bg:#fbeceb;
+    --muted:#6b7684; --sidebar-w:232px;
   }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--paper); color:var(--ink);
@@ -109,16 +118,17 @@
   .btn:disabled { opacity:.5; cursor:default; }
 
   table.tbl { width:100%; border-collapse:collapse; font-size:12.5px; }
-  table.tbl th { background:var(--steel-tint); color:#000; font-weight:700;
+  table.tbl th { background:var(--row-head); color:#16222c; font-weight:600;
                  text-align:center; padding:7px 8px; border:1px solid var(--border);
                  white-space:nowrap; position:sticky; top:0; z-index:1; }
   table.tbl td { padding:6px 8px; border:1px solid var(--border); text-align:center;
                  vertical-align:top; }
   table.tbl td.l { text-align:left; }
   table.tbl td.r { text-align:right; font-variant-numeric:tabular-nums; }
-  table.tbl tbody tr:nth-child(even) { background:#fafbfc; }
-  table.tbl tbody tr.fuzzy { background:var(--match); }
-  mark { background:var(--match); padding:0 1px; }
+  table.tbl tbody tr { background:#fff; }
+  table.tbl tbody tr:nth-child(even) { background:var(--row-alt); }
+  table.tbl tbody tr:hover td { background:#eef4f9; }
+  mark { background:var(--hit); padding:0 1px; }
   .desc { color:#3c4a57; font-size:12px; }
   .pill { display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:10px;
           border:1px solid transparent; white-space:nowrap; }
@@ -187,10 +197,15 @@
 
   /* ---- what a match looks like ---- */
   /* The letters actually typed, picked out. Not the whole cell. */
-  mark.hit { background:#f3c623; color:#000; padding:0 1px; border-radius:2px; font-weight:600; }
-  /* A close match, not an exact one. The whole row is tinted so it cannot be
-     mistaken for one, and the count says how many there are. */
-  tr.fuzzy td { background:#fdf8e3; }
+  /* The letters actually typed. Strong enough to find on a white row and on a
+     light blue one, and still black text on yellow, which is the most legible
+     pairing there is. */
+  mark.hit { background:var(--hit); color:#000; padding:0 2px; border-radius:2px;
+             font-weight:700; box-shadow:0 0 0 1px rgba(0,0,0,.08); }
+  /* A close match, not an exact one. The faintest tint, so it reads as a note
+     about the row rather than as another colour competing with the data. */
+  table.tbl tbody tr.fuzzy, table.tbl tbody tr.fuzzy:nth-child(even) { background:var(--hit-row); }
+  table.tbl tbody tr.fuzzy td { border-color:#efe4b8; }
 
   .boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
           background:var(--bg); z-index:60; padding:20px; }
@@ -292,8 +307,8 @@
           </div>
           <div class="chips" id="docChips"></div>
           <div class="searchbar-end">
-            <label class="fl" for="from">From</label><input class="f dt" type="date" id="from" />
-            <label class="fl" for="to">To</label><input class="f dt" type="date" id="to" />
+            <label class="fl" for="from">From</label><input class="f dt" type="date" id="from" data-datekeys />
+            <label class="fl" for="to">To</label><input class="f dt" type="date" id="to" data-datekeys />
             <label class="fl" for="pageSize">Show</label>
             <select class="f sm" id="pageSize">
               <option>25</option><option selected>50</option><option>100</option>
@@ -1604,6 +1619,50 @@ upload_token = (shown on the download screen)</pre>
     });
   })();
 
+  /* ---- DATE FIELDS: the same two keys everywhere ----------------------
+     T for today, Delete to clear. Dates get typed dozens of times a day and
+     reaching for the mouse to empty one is the friction that makes people
+     stop using a system.
+
+     Why these two: T is the first letter of the word, and Delete is what
+     Delete means. Neither is taken by the browser's own date control -- it
+     uses the arrows and the digits -- so nothing is being stolen. Esc is
+     deliberately NOT used: on this screen Esc already clears the search box,
+     and one key doing two jobs depending on where the cursor is, is how
+     people learn not to trust a key.
+
+     Written once and attached to anything marked data-datekeys, so the next
+     date field on the next screen behaves the same way. See docs/23. */
+  var DATE_KEYS_TIP = 'T = today · Delete = clear';
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + '-' +
+           String(d.getMonth() + 1).padStart(2, '0') + '-' +
+           String(d.getDate()).padStart(2, '0');
+  }
+
+  function wireDateKeys(el, afterChange) {
+    el.title = DATE_KEYS_TIP;
+    el.addEventListener('keydown', function (e) {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      var k = e.key;
+      if (k === 't' || k === 'T') {
+        e.preventDefault(); el.value = today();
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        if (afterChange) afterChange();
+      } else if (k === 'Delete' || k === 'Backspace') {
+        e.preventDefault(); el.value = '';
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        if (afterChange) afterChange();
+      }
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-datekeys]'), function (el) {
+    wireDateKeys(el);
+  });
+
   /* Searching happens as you type, so there is no Search button. A button that
      repeats what the screen already did is a button that looks broken. */
   $('q').addEventListener('input', runSoon);
@@ -1659,8 +1718,12 @@ upload_token = (shown on the download screen)</pre>
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.key === '/') {
       e.preventDefault();
-      alert('Type — the results follow as you type\nEsc — clear the search box\n' +
-            'Tab — next box');
+      alert('Type — the results follow as you type\n' +
+            'Esc — clear the search box\n' +
+            'Tab — next control\n\n' +
+            'In a date box:\n' +
+            'T — today\n' +
+            'Delete — clear the date');
     }
   });
 

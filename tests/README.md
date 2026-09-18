@@ -38,3 +38,37 @@ because they are the structure being tested, and they are not private.
 4. Focus landing on the thing just clicked is correct. Pass `focusMayBe`.
 5. Leave a test failing rather than deleting it when the fault is real and the
    fix needs a decision. A deleted test is a forgotten fault.
+
+## Refreshing the recorded database signatures
+
+`fixtures/rpc-signatures.json` is a **copy** of what the project's functions
+take, and a copy drifts. `check-rpc-calls.js` refuses to pass if any migration
+file is newer than that copy, because a stale copy makes the check meaningless
+while still looking green.
+
+After a migration that adds or changes a function, run this against the project
+and write the answer into the file:
+
+```sql
+select json_object_agg(fn, info)::text from (
+  select p.proname::text as fn,
+         json_build_object(
+           'args', (select coalesce(json_agg(a.name order by a.ord),'[]'::json)
+                    from unnest(coalesce(p.proargnames,'{}')) with ordinality a(name, ord)
+                    where a.ord <= p.pronargs),
+           'total', p.pronargs,
+           'with_defaults', p.pronargdefaults) as info
+  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and p.prokind='f'
+) t;
+```
+
+## Checking the call sites against the LIVE project
+
+The offline check compares against the copy. To check against the database
+itself — which is what actually answers the call — run
+`node tests/list-call-sites.js`, paste its output into the `call(...)` VALUES
+list in `tests/check-rpc-live.sql`, and run that against the project. Every row
+must say `resolves`.
+
+Do this after every migration that touches a function.
