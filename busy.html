@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789724059';</script>
+<script>window.__BUILD_VERSION__ = '1789726149';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -196,6 +196,11 @@
   .colmenu-list input { accent-color:var(--steel); }
   .colmenu-note { font-size:11px; color:var(--muted); padding:5px 8px 2px;
                   border-top:1px solid var(--border); margin-top:4px; }
+
+  .danger-zone { border-color:#e6cfcc; background:#fefaf9; }
+  .btn-danger { background:var(--danger); border-color:var(--danger); color:#fff; }
+  .btn-danger:hover { background:#8c332a; border-color:#8c332a; }
+  .btn-danger:disabled { opacity:.45; cursor:not-allowed; }
 
   /* ---- cell selection: a border, never a fill ----------------------------
      A fill would fight the row colours and the search highlight, and would
@@ -497,6 +502,43 @@
                 <tr><td colspan="7" class="loading">No files chosen yet.</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- ---- start again ----
+             The history was once cleared by hand for a reload. Fine once.
+             Twice is a habit of asking somebody else to run a DELETE on your
+             own data, and the second time nobody writes down what it removed.
+             So it is a tool: it names what will go, and asks. -->
+        <div class="card danger-zone" style="margin-top:14px">
+          <div style="font-weight:600; margin-bottom:6px;">Start again</div>
+          <div style="font-size:12.5px; color:#3c4a57;">
+            Empties the history so a fresh file can be loaded clean. Use this when the
+            parser has changed and the old rows are no longer in the file — otherwise the
+            comparison would mark every one of them deleted, which is correct but leaves a
+            record of a mass deletion that never really happened.
+            <strong>A normal reload does not need this.</strong> Sending a year again simply
+            replaces it.
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-danger" id="clearBusyBtn">Clear the history…</button>
+            <span id="clearNote" style="font-size:12.5px; color:var(--muted); margin-left:8px;"></span>
+          </div>
+
+          <div id="clearConfirm" style="display:none; margin-top:12px; border-top:1px solid #e6cfcc; padding-top:12px;">
+            <div style="font-weight:600; color:var(--danger); margin-bottom:6px;">
+              This will remove:
+            </div>
+            <div id="clearWhat" style="font-size:12.5px;"></div>
+            <div style="font-size:12.5px; color:#3c4a57; margin-top:10px;">
+              Keep the Busy files until the numbers match again after the next load.
+            </div>
+            <div style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <label class="fl" for="clearWord" style="margin:0;">Type <strong>CLEAR</strong> to confirm</label>
+              <input class="f" id="clearWord" style="width:120px; padding:6px 8px;" autocomplete="off" />
+              <button class="btn btn-danger" id="clearDoBtn" disabled>Clear the history</button>
+              <button class="btn btn-outline" id="clearCancelBtn">Leave it alone</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1598,6 +1640,88 @@ upload_token = (shown on the download screen)</pre>
       });
     });
   }
+
+  /* ---- START AGAIN -------------------------------------------------------
+     Names what will go, makes the person type the word, then does it and
+     reports what actually went. Owner only, twice over: the button is only
+     drawn for an owner, and the database refuses anyone else regardless of
+     what the screen does. */
+  function clearSay(text, danger) {
+    $('clearNote').innerHTML = text;
+    $('clearNote').style.color = danger ? 'var(--danger)' : 'var(--muted)';
+  }
+
+  function closeClearPanel() {
+    $('clearConfirm').style.display = 'none';
+    $('clearWord').value = '';
+    $('clearDoBtn').disabled = true;
+    $('clearBusyBtn').disabled = false;
+  }
+
+  $('clearBusyBtn').addEventListener('click', function () {
+    clearSay('Counting what is there…');
+    $('clearBusyBtn').disabled = true;
+    guard(REF.supabase().rpc('busy_clear_preview'), function (t) { clearSay(t, true); },
+          'what is in the history')
+      .then(function (res) {
+        if (!res) { $('clearBusyBtn').disabled = false; return; }
+        var d = (res.data && res.data[0]) || res.data || {};
+        if (!Number(d.history_rows)) {
+          clearSay('There is nothing to clear — the history is already empty.');
+          $('clearBusyBtn').disabled = false;
+          return;
+        }
+        clearSay('');
+        $('clearWhat').innerHTML =
+          '<ul style="margin:0; padding-left:18px; line-height:1.7;">' +
+          '<li><strong>' + inr.format(d.history_rows) + ' rows</strong> of history — ' +
+            inr.format(d.ref_rows) + ' REF and ' + inr.format(d.rs_rows) + ' RS</li>' +
+          '<li><strong>' + inr.format(d.years) + ' years</strong> from the year list</li>' +
+          '<li><strong>' + inr.format(d.change_records) + '</strong> edit and deletion records</li>' +
+          (Number(d.staged_rows)
+            ? '<li><strong>' + inr.format(d.staged_rows) + '</strong> rows part-way through a load</li>' : '') +
+          '</ul>' +
+          '<div style="margin-top:8px; color:var(--green);">' +
+          'Kept: the record of all ' + inr.format(d.batches_kept) +
+          ' loads ever attempted, including the ones that were refused and why.</div>';
+        $('clearConfirm').style.display = '';
+        $('clearWord').focus();
+      });
+  });
+
+  $('clearWord').addEventListener('input', function () {
+    $('clearDoBtn').disabled = ($('clearWord').value.trim() !== 'CLEAR');
+  });
+  $('clearWord').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !$('clearDoBtn').disabled) $('clearDoBtn').click();
+    if (e.key === 'Escape') { closeClearPanel(); clearSay(''); }
+  });
+  $('clearCancelBtn').addEventListener('click', function () {
+    closeClearPanel();
+    clearSay('Nothing was cleared.');
+  });
+
+  $('clearDoBtn').addEventListener('click', function () {
+    $('clearDoBtn').disabled = true;
+    $('clearCancelBtn').disabled = true;
+    clearSay('Clearing…');
+    guard(REF.supabase().rpc('busy_clear_history', { p_confirm: $('clearWord').value.trim() }),
+          function (t) { clearSay(t, true); }, 'the clear')
+      .then(function (res) {
+        $('clearCancelBtn').disabled = false;
+        closeClearPanel();
+        if (!res) return;                        // guard has said what happened
+        var d = (res.data && res.data[0]) || res.data || {};
+        clearSay('<span style="color:var(--green); font-weight:600">Cleared ' +
+          inr.format(d.history_removed) + ' rows, ' + inr.format(d.years_removed) +
+          ' years and ' + inr.format(d.changes_removed) + ' change records.</span> ' +
+          'The history is empty. Load the file now, and keep the Busy files until the ' +
+          'numbers match.');
+        items = [];
+        drawItems();
+        refreshTotals();
+      });
+  });
 
   /* ---------------- the uploader download ---------------- */
   function loadDownloadScreen() {
