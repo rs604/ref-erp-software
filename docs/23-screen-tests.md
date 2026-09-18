@@ -187,6 +187,54 @@ the deciding was wasted.**
 
 ---
 
+## 5b. EVERY RESULT TABLE WORKS LIKE A SPREADSHEET
+
+Anyone who works in Excel all day reaches for the arrow keys without thinking.
+Every table of results in the ERP answers them.
+
+| Key | Expected |
+|---|---|
+| Click a cell | It is selected — a **visible border, never a fill** |
+| Arrow keys | Move the selection one cell left, right, up, down |
+| `Home` / `End` | First and last cell of the row |
+| `Ctrl+Up` / `Ctrl+Down` | Top and bottom of the table |
+| `Ctrl+C` | Copies the selected cell, and says so |
+
+**Nothing in a result table is editable.** Selection is for reading and
+copying. A table that shows what was, rather than what is being decided, is
+read only, and no key in it may change a value.
+
+A border rather than a fill, because a fill fights the row colours and the
+search highlight, and reads as *this cell is different* rather than *this cell
+is where you are*.
+
+**Report as:** `selection · arrows · Home/End · Ctrl+Up/Down · Ctrl+C — 5 of 5`
+
+---
+
+## 5c. NEVER FIND A CELL BY COUNTING
+
+This is a rule for the **tests**, not the screens, and it earned its place.
+
+A test read the Amount column as `td[10]`. The moment a column was hidden it
+was reading Rate instead, and reported every row as having no amount at all.
+Nothing was wrong with the screen. The test was counting.
+
+Columns can be turned on and off, so columns will keep moving:
+
+```js
+const at = name => heads.indexOf(name);
+td[at('Amount')]                               // not td[10]
+rows.find(r => r.innerText.includes('80X40'))  // not rows[1]
+```
+
+Position in a list of **equivalent** things — the third checkbox, the first
+menu item — is fine. Indexing into the cells of a row is not.
+`tests/check-no-positional-cells.js` runs on every test run and refuses both
+`td[N]` and `tr:nth-child(N)`.
+
+---
+
 ## 6. POPUPS
 
 - Open one, then another from inside it. **Two deep works**

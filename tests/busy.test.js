@@ -527,10 +527,22 @@ async function openBusy(server, browser, user) {
       marks.length > 0, marks.slice(0, 4).join(' | '));
     record('a word is found inside a longer one — 80x40 lights up in 80X40X2.5',
       marks.some(m => /^80X40$/i.test(m)), marks.join(' | '));
-    const shading = await p.evaluate(() => ({
-      exactShaded: !!document.querySelector('#rows tr:nth-child(1)')?.classList.contains('fuzzy'),
-      fuzzyShaded: !!document.querySelector('#rows tr:nth-child(2)')?.classList.contains('fuzzy'),
-    }));
+    // Found by what the row HOLDS, not by where it sits. The stub puts the
+    // exact match first today; if that ever changed, reading row 1 and row 2
+    // would quietly test the opposite of what it says.
+    const shading = await p.evaluate(() => {
+      const rowFor = text => Array.from(document.querySelectorAll('#rows tr'))
+        .find(r => r.innerText.includes(text));
+      const exact = rowFor('80X40X2.5');
+      const close = rowFor('80X40X3');
+      return {
+        found: !!exact && !!close,
+        exactShaded: !!exact && exact.classList.contains('fuzzy'),
+        fuzzyShaded: !!close && close.classList.contains('fuzzy'),
+      };
+    });
+    record('both the exact and the close row are on screen to compare',
+      shading.found);
     record('a close match shades the whole row, an exact one does not',
       shading.fuzzyShaded && !shading.exactShaded,
       `exact shaded: ${shading.exactShaded}, close shaded: ${shading.fuzzyShaded}`);
@@ -595,6 +607,148 @@ async function openBusy(server, browser, user) {
     const kept = await headOf();
     record('the choice is remembered on the next visit',
       kept.includes('FY') && !kept.includes('Description'), kept.join(' · '));
+    await p.close();
+  }
+
+  /* ============ 5b. THE TABLE WORKS LIKE A SPREADSHEET ============ */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.waitForFunction(() => document.querySelectorAll('#rows tr').length > 3);
+
+    const sel = () => p.evaluate(() => {
+      const td = document.querySelector('#rows td.sel');
+      if (!td) return null;
+      const heads = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const rows = Array.from(document.querySelectorAll('#rows tr'));
+      return { row: rows.indexOf(td.parentNode), col: heads[td.cellIndex], text: td.innerText.trim() };
+    });
+
+    record('no cell is selected before anything is clicked', (await sel()) === null);
+
+    // Click a cell found by its heading, never by counting.
+    await p.evaluate(() => {
+      const heads = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const row = document.querySelectorAll('#rows tr')[1];
+      row.cells[heads.indexOf('Party')].click();
+    });
+    let s1 = await sel();
+    record('clicking a cell selects it', s1 && s1.col === 'Party', JSON.stringify(s1));
+
+    const border = await p.evaluate(() => {
+      const td = document.querySelector('#rows td.sel');
+      const cs = getComputedStyle(td);
+      return { outline: cs.outlineWidth, style: cs.outlineStyle, bg: cs.backgroundColor };
+    });
+    record('the selection is a border, not a fill',
+      parseFloat(border.outline) >= 1 && border.style !== 'none', JSON.stringify(border));
+
+    const wrap = p.locator('#view-search .tbl-wrap');
+    await wrap.press('ArrowRight');
+    record('right arrow moves one cell right', (await sel()).col === 'Item',
+      (await sel()).col);
+    await wrap.press('ArrowLeft');
+    record('left arrow moves back', (await sel()).col === 'Party');
+    const rowBefore = (await sel()).row;
+    await wrap.press('ArrowDown');
+    record('down arrow moves one row down', (await sel()).row === rowBefore + 1);
+    await wrap.press('ArrowUp');
+    record('up arrow moves back', (await sel()).row === rowBefore);
+
+    await wrap.press('Home');
+    record('Home goes to the first cell of the row', (await sel()).col === 'Sr.',
+      (await sel()).col);
+    await wrap.press('End');
+    record('End goes to the last cell of the row', (await sel()).col === 'Amount',
+      (await sel()).col);
+
+    await wrap.press('Control+ArrowDown');
+    const lastRow = await p.evaluate(() => document.querySelectorAll('#rows tr').length - 1);
+    record('Ctrl+Down goes to the bottom of the table', (await sel()).row === lastRow,
+      `row ${(await sel()).row} of ${lastRow}`);
+    await wrap.press('Control+ArrowUp');
+    record('Ctrl+Up goes to the top', (await sel()).row === 0);
+
+    // Arrows must not run off the ends. Go to the corner first — after Ctrl+Up
+    // the selection is at row 0 but still in the LAST column, so one ArrowLeft
+    // from there lands on Rate, not on Sr. Testing that was testing nothing.
+    await wrap.press('Home');
+    await wrap.press('ArrowUp');
+    await wrap.press('ArrowLeft');
+    let edge = await sel();
+    record('at the top left, up and left do not run off the table',
+      edge.row === 0 && edge.col === 'Sr.', `${edge.col}, row ${edge.row}`);
+
+    await wrap.press('Control+ArrowDown');
+    await wrap.press('End');
+    await wrap.press('ArrowDown');
+    await wrap.press('ArrowRight');
+    edge = await sel();
+    record('at the bottom right, down and right do not run off either',
+      edge.row === lastRow && edge.col === 'Amount', `${edge.col}, row ${edge.row}`);
+
+    // Ctrl+C
+    await p.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
+    await p.evaluate(() => {
+      const heads = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      document.querySelectorAll('#rows tr')[0].cells[heads.indexOf('Party')].click();
+    });
+    const want = (await sel()).text;
+    await wrap.press('Control+c');
+    await p.waitForTimeout(400);
+    const said = await p.locator('#copyNote').innerText().catch(() => '');
+    record('Ctrl+C copies the selected cell and says so',
+      /^Copied:/.test(said) && said.includes(want.slice(0, 12)), said);
+
+    // READ ONLY. Nothing may be editable.
+    const editable = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('#rows td, #rows input, #rows textarea, #rows select'))
+        .filter(e => e.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName)).length);
+    record('nothing in the table is editable — this is read-only data', editable === 0,
+      `${editable} editable things found`);
+
+    // A redraw must not leave a selection pointing at a row that has gone.
+    await p.locator('#q').click();
+    await p.locator('#q').type('pipe', { delay: 5 });
+    await p.waitForTimeout(600);
+    record('a new search clears the selection rather than leaving it stranded',
+      (await sel()) === null);
+    await p.close();
+  }
+
+  /* ============ A REFUSAL MUST NOT SCROLL PAST ============ */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await p.waitForTimeout(400);
+    await p.evaluate(() => {
+      // One year refuses, the rest are fine — the shape of the real upload.
+      window.__TEST_DATA__['rpc:busy_import_stage'] = a =>
+        a.p_fy === '2025-26' ? { error: { message: 'canceling statement due to statement timeout' } }
+                             : (a.p_rows || []).length;
+      window.__TEST_DATA__['rpc:busy_import_finalise'] = () => [{ inserted: 10 }];
+      window.__TEST_DATA__['rpc:busy_import_abandon'] = () => 0;
+    });
+    const head = 'company,fy,kind,vch_code,sr_no,vch_type,doc_type,vch_no,vch_date,party,item,description,qty,rate,amount,is_lump_sum,parser_version';
+    const lines = [head];
+    for (let i = 1; i <= 40; i++) {
+      const fy = i <= 20 ? '2024-25' : '2025-26';
+      lines.push(`REF,${fy},item,V${i},1,2,Purchase Bill,B${i},2025-04-01,P,I,LOT ${i},1,1,1,False,2026.09.17-mdbtools`);
+    }
+    await p.setInputFiles('#fileInput', {
+      name: 'ref-rows.csv', mimeType: 'text/csv', buffer: Buffer.from(lines.join('\n')),
+    });
+    await p.waitForTimeout(900);
+    await p.click('#loadBtn');
+    await p.waitForFunction(() => /did NOT load|Finished/.test(document.getElementById('uploadState').innerText),
+      null, { timeout: 30000 }).catch(() => {});
+    const state = (await p.locator('#uploadState').innerText()).replace(/\s+/g, ' ');
+    record('one year refused does NOT report the run as finished',
+      !/^Finished/.test(state) && /did NOT load/.test(state), state.slice(0, 110));
+    record('the summary names which year is missing', /2025-26/.test(state), state.slice(0, 110));
+    record('and says not to move the files off the Busy PC',
+      /Do not move any file/.test(state));
     await p.close();
   }
 
