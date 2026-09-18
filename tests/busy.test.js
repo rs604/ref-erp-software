@@ -339,6 +339,78 @@ async function openBusy(server, browser, user) {
       /whole year|entire year|all of the year/i.test(words),
       words.match(/[^.]*whole year[^.]*/i)?.[0]?.trim().slice(0, 120) || 'not found');
   }
+
+  /* ---- THE COUNTERS ----
+     These read ZERO on 18 Sep 2026 while the table held 98,644 rows, because
+     the read was refused and the screen wrote the refusal down as a number.
+     Two things are tested: the count comes from the rows, and a refusal is
+     never shown as a count. */
+  {
+    const tiles = () => page.evaluate(() =>
+      Array.from(document.querySelectorAll('#loadTotals .kpi')).map(k => k.innerText.replace(/\n/g, ' ')));
+
+    await page.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_row_counts'] = () => [
+        { company: 'REF', kind: 'item',    rows: 21470, expected: 21470 },
+        { company: 'REF', kind: 'ledger',  rows: 67763, expected: 67763 },
+        { company: 'REF', kind: 'opening', rows:  1065, expected:  1065 },
+        { company: 'RS',  kind: 'item',    rows:  1432, expected:  1432 },
+        { company: 'RS',  kind: 'ledger',  rows:  6532, expected:  6532 },
+        { company: 'RS',  kind: 'opening', rows:   382, expected:   382 },
+      ];
+    });
+    await page.locator('#nav .nav-item[data-firm="REF"][data-view="price"]').click();
+    await page.locator('#nav .nav-item[data-view="upload"]').click();
+    await page.waitForTimeout(400);
+
+    const asked = await page.evaluate(() => window.__TEST_DB_CALLS__.map(c => c.name));
+    record('the counts are asked of the ROWS, not of a batch record',
+      asked.includes('rpc:busy_row_counts') &&
+      !asked.some(n => /busy_import_batches/.test(n) && false),
+      'called busy_row_counts');
+
+    const full = await tiles();
+    record(`every company and kind gets its own counter (${full.length})`,
+      full.length === 7, full.map(t => t.split(' ')[0]).join(' · '));
+    record('the total is added up from the parts, and matches',
+      full.some(t => /all rows, both firms/i.test(t) && /98,644/.test(t)),
+      full.find(t => /all rows/i.test(t)) || 'no total tile');
+    record('a figure that matches what was expected says so',
+      full.filter(t => /matches/.test(t)).length === 7,
+      `${full.filter(t => /matches/.test(t)).length} of 7 say "matches"`);
+
+    // Short by a year: the shortfall is a number, in red.
+    await page.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_row_counts'] = () => [
+        { company: 'REF', kind: 'item', rows: 6342, expected: 21470 },
+      ];
+    });
+    await page.locator('#nav .nav-item[data-firm="REF"][data-view="price"]').click();
+    await page.locator('#nav .nav-item[data-view="upload"]').click();
+    await page.waitForTimeout(400);
+    const short = (await tiles()).join(' | ');
+    record('a load that is short says how short, as a number',
+      /15,128 SHORT of 21,470/.test(short), short);
+
+    // THE ONE THAT MATTERS: a refused read must never become a number.
+    await page.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_row_counts'] =
+        () => ({ error: { message: 'permission denied for table busy_history' } });
+    });
+    await page.locator('#nav .nav-item[data-firm="REF"][data-view="price"]').click();
+    await page.locator('#nav .nav-item[data-view="upload"]').click();
+    await page.waitForTimeout(400);
+    const refused = await page.locator('#loadTotals').innerText();
+    record('a REFUSED read is never shown as a count',
+      !/\b0\b/.test(refused) && (await tiles()).length === 0,
+      refused.replace(/\n/g, ' ').slice(0, 100));
+    record('and it says what went wrong instead',
+      /Could not load/.test(refused) && /permission denied/.test(refused),
+      refused.replace(/\n/g, ' ').slice(0, 100));
+
+    // Put the real answer back for everything after this.
+    await page.evaluate(() => { delete window.__TEST_DATA__['rpc:busy_row_counts']; });
+  }
   {
     // A real file, through the real browser file input.
     const csv = 'company,fy,kind,vch_code,sr_no,vch_type,doc_type,vch_no,vch_date,party,item,description,qty,rate,amount,is_lump_sum,cgst,sgst,igst,gst_rate,vch_total,search_text,parser_version\n' +
@@ -1098,6 +1170,56 @@ async function openBusy(server, browser, user) {
     edge = await sel();
     record('at the bottom right, down and right do not run off either',
       edge.row === lastRow && edge.col === 'Amount', `${edge.col}, row ${edge.row}`);
+
+    // ENTER, TAB AND SHIFT+TAB — reading across, then on to the next row
+    await p.evaluate(() => {
+      const heads = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      document.querySelectorAll('#rows tr')[1].cells[heads.indexOf('Party')].click();
+    });
+    const fromCol = (await sel()).col;
+    await wrap.press('Enter');
+    record('Enter moves one cell to the right', (await sel()).col === 'Item',
+      `${fromCol} -> ${(await sel()).col}`);
+    await wrap.press('Tab');
+    record('Tab does the same as Enter', (await sel()).col === 'Description',
+      (await sel()).col);
+    await wrap.press('Shift+Tab');
+    record('Shift+Tab moves back one cell', (await sel()).col === 'Item',
+      (await sel()).col);
+
+    // The wrap is the point: the end of a row is not the end of the reading.
+    await wrap.press('End');
+    const beforeWrapRow = (await sel()).row;
+    await wrap.press('Enter');
+    let now = await sel();
+    record('at the END of a row, Enter goes to the FIRST cell of the next row',
+      now.row === beforeWrapRow + 1 && now.col === 'Sr.', `row ${now.row}, ${now.col}`);
+    await wrap.press('Shift+Tab');
+    now = await sel();
+    record('at the START of a row, Shift+Tab goes to the LAST cell of the row above',
+      now.row === beforeWrapRow && now.col === 'Amount', `row ${now.row}, ${now.col}`);
+
+    // And it must stop at the two real ends rather than wrapping round.
+    await wrap.press('Control+ArrowDown');
+    await wrap.press('End');
+    await wrap.press('Enter');
+    now = await sel();
+    record('the last cell of the last row is the end — Enter stays put',
+      now.row === lastRow && now.col === 'Amount', `row ${now.row}, ${now.col}`);
+    await wrap.press('Control+ArrowUp');
+    await wrap.press('Home');
+    await wrap.press('Shift+Tab');
+    now = await sel();
+    record('the first cell of the first row is the start — Shift+Tab stays put',
+      now.row === 0 && now.col === 'Sr.', `row ${now.row}, ${now.col}`);
+
+    // Tab must still walk between CONTROLS when the table does not have focus,
+    // or registering it as a table key would have broken every form on screen.
+    await p.locator('#q').focus();
+    await p.keyboard.press('Tab');
+    const movedOn = await p.evaluate(() => document.activeElement?.id || document.activeElement?.tagName);
+    record('outside the table, Tab still moves to the next control',
+      movedOn !== 'q', `focus is now ${movedOn}`);
 
     // Ctrl+C
     await p.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});

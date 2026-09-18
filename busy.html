@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789730457';</script>
+<script>window.__BUILD_VERSION__ = '1789733473';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -869,7 +869,10 @@ upload_token = (shown on the download screen)</pre>
           var seen = r.last_seen_at ? new Date(r.last_seen_at).toLocaleDateString('en-IN',
                        { day: 'numeric', month: 'short', year: 'numeric' }) : '';
           return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.fy) + '</td>' +
-            '<td class="r">' + inr.format(r.live_rows || 0) + '</td>' +
+            // A count that did not arrive is not zero rows. Say nothing
+            // rather than say 0, which would read as "this year is empty".
+            '<td class="r">' + (r.live_rows === null || r.live_rows === undefined
+                                ? '—' : inr.format(r.live_rows)) + '</td>' +
             '<td class="r">' + (r.deleted_rows ? inr.format(r.deleted_rows) : '') + '</td>' +
             '<td>' + seen + '</td>' +
             '<td>' + (r.is_frozen
@@ -1360,38 +1363,73 @@ upload_token = (shown on the download screen)</pre>
       .then(function (res) { settings = res.data || {}; return settings; });
   }
 
-  function loadUploadScreen() { getSettings().then(refreshTotals); }
+  function loadUploadScreen() {
+    // The counts no longer wait on the settings row: they come from the rows.
+    getSettings();
+    refreshTotals();
+  }
 
+  /* ---- HOW MANY ROWS ARE ACTUALLY IN THERE ----
+     These counters read ZERO on 18 Sep 2026 while busy_history held all
+     98,644 rows. They were counting the table, not batch records -- but the
+     read was REFUSED, and the screen wrote `r.count || 0` and showed 0. A
+     number whose job is to say whether the load worked, and which reads zero
+     on a full table, is worse than no number at all.
+
+     Two rules come out of that, and both are kept here:
+       1. Count the THING, never a record about the thing. busy_row_counts
+          counts busy_history by company and kind. No batch record is asked
+          whether it finished.
+       2. A call that fails is never turned into a number. If the count
+          cannot be read, the tiles say so, in red, and show nothing. */
   function refreshTotals() {
-    getSettings().then(function (cfg) {
-      var q = function (view, kind) {
-        var sel = REF.supabase().from(view).select('*', { count: 'exact', head: true });
-        if (kind) sel = sel.eq('kind', kind);
-        return sel.then(function (r) { return r.count || 0; });
-      };
-      Promise.all([
-        q('busy_history_ref', 'item'), q('busy_history_rs', 'item'),
-        q('busy_history_ref', null),   q('busy_history_rs', null)
-      ]).then(function (n) {
-        function tile(label, got, want) {
-          var done = (got === want);
-          var short = want - got;
-          // "16,987 of 21,307 expected" reads like progress. It was a year
-          // missing. Say the shortfall as a number, in red.
-          return '<div class="kpi"><div class="k">' + label + '</div>' +
-                 '<div class="v ' + (done ? 'up' : 'down') + '">' + inr.format(got) + '</div>' +
-                 '<div style="font-size:11.5px; color:' + (done ? 'var(--muted)' : 'var(--danger)') + '">' +
-                 (done ? 'of ' + inr.format(want) + ' · matches'
-                       : (short > 0 ? inr.format(short) + ' SHORT of ' + inr.format(want)
-                                    : inr.format(-short) + ' MORE than the ' + inr.format(want) + ' expected')) +
-                 '</div></div>';
+    var say = intoBox('loadTotals');
+    $('loadTotals').innerHTML = '<div class="loading">Counting the rows…</div>';
+    guard(REF.supabase().rpc('busy_row_counts'), say, 'the row counts')
+      .then(function (res) {
+        if (!res) return;                       // guard has already said why
+        var rows = res.data || [];
+        if (!rows.length) {
+          say('No rows have been loaded yet, and nothing is expected. ' +
+              'Send a year up with Load history.');
+          return;
         }
-        $('loadTotals').innerHTML =
-          tile('Item rows, REF', n[0], cfg.expected_item_rows_ref || 21307) +
-          tile('Item rows, RS', n[1], cfg.expected_item_rows_rs || 1425) +
-          tile('All rows, both firms', n[2] + n[3], cfg.expected_total_rows || 47635);
+        $('loadTotals').innerHTML = totalsHtml(rows);
       });
-    });
+  }
+
+  var KIND_LABEL = { item: 'Item rows', ledger: 'Ledger rows', opening: 'Opening balances' };
+
+  function totalsHtml(rows) {
+    function tile(label, got, want) {
+      // A count with nothing to compare it against says so, rather than
+      // pretending the number is right because it is the only one there.
+      if (want === null || want === undefined) {
+        return '<div class="kpi"><div class="k">' + esc(label) + '</div>' +
+               '<div class="v">' + inr.format(got) + '</div>' +
+               '<div style="font-size:11.5px; color:var(--muted)">counted · nothing expected was set</div></div>';
+      }
+      var done = (got === want);
+      var short = want - got;
+      // "16,987 of 21,307 expected" reads like progress. It was a year
+      // missing. Say the shortfall as a number, in red.
+      return '<div class="kpi"><div class="k">' + esc(label) + '</div>' +
+             '<div class="v ' + (done ? 'up' : 'down') + '">' + inr.format(got) + '</div>' +
+             '<div style="font-size:11.5px; color:' + (done ? 'var(--muted)' : 'var(--danger)') + '">' +
+             (done ? 'of ' + inr.format(want) + ' · matches'
+                   : (short > 0 ? inr.format(short) + ' SHORT of ' + inr.format(want)
+                                : inr.format(-short) + ' MORE than the ' + inr.format(want) + ' expected')) +
+             '</div></div>';
+    }
+    var html = rows.map(function (r) {
+      return tile((KIND_LABEL[r.kind] || r.kind) + ', ' + r.company, Number(r.rows), r.expected);
+    }).join('');
+    // The total is ADDED UP from the parts, never stored and never read from
+    // anywhere else, so it cannot disagree with the tiles above it.
+    var got  = rows.reduce(function (a, r) { return a + Number(r.rows); }, 0);
+    var want = rows.every(function (r) { return r.expected !== null && r.expected !== undefined; })
+      ? rows.reduce(function (a, r) { return a + Number(r.expected); }, 0) : null;
+    return html + tile('All rows, both firms', got, want);
   }
 
   /* A CSV reader that copes with quoted fields, because descriptions hold
@@ -1928,7 +1966,8 @@ upload_token = (shown on the download screen)</pre>
 
      Written against a table by id so the next result table in the ERP gets it
      by calling wireGrid(). See docs/23. */
-  var GRID_TIP = 'Arrow keys move · Ctrl+C copies · Home/End ends of the row · Ctrl+Up/Down top and bottom';
+  var GRID_TIP = 'Arrow keys move · Enter or Tab next cell, then the next row · Shift+Tab back · ' +
+                 'Ctrl+C copies · Home/End ends of the row · Ctrl+Up/Down top and bottom';
 
   function wireGrid(tbodyId) {
     var body = $(tbodyId);
@@ -1964,6 +2003,28 @@ upload_token = (shown on the download screen)</pre>
       paint();
     }
 
+    /* One cell forward or back, carrying on to the next row rather than
+       stopping at the edge. This is how a person reads across a table: the
+       end of a row is not the end of the reading. Nothing here is editable —
+       Enter and Tab move, they never open a cell. */
+    function step(forward) {
+      var rows = cells();
+      if (!rows.length) return;
+      if (!sel) { sel = forward ? { r: 0, c: 0 }
+                                : { r: rows.length - 1, c: rows[rows.length - 1].cells.length - 1 };
+                  paint(); return; }
+      var r = sel.r, c = sel.c + (forward ? 1 : -1);
+      if (c >= rows[r].cells.length) {
+        if (r >= rows.length - 1) return;      // last cell of the last row: stay put
+        r = r + 1; c = 0;                      // FIRST cell of the next row
+      } else if (c < 0) {
+        if (r <= 0) return;                    // first cell of the first row: stay put
+        r = r - 1; c = rows[r].cells.length - 1;   // LAST cell of the row above
+      }
+      sel = { r: r, c: c };
+      paint();
+    }
+
     body.addEventListener('click', function (e) {
       var td = e.target.closest('td');
       if (!td || td.classList.contains('loading')) return;
@@ -1994,6 +2055,11 @@ upload_token = (shown on the download screen)</pre>
         e.preventDefault();
         var rr = (sel || { r: 0 }).r;
         sel = { r: rr, c: rows[rr].cells.length - 1 }; paint();
+      } else if (k === 'Enter' || k === 'Tab') {
+        // Tab would otherwise walk out of the table and into the page
+        // furniture, which loses the person's place in the data.
+        e.preventDefault();
+        step(!e.shiftKey);
       } else if (k === 'c' && (e.ctrlKey || e.metaKey)) {
         var td = body.querySelector('td.sel');
         if (!td) return;
@@ -2154,6 +2220,9 @@ upload_token = (shown on the download screen)</pre>
         if (shortcutPanelOpen()) { closeShortcutPanel(); return; }
         if (document.activeElement === $('q')) clearSearch();
       } },
+    { keys: ['Enter'],          label: 'Enter',    does: 'In the table: next cell, on to the next row at the end' },
+    { keys: ['Tab'],            label: 'Tab',      does: 'In the table: the same as Enter' },
+    { keys: ['Shift+Tab'],      label: 'Shift + Tab', does: 'In the table: back one cell, on to the row above at the start' },
     { keys: ['Ctrl+ArrowUp'],   label: 'Ctrl + ↑', does: 'First row of the table' },
     { keys: ['Ctrl+ArrowDown'], label: 'Ctrl + ↓', does: 'Last row of the table' },
     { keys: ['Home'],           label: 'Home',     does: 'First cell of the row' },
@@ -2166,7 +2235,7 @@ upload_token = (shown on the download screen)</pre>
   ];
   var TYPING_NOTE = [
     ['Typing', 'The results follow as you type — there is no Search button'],
-    ['Tab', 'Next control'],
+    ['Tab', 'Next control — but inside the results table it moves one cell'],
     ['In a date box: T', 'Today'],
     ['In a date box: Delete', 'Clear the date'],
   ];

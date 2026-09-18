@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1789730457';</script>
+<script>window.__BUILD_VERSION__ = '1789733473';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -1223,6 +1223,13 @@
   document.getElementById('lightboxClose').addEventListener('click', () => document.getElementById('lightbox').classList.remove('open'));
   document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target.id === 'lightbox') e.currentTarget.classList.remove('open'); });
 
+  /* A message from the server goes on screen as TEXT, never as markup. */
+  function escapeHtml(v) {
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   async function loadHome() {
     showSpinner('homeContent');
     const isOwner = currentUser.is_owner;
@@ -1234,6 +1241,11 @@
 
     // A reply that says success but carries no list used to crash this screen
     // on .length. Caught by the screen tests; see docs/23-screen-tests.md.
+    // And a reply that FAILED is not an empty list: showing "Nothing pending"
+    // when the call was refused is the same lie as a counter reading zero on
+    // a full table. Say which it was.
+    const pendingFailed = isOwner && !pendingRes.success;
+    const myFailed = !myRes.success;
     const pending = (pendingRes.success && pendingRes.requests) || [];
     const myRequests = (myRes.success && myRes.requests) || [];
 
@@ -1245,7 +1257,9 @@
           ${isOwner ? `
           <span class="pill-section-label">Pending Approvals</span>
           <p style="font-size:12px; color:var(--muted); margin:6px 0 14px;">Things that need your decision — organized by department/category.</p>
-          ${pending.length === 0 ? '<div class="empty-state">Nothing pending right now.</div>' : `
+          ${pendingFailed
+            ? `<div class="empty-state" style="color:var(--danger);">Could not read the pending approvals — ${escapeHtml(pendingRes.error || 'the request was refused')}. This is NOT "nothing pending": reload the page.</div>`
+            : pending.length === 0 ? '<div class="empty-state">Nothing pending right now.</div>' : `
             <p class="section-label" style="margin-top:0;">HRMS</p>
             <div id="homeApprovalsList">
               ${pending.map(r => `
@@ -1264,7 +1278,9 @@
 
           <span class="pill-section-label" style="${isOwner ? 'margin-top:26px; display:inline-block; padding-top:20px; border-top:1px solid var(--border);' : ''}">My Requests</span>
           <p style="font-size:12px; color:var(--muted); margin:6px 0 14px;">Status of ERP access requests you've submitted for others.</p>
-          ${myRequests.length === 0 ? `<div class="empty-state">You haven't submitted any requests.</div>` : `
+          ${myFailed
+            ? `<div class="empty-state" style="color:var(--danger);">Could not read your requests — ${escapeHtml(myRes.error || 'the request was refused')}. This is NOT "none submitted": reload the page.</div>`
+            : myRequests.length === 0 ? `<div class="empty-state">You haven't submitted any requests.</div>` : `
             ${myRequests.map(r => `
               <div style="border:1px solid var(--border); border-radius:6px; padding:12px 14px; margin-bottom:10px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">

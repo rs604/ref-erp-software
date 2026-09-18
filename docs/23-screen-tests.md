@@ -354,6 +354,86 @@ layer of guessing is allowed to blur them.
 
 ---
 
+## 5f. KEYBOARD MOVEMENT IN A RESULT TABLE
+
+**Every result table in the ERP, not just Price History.** The data is
+read-only, so the keys are for reading and copying, never for editing.
+
+| Key | What it does |
+|---|---|
+| Arrow keys | one cell in that direction, stopping at the edges |
+| **Enter** | next cell to the right. At the END of a row, the FIRST cell of the next row |
+| **Tab** | the same as Enter |
+| **Shift + Tab** | back one cell. At the START of a row, the LAST cell of the row above |
+| Home / End | first / last cell of the row |
+| Ctrl + ↑ / ↓ | first / last row |
+| Ctrl + C | copy the selected cell |
+
+The end of a row is not the end of the reading, which is why Enter and Tab
+carry on to the next row. The two real ends — the first cell of the first row
+and the last cell of the last row — stop. They do not wrap round to the other
+end of the table, because that loses the person's place.
+
+**Two things to prove every time:**
+
+1. **Nothing is editable.** No `input`, no `textarea`, no `contenteditable`,
+   anywhere in the table body. Enter and Tab move; they never open a cell.
+2. **Tab still works outside the table.** Registering Tab as a table key is
+   one line away from breaking every form on the screen. Focus a field that is
+   not in the table, press Tab, and prove the focus moved on.
+
+**Report as:** `Enter · Tab · Shift+Tab · wraps at both row ends · stops at
+both table ends · Tab still walks the controls outside`
+
+---
+
+## 5g. IS THIS NUMBER COUNTING THE THING, OR A RECORD ABOUT THE THING?
+
+The Load history counters read **zero** while `busy_history` held 98,644 rows.
+Raghbir had been told to check the load against those three numbers. Zero on a
+full table is worse than no number at all: had the load really failed, he could
+not have told the difference.
+
+Ask it of **every number on every screen**:
+
+- **Counting the thing** — `count(*)` over the rows themselves. Safe.
+- **Counting a record about the thing** — a batch that says it finished, a
+  status field, a stored total. That number can be right while the thing it
+  describes is wrong, and it will be believed anyway.
+
+This is convention 6 in `docs/12` — balances are derived from the documents,
+never typed in — applied to counts. A total is **added up from its parts** and
+never stored, so it cannot disagree with them.
+
+### And the fault underneath it, which is more common
+
+`busy_history` had a read policy for `authenticated` and **no SELECT grant
+behind it**, so every read was refused before the policy was ever consulted.
+The screen then wrote:
+
+```js
+return sel.then(function (r) { return r.count || 0; });   // a refusal becomes 0
+```
+
+**A call that fails is never turned into a number, a zero, or an empty list.**
+Three shapes of the same lie, all found on this pass:
+
+| Written as | Reads on screen as | Actually means |
+|---|---|---|
+| `r.count \|\| 0` | `0` | the read was refused |
+| `r.live_rows \|\| 0` | `0 rows this year` | the field never arrived |
+| `(res.success && res.requests) \|\| []` | `Nothing pending right now.` | the call failed |
+
+Say what went wrong, in red, and show no number at all.
+
+`tests/check-rls-grants.sql` asks the grant question of every table at once —
+a read policy with no grant, a grant with no policy, and no row security at
+all. Run it after any migration that adds a table, a policy or a view.
+
+**Report as:** `88 tables · all reachable on purpose`
+
+---
+
 ## 6. POPUPS
 
 - Open one, then another from inside it. **Two deep works**
