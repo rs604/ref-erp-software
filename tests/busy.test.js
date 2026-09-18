@@ -326,19 +326,27 @@ async function openBusy(server, browser, user) {
       `${before.windowScroll[1]} -> ${after.windowScroll[1]}`);
     const state = (await page.locator('#uploadState').textContent()).trim();
     record('the result of the load is shown without a reload', state.length > 0, state.slice(0, 90));
-    const sent = await page.evaluate(() =>
-      window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_import_fy').map(c => ({
-        company: c.args.p_company, fy: c.args.p_fy, rows: (c.args.p_rows || []).length,
-        parser: (c.args.p_rows || [])[0] && c.args.p_rows[0].parser_version,
-        blankQty: (c.args.p_rows || []).filter(r => r.qty === '').length,
-      })));
-    record('the rows went up split by firm and year, as one whole year',
-      sent.length === 1 && sent[0].company === 'REF' && sent[0].fy === '2025-26' && sent[0].rows === 2,
-      JSON.stringify(sent));
+    // The rows now arrive by busy_import_stage and are compared by
+    // busy_import_finalise. A year small enough to fit in one chunk still
+    // makes both calls, in that order.
+    const db = await page.evaluate(() => window.__TEST_DB_CALLS__);
+    const staged = db.filter(c => c.name === 'rpc:busy_import_stage');
+    const finalised = db.filter(c => c.name === 'rpc:busy_import_finalise');
+    const allRows = staged.flatMap(c => c.args.p_rows || []);
+    record('the rows went up split by firm and year',
+      staged.length >= 1 && staged.every(c => c.args.p_company === 'REF' && c.args.p_fy === '2025-26')
+        && allRows.length === 2,
+      `${staged.length} chunk(s), ${allRows.length} rows`);
+    record('the year is compared once, after the rows have arrived',
+      finalised.length === 1 && finalised[0].args.p_company === 'REF'
+        && finalised[0].args.p_fy === '2025-26',
+      `${finalised.length} comparison(s)`);
     record('the parser version travelled with the rows, so the batch can name it',
-      sent[0] && sent[0].parser === '2026.09.17-mdbtools', String(sent[0] && sent[0].parser));
+      allRows[0] && allRows[0].parser_version === '2026.09.17-mdbtools',
+      String(allRows[0] && allRows[0].parser_version));
     record('an empty number was sent as nothing, not as an empty string',
-      sent[0] && sent[0].blankQty === 0, `${sent[0] && sent[0].blankQty} blanks left as ""`);
+      allRows.filter(r => r.qty === '').length === 0,
+      `${allRows.filter(r => r.qty === '').length} blanks left as ""`);
   }
 
   /* ============ the frozen-years limit, in plain words ============ */
@@ -434,6 +442,182 @@ async function openBusy(server, browser, user) {
     record('a load that fails says what failed, in the table itself',
       /Could not load the history/.test(t) && /connection lost/.test(t), t.slice(0, 90));
     record('it does not leave "Looking…" on the screen', !/Looking/.test(t));
+    await p.close();
+  }
+
+  /* ============ THE FRAME: WHAT MUST NOT SCROLL AWAY ============
+     Three complaints with one cause: the page scrolled as a whole, taking the
+     menu, the page title and the way out with it. */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.waitForFunction(() => document.querySelectorAll('#rows tr').length > 1);
+
+    const back = p.locator('.topbar a[href="admin.html"]');
+    record('there is a way back to the ERP, and it is on screen',
+      await back.count() === 1 && await back.first().isVisible());
+
+    // Scroll everything that can be scrolled, as far as it will go.
+    await p.evaluate(() => {
+      window.scrollTo(0, 99999);
+      document.querySelector('.content').scrollTop = 99999;
+      const w = document.querySelector('.tbl-wrap');
+      if (w) w.scrollTop = 99999;
+    });
+    await p.waitForTimeout(250);
+
+    const after = await p.evaluate(() => {
+      const box = el => { const r = el.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, onScreen: r.bottom > 0 && r.top < window.innerHeight }; };
+      const th = document.querySelector('.tbl thead th');
+      const wrap = document.querySelector('.tbl-wrap');
+      const firstRowTop = document.querySelector('#rows tr')?.getBoundingClientRect().top;
+      return {
+        sidebar: box(document.querySelector('.sidebar')),
+        topbar:  box(document.querySelector('.topbar')),
+        back:    box(document.querySelector('.topbar a[href="admin.html"]')),
+        header:  box(th),
+        wrapTop: wrap.getBoundingClientRect().top,
+        headerAtTopOfTable: th.getBoundingClientRect().top - wrap.getBoundingClientRect().top,
+        scrolledInside: wrap.scrollTop,
+        firstRowTop,
+      };
+    });
+
+    record('the left menu stays put when the table is scrolled', after.sidebar.onScreen,
+      `top ${Math.round(after.sidebar.top)}`);
+    record('the page title bar stays put', after.topbar.onScreen,
+      `top ${Math.round(after.topbar.top)}`);
+    record('Back to ERP is still reachable after scrolling', after.back.onScreen);
+    record('the table was actually scrolled, so this proves something',
+      after.scrolledInside > 100, `${after.scrolledInside}px down`);
+    record('the column headings freeze at the top of the table',
+      after.header.onScreen && Math.abs(after.headerAtTopOfTable) < 3,
+      `${Math.round(after.headerAtTopOfTable)}px from the top of the table box`);
+    await p.close();
+  }
+
+  /* ============ THE MENU LOOKS LIKE THE REST OF THE ERP ============ */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    const nav = await p.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('#nav .nav-item'));
+      const labels = Array.from(document.querySelectorAll('.nav-section-label'));
+      return {
+        items: items.length,
+        withIcon: items.filter(n => n.querySelector('svg')).length,
+        withLabel: items.filter(n => n.querySelector('.nav-label')).length,
+        headingsBold: labels.every(l => Number(getComputedStyle(l).fontWeight) >= 700),
+        headings: labels.length,
+      };
+    });
+    record(`every menu item has an icon (${nav.withIcon} of ${nav.items})`, nav.withIcon === nav.items);
+    record('every menu item has its label in a span, as admin.html does',
+      nav.withLabel === nav.items);
+    record(`the group headings are bold (${nav.headings} of them)`, nav.headingsBold);
+    await p.close();
+  }
+
+  /* ============ THE LOAD: A YEAR IN CHUNKS, COMPARED ONCE ============
+     The fault was a 7,219-row year refused for taking longer than the 8
+     seconds a signed-in person is allowed. */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await p.waitForTimeout(300);
+
+    // Record every call the page makes, and let staging and finalise answer.
+    await p.evaluate(() => {
+      window.__CALLS__ = [];
+      window.__TEST_DATA__['rpc:busy_import_stage'] = a => {
+        window.__CALLS__.push({ fn: 'stage', rows: (a.p_rows || []).length, fy: a.p_fy });
+        return (a.p_rows || []).length;
+      };
+      window.__TEST_DATA__['rpc:busy_import_finalise'] = a => {
+        window.__CALLS__.push({ fn: 'finalise', fy: a.p_fy });
+        return [{ inserted: 7219, updated: 0, edited: 0, deleted: 0, restored: 0 }];
+      };
+    });
+
+    // A real 7,219-row year, through the real file input.
+    const head = 'company,fy,kind,vch_code,sr_no,vch_type,doc_type,vch_no,vch_date,party,item,description,qty,rate,amount,is_lump_sum,parser_version';
+    const lines = [head];
+    for (let i = 1; i <= 7219; i++) {
+      lines.push(`REF,2025-26,item,V${i},1,2,Purchase Bill,B${i},2025-04-01,PARTY ${i % 50},MS PIPE 80X40X${i % 9},LOT ${i},10,50,500,False,2026.09.17-mdbtools`);
+    }
+    await p.setInputFiles('#fileInput', {
+      name: 'ref-2025-26-rows.csv', mimeType: 'text/csv', buffer: Buffer.from(lines.join('\n')),
+    });
+    await p.waitForTimeout(1500);
+    await p.click('#loadBtn');
+    await p.waitForFunction(() => /Finished/.test(document.getElementById('uploadState').textContent),
+      null, { timeout: 60000 }).catch(() => {});
+
+    const calls = await p.evaluate(() => window.__CALLS__);
+    const stages = calls.filter(c => c.fn === 'stage');
+    const finals = calls.filter(c => c.fn === 'finalise');
+    const sent = stages.reduce((a, c) => a + c.rows, 0);
+    const biggest = Math.max(...stages.map(c => c.rows));
+
+    record(`a 7,219-row year went up in ${stages.length} chunks, not one call`,
+      stages.length >= 14, `${stages.length} chunks`);
+    record('every row arrived', sent === 7219, `${sent} of 7219`);
+    record('no chunk was bigger than 500', biggest <= 500, `biggest ${biggest}`);
+    record('the comparison ran EXACTLY ONCE, after every chunk had landed',
+      finals.length === 1 && calls[calls.length - 1].fn === 'finalise',
+      `${finals.length} finalise calls, last call was ${calls[calls.length - 1].fn}`);
+    record('the whole year was compared as one, so nothing is wrongly marked deleted',
+      finals.length === 1 && finals[0].fy === '2025-26');
+    await p.close();
+  }
+
+  /* ---- a chunk that fails must not leave half a year loaded ---- */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await p.waitForTimeout(300);
+    await p.evaluate(() => {
+      window.__CALLS__ = [];
+      let n = 0;
+      window.__TEST_DATA__['rpc:busy_import_stage'] = a => {
+        n++;
+        window.__CALLS__.push({ fn: 'stage', rows: (a.p_rows || []).length });
+        if (n === 3) return { error: { message: 'connection lost partway' } };
+        return (a.p_rows || []).length;
+      };
+      window.__TEST_DATA__['rpc:busy_import_finalise'] = () => {
+        window.__CALLS__.push({ fn: 'finalise' });
+        return [{ inserted: 0 }];
+      };
+      window.__TEST_DATA__['rpc:busy_import_abandon'] = () => {
+        window.__CALLS__.push({ fn: 'abandon' }); return 0;
+      };
+    });
+    const head = 'company,fy,kind,vch_code,sr_no,vch_type,doc_type,vch_no,vch_date,party,item,description,qty,rate,amount,is_lump_sum,parser_version';
+    const lines = [head];
+    for (let i = 1; i <= 2000; i++) {
+      lines.push(`REF,2025-26,item,V${i},1,2,Purchase Bill,B${i},2025-04-01,P,I,LOT ${i},1,1,1,False,2026.09.17-mdbtools`);
+    }
+    await p.setInputFiles('#fileInput', {
+      name: 'ref-2025-26-rows.csv', mimeType: 'text/csv', buffer: Buffer.from(lines.join('\n')),
+    });
+    await p.waitForTimeout(800);
+    await p.click('#loadBtn');
+    await p.waitForFunction(() => /Finished/.test(document.getElementById('uploadState').textContent),
+      null, { timeout: 30000 }).catch(() => {});
+    const calls = await p.evaluate(() => window.__CALLS__);
+    record('a chunk that fails stops the load — the comparison never runs',
+      calls.filter(c => c.fn === 'finalise').length === 0,
+      calls.map(c => c.fn).join(' -> '));
+    record('and what had already arrived is thrown away',
+      calls.some(c => c.fn === 'abandon'));
+    const shown = (await p.locator('#uploadRows').innerText()).replace(/\s+/g, ' ');
+    record('the screen says nothing was loaded, and why',
+      /Nothing was loaded/i.test(shown) && /connection lost partway/.test(shown),
+      shown.slice(0, 100));
     await p.close();
   }
 

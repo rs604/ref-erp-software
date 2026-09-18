@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789666380';</script>
+<script>window.__BUILD_VERSION__ = '1789720809';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -39,7 +39,12 @@
   * { box-sizing:border-box; }
   body { margin:0; background:var(--paper); color:var(--ink);
          font-family:'IBM Plex Sans',system-ui,sans-serif; font-size:13px; }
-  .app-shell { display:flex; min-height:100vh; }
+  /* The page used to scroll as a whole, which took the menu, the page title
+     and the Back to ERP button off the screen together, and carried the
+     table's frozen header away with them. Three complaints, one cause.
+     Now the shell is the window: the sidebar and the topbar are fixed, and
+     only the content underneath them scrolls. */
+  .app-shell { display:flex; height:100vh; overflow:hidden; }
 
   .sidebar { width:var(--sidebar-w); flex:0 0 var(--sidebar-w); background:var(--steel-dark);
              color:#dfe7ed; display:flex; flex-direction:column; }
@@ -48,22 +53,32 @@
   .sidebar-brand .name { font-weight:700; font-size:16px; color:#fff; letter-spacing:.5px; }
   .sidebar-brand .tag { font-size:11px; color:#9fb4c4; }
   .sidebar-nav { padding:8px 0; flex:1; overflow:auto; }
+  /* The same shape as the menu in admin.html: bold group headings, an icon on
+     every item. It read as a different application because it was built as
+     one. */
   .nav-section-label { font-size:10px; text-transform:uppercase; letter-spacing:.8px;
-                       color:#7f97a8; padding:12px 16px 4px; }
-  .nav-item { display:block; width:100%; text-align:left; background:none; border:0;
-              color:#dfe7ed; padding:7px 16px; font-size:13px; cursor:pointer;
-              font-family:inherit; }
-  .nav-item.level-2 { padding-left:28px; font-size:12.5px; color:#bfd0dc; }
+                       font-weight:700; color:#9fb4c4; padding:12px 16px 4px; }
+  .nav-item { display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+              background:none; border:0; color:#dfe7ed; padding:7px 16px;
+              font-size:13px; cursor:pointer; font-family:inherit;
+              border-left:3px solid transparent; }
+  .nav-item svg { flex-shrink:0; width:16px; height:16px; }
+  .nav-item .nav-label { flex:1; }
+  .nav-item.level-2 { padding-left:22px; font-size:12.5px; color:#bfd0dc; }
+  .ic-amber { color:#c58a2e; } .ic-teal { color:#2e8b76; }
+  .ic-blue { color:#5b8db8; }  .ic-purple { color:#b28ce0; }
+  .ic-slate { color:#9fb4c4; }
   .nav-item:hover { background:rgba(255,255,255,.06); }
   .nav-item.active { background:var(--steel); color:#fff; font-weight:600;
-                     box-shadow:inset 3px 0 0 var(--amber); }
+                     border-left-color:var(--amber); }
   .sidebar-footer { padding:10px 16px; font-size:11px; color:#7f97a8;
                     border-top:1px solid rgba(255,255,255,.08); }
 
-  .main { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .main { flex:1; min-width:0; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
   .topbar { background:var(--surface); border-bottom:1px solid var(--border);
             padding:10px 18px; display:flex; align-items:center;
-            justify-content:space-between; gap:12px; flex-wrap:wrap; }
+            justify-content:space-between; gap:12px; flex-wrap:wrap;
+            flex:0 0 auto; }
   .topbar-title { font-weight:600; font-size:15px; }
   .topbar-sub { font-size:11.5px; color:var(--muted); }
   .firm-chip { font-weight:700; font-size:12px; padding:4px 10px; border-radius:3px;
@@ -71,7 +86,7 @@
   .firm-REF { background:var(--steel-tint); color:var(--steel-dark); }
   .firm-RS  { background:var(--amber-bg);  color:var(--amber); }
   .sync-stamp { font-size:11.5px; color:var(--muted); }
-  .content { padding:16px 18px 60px; }
+  .content { padding:16px 18px 60px; flex:1; overflow-y:auto; min-height:0; }
 
   .card { background:var(--surface); border:1px solid var(--border); border-radius:4px;
           padding:14px; margin-bottom:14px; }
@@ -109,7 +124,10 @@
           border:1px solid transparent; white-space:nowrap; }
   .pill-amber { background:var(--amber-bg); color:var(--amber); border-color:#e6d2a8; }
   .pill-grey  { background:var(--slate-bg); color:var(--slate); }
-  .tbl-wrap { overflow:auto; max-height:62vh; border:1px solid var(--border); border-radius:4px; }
+  /* Its own scrollbox, so the column names stay put. th is sticky, and sticky
+     resolves against the nearest scrolling ancestor -- which has to be this
+     box, not the page, or the header leaves with everything else. */
+  .tbl-wrap { overflow:auto; max-height:70vh; border:1px solid var(--border); border-radius:4px; }
   .rowcount { font-size:12px; color:var(--muted); margin:8px 2px; }
 
   .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
@@ -127,7 +145,10 @@
   .loading { padding:20px; text-align:center; color:var(--muted); }
 
   @media (max-width:860px) {
-    .app-shell { flex-direction:column; }
+    /* A phone has no room for a fixed frame; the page scrolls as one again. */
+    .app-shell { flex-direction:column; height:auto; overflow:visible; }
+    .main { height:auto; overflow:visible; }
+    .content { overflow:visible; }
     .sidebar { width:100%; flex:none; }
     .sidebar-nav { display:flex; overflow-x:auto; padding:4px; }
     .nav-item { white-space:nowrap; width:auto; }
@@ -159,19 +180,19 @@
     <div class="sidebar-brand"><div class="name">REF</div><div class="tag">ERP · Busy Data</div></div>
     <nav class="sidebar-nav" id="nav">
       <div class="nav-section-label">Raghbir Erectors &amp; Fabricators</div>
-      <button class="nav-item level-2 active" data-firm="REF" data-view="price">Price History</button>
-      <button class="nav-item level-2" data-firm="REF" data-view="challans">Challans</button>
-      <button class="nav-item level-2" data-firm="REF" data-view="reports">Reports</button>
-      <button class="nav-item level-2 owner-only" data-firm="REF" data-view="deleted" style="display:none">Deleted in Busy</button>
+      <button class="nav-item level-2 active" data-firm="REF" data-view="price"><svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="nav-label">Price History</span></button>
+      <button class="nav-item level-2" data-firm="REF" data-view="challans"><svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg><span class="nav-label">Challans</span></button>
+      <button class="nav-item level-2" data-firm="REF" data-view="reports"><svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg><span class="nav-label">Reports</span></button>
+      <button class="nav-item level-2 owner-only" data-firm="REF" data-view="deleted" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span class="nav-label">Deleted in Busy</span></button>
       <div class="nav-section-label">RS Industries</div>
-      <button class="nav-item level-2" data-firm="RS" data-view="price">Price History</button>
-      <button class="nav-item level-2" data-firm="RS" data-view="challans">Challans</button>
-      <button class="nav-item level-2" data-firm="RS" data-view="reports">Reports</button>
-      <button class="nav-item level-2 owner-only" data-firm="RS" data-view="deleted" style="display:none">Deleted in Busy</button>
+      <button class="nav-item level-2" data-firm="RS" data-view="price"><svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="nav-label">Price History</span></button>
+      <button class="nav-item level-2" data-firm="RS" data-view="challans"><svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg><span class="nav-label">Challans</span></button>
+      <button class="nav-item level-2" data-firm="RS" data-view="reports"><svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg><span class="nav-label">Reports</span></button>
+      <button class="nav-item level-2 owner-only" data-firm="RS" data-view="deleted" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span class="nav-label">Deleted in Busy</span></button>
       <div class="nav-section-label owner-only" style="display:none">Owner only</div>
-      <button class="nav-item level-2 owner-only" data-view="upload" style="display:none">Load history</button>
-      <button class="nav-item level-2 owner-only" data-view="download" style="display:none">Download the uploader</button>
-      <button class="nav-item level-2 owner-only" data-view="setup" style="display:none">Setup instructions</button>
+      <button class="nav-item level-2 owner-only" data-view="upload" style="display:none"><svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><span class="nav-label">Load history</span></button>
+      <button class="nav-item level-2 owner-only" data-view="download" style="display:none"><svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span class="nav-label">Download the uploader</span></button>
+      <button class="nav-item level-2 owner-only" data-view="setup" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="nav-label">Setup instructions</span></button>
     </nav>
     <div class="sidebar-footer">Imported from Busy. Read only.</div>
   </div>
@@ -1175,41 +1196,94 @@ upload_token = (shown on the download screen)</pre>
     refreshTotals();
   }
 
+  /* ---- A YEAR ARRIVES IN PIECES AND IS STILL COMPARED AS A WHOLE ----
+     REF 2025-26 is 7,219 rows. Sent as one call it was refused: a signed-in
+     person gets 8 seconds and that does not fit.
+
+     So the rows are staged a few hundred at a time — each call small and
+     quick — and then ONE call compares the whole year and does the deletion
+     sweep. The rule is untouched: nothing is compared, and nothing is marked
+     deleted, until every chunk has landed.
+
+     If any chunk fails, the comparison is never run, so busy_history is never
+     touched. Nothing half-loaded — not because a transaction rolled back
+     across separate calls, which it cannot, but because nothing reaches the
+     real table until the whole year is there. What was staged is thrown away. */
+  var CHUNK = 500;
+
   function loadRowsBatch(i, done) {
     var it = items[i];
-    setCell(i, 'prog', '<span style="color:var(--muted)">sending…</span>');
+    var total = it.rows.length;
+    var batchId = null;
+
+    function fail(message, pill) {
+      finishItem(i, false, message, pill);
+      var after = batchId
+        ? REF.supabase().from('busy_import_batches').update({
+            status: 'cancelled', finished_at: new Date().toISOString(),
+            error_message: String(message).replace(/<[^>]*>/g, '').slice(0, 2000)
+          }).eq('id', batchId).then(function () {
+            // Throw away what arrived. None of it ever reached busy_history.
+            return REF.supabase().rpc('busy_import_abandon', { p_batch_id: batchId });
+          })
+        : Promise.resolve();
+      Promise.resolve(after).then(done, done);
+    }
+
+    setCell(i, 'prog', '<span style="color:var(--muted)">0 of ' + inr.format(total) + '</span>');
+
     REF.supabase().from('busy_import_batches').insert({
       company: it.company, fy: it.fy, source_file: 'one-time load', status: 'draft'
     }).select().single().then(function (b) {
-      var batchId = b.data ? b.data.id : null;
-      // The WHOLE year in one call. Splitting it would mark the rest deleted.
-      return REF.supabase().rpc('busy_import_fy', {
-        p_batch_id: batchId, p_company: it.company, p_fy: it.fy, p_rows: it.rows
+      if (b.error) throw new Error(b.error.message);
+      batchId = b.data ? b.data.id : null;
+      if (!batchId) throw new Error('The load could not be started — no batch was created.');
+
+      var sent = 0;
+      function sendNext() {
+        if (sent >= total) return Promise.resolve();
+        var piece = it.rows.slice(sent, sent + CHUNK);
+        return REF.supabase().rpc('busy_import_stage', {
+          p_batch_id: batchId, p_company: it.company, p_fy: it.fy, p_rows: piece
+        }).then(function (res) {
+          if (res.error) throw new Error(res.error.message);
+          sent += piece.length;
+          setCell(i, 'prog', '<span style="color:var(--muted)">' +
+            inr.format(sent) + ' of ' + inr.format(total) + '</span>');
+          $('uploadState').textContent =
+            'Loading ' + it.company + ' ' + it.fy + ' — ' +
+            inr.format(sent) + ' of ' + inr.format(total) + ' rows sent. Leave this page open.';
+          return sendNext();
+        });
+      }
+
+      return sendNext().then(function () {
+        setCell(i, 'prog', '<span style="color:var(--muted)">comparing the year…</span>');
+        $('uploadState').textContent =
+          'All ' + inr.format(total) + ' rows of ' + it.company + ' ' + it.fy +
+          ' have arrived. Comparing the whole year. Leave this page open.';
+        return REF.supabase().rpc('busy_import_finalise', {
+          p_batch_id: batchId, p_company: it.company, p_fy: it.fy
+        });
       }).then(function (res) {
         if (res.error) {
-          finishItem(i, false,
-            '<span style="color:var(--danger)"><strong>Nothing was loaded from this batch.</strong>' +
-            '<br>' + esc(res.error.message) + '</span>',
-            '<span style="color:var(--danger)">refused</span>');
-          if (batchId) REF.supabase().from('busy_import_batches').update({
-            status: 'cancelled', finished_at: new Date().toISOString(),
-            error_message: String(res.error.message).slice(0, 2000)
-          }).eq('id', batchId).then(function () {});
-        } else {
-          var d = (res.data && res.data[0]) || res.data || {};
-          finishItem(i, true, describeCounts(d), '<span style="color:var(--green)">done</span>');
-          if (batchId) REF.supabase().from('busy_import_batches').update({
-            status: 'completed', finished_at: new Date().toISOString(),
-            rows_read: it.rows.length, rows_inserted: d.inserted || 0, rows_updated: d.updated || 0
-          }).eq('id', batchId).then(function () {});
+          fail('<span style="color:var(--danger)"><strong>Nothing was loaded from this batch.</strong>' +
+               '<br>' + esc(res.error.message) + '</span>',
+               '<span style="color:var(--danger)">refused</span>');
+          return;
         }
-        done();
+        var d = (res.data && res.data[0]) || res.data || {};
+        finishItem(i, true, describeCounts(d), '<span style="color:var(--green)">done</span>');
+        var after = REF.supabase().from('busy_import_batches').update({
+          status: 'completed', finished_at: new Date().toISOString(),
+          rows_read: total, rows_inserted: d.inserted || 0, rows_updated: d.updated || 0
+        }).eq('id', batchId);
+        Promise.resolve(after).then(done, done);
       });
     }).catch(function (e) {
-      finishItem(i, false, '<span style="color:var(--danger)">' + esc(e.message) +
+      fail('<span style="color:var(--danger)">' + esc(e.message) +
         '<br>Nothing was loaded from this batch — it can be tried again on its own.</span>',
         '<span style="color:var(--danger)">failed</span>');
-      done();
     });
   }
 

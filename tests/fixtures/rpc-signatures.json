@@ -1,6 +1,6 @@
 {
  "_refresh": "see tests/check-rpc-calls.js",
- "_taken_from": "public schema of refcon-erp, 17 Sep 2026",
+ "_taken_from": "public schema of refcon-erp, 18 Sep 2026",
  "functions": {
   "busy_compact": {
    "args": [
@@ -14,6 +14,22 @@
     "p_company"
    ],
    "total": 1,
+   "with_defaults": 0
+  },
+  "busy_import_abandon": {
+   "args": [
+    "p_batch_id"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_import_finalise": {
+   "args": [
+    "p_batch_id",
+    "p_company",
+    "p_fy"
+   ],
+   "total": 3,
    "with_defaults": 0
   },
   "busy_import_fy": {
@@ -32,6 +48,16 @@
     "p_rows"
    ],
    "total": 2,
+   "with_defaults": 0
+  },
+  "busy_import_stage": {
+   "args": [
+    "p_batch_id",
+    "p_company",
+    "p_fy",
+    "p_rows"
+   ],
+   "total": 4,
    "with_defaults": 0
   },
   "busy_monthly_totals": {
