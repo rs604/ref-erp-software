@@ -1,6 +1,6 @@
 {
  "_refresh": "see tests/check-rpc-calls.js",
- "_taken_from": "public schema of refcon-erp, 18 Sep 2026, after migration 62",
+ "_taken_from": "public schema of refcon-erp, 18 Sep 2026, after migration 63",
  "functions": {
   "busy_clear_history": {
    "args": [
@@ -134,10 +134,11 @@
     "p_party",
     "p_doc_types",
     "p_date_from",
-    "p_date_to"
+    "p_date_to",
+    "p_undated_only"
    ],
-   "total": 6,
-   "with_defaults": 5
+   "total": 7,
+   "with_defaults": 6
   },
   "busy_split_query": {
    "args": [

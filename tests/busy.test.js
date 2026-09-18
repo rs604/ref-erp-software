@@ -714,6 +714,69 @@ async function openBusy(server, browser, user) {
     });
     record('with nothing typed, no row claims to be a match of any kind', blank);
 
+    // WHAT BUSY DID NOT GIVE US IS SHOWN AS MISSING, NOT AS BLANK
+    // Five Credit Note rows in the real data carry no voucher number. A row
+    // that exists and cannot be fully described is information about the
+    // source, not a defect to tidy away — so it is shown, and marked.
+    await p.evaluate(rows => {
+      window.__TEST_DATA__['rpc:busy_search'] = () => [
+        Object.assign({}, rows[0], { item: 'HAS BOTH', vch_no: 'V-1', vch_date: '2024-06-01', match_tier: 1 }),
+        Object.assign({}, rows[0], { item: 'NO NUMBER', vch_no: '',  vch_date: '2024-06-02', match_tier: 1 }),
+        Object.assign({}, rows[0], { item: 'NO DATE',   vch_no: 'V-3', vch_date: null,       match_tier: 1 }),
+      ];
+    }, DB['rpc:busy_search']);
+    await p.locator('#q').fill('');
+    await p.locator('#q').type('pipe', { delay: 10 });
+    await p.waitForTimeout(600);
+    const marked = await p.evaluate(() => {
+      const head = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const rowFor = t => Array.from(document.querySelectorAll('#rows tr')).find(r => r.innerText.includes(t));
+      const cell = (t, col) => {
+        const r = rowFor(t); const i = head.indexOf(col);
+        return r && i >= 0 ? r.children[i].textContent.trim() : null;
+      };
+      return {
+        goodDate: cell('HAS BOTH', 'Date'),
+        goodVch: cell('HAS BOTH', 'Vch No'),
+        noNumber: cell('NO NUMBER', 'Vch No'),
+        noDate: cell('NO DATE', 'Date'),
+        allThreeShown: ['HAS BOTH', 'NO NUMBER', 'NO DATE'].every(rowFor),
+      };
+    });
+    record('a row Busy could not fully describe is still SHOWN, not hidden',
+      marked.allThreeShown);
+    record('a missing voucher number says so, rather than sitting blank',
+      marked.noNumber === 'no number in Busy', marked.noNumber);
+    record('a missing date says so, rather than sitting blank',
+      marked.noDate === 'no date in Busy', marked.noDate);
+    record('a row that HAS both still shows the real values',
+      marked.goodVch === 'V-1' && /Jun/.test(marked.goodDate || ''),
+      `${marked.goodVch} · ${marked.goodDate}`);
+
+    // A DATE RANGE SAYS WHAT IT LEFT OUT
+    // Undated rows cannot be inside any range, so a range drops them. The
+    // count must say so rather than quietly shrinking.
+    await p.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_search_count'] =
+        (args) => (args && args.p_undated_only) ? 5 : 120;
+    });
+    await p.locator('#from').fill('2024-04-01');
+    await p.waitForTimeout(700);
+    const said = await p.locator('#rowCount').innerText();
+    record('with a date range set, the screen says how many rows it left out for having no date',
+      /5 rows have no date and are not included in this range/.test(said), said);
+    const askedUndated = await p.evaluate(() => window.__TEST_DB_CALLS__
+      .filter(c => c.name === 'rpc:busy_search_count' && c.args && c.args.p_undated_only).length);
+    record('and it asks that question with the SAME filters, not a guess',
+      askedUndated > 0, `${askedUndated} calls`);
+
+    // With no range there is nothing being left out, so nothing is claimed.
+    await p.locator('#from').fill('');
+    await p.waitForTimeout(700);
+    const noRange = await p.locator('#rowCount').innerText();
+    record('with no date range, the screen claims nothing about undated rows',
+      !/no date/.test(noRange), noRange);
+
     // 8 — Back to ERP on the left
     const sides = await p.evaluate(() => {
       const back = document.querySelector('.topbar a[href="admin.html"]').getBoundingClientRect();

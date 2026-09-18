@@ -387,25 +387,49 @@ both table ends · Tab still walks the controls outside`
 
 ---
 
-## 5g. IS THIS NUMBER COUNTING THE THING, OR A RECORD ABOUT THE THING?
+## 5g. A NUMBER THAT REPORTS SUCCESS MUST COUNT THE THING
 
 The Load history counters read **zero** while `busy_history` held 98,644 rows.
-Raghbir had been told to check the load against those three numbers. Zero on a
-full table is worse than no number at all: had the load really failed, he could
-not have told the difference.
+Raghbir had been told to check the load against those numbers. Zero on a full
+table is worse than no number at all: had the load really failed, he could not
+have told the difference.
 
-Ask it of **every number on every screen**:
+The first version of this rule was "never count records", and that is too
+wide. The employee count on the HR screen counts employee rows, and the
+employee row **is** the thing. Nothing is wrong with it.
 
-- **Counting the thing** — `count(*)` over the rows themselves. Safe.
-- **Counting a record about the thing** — a batch that says it finished, a
-  status field, a stored total. That number can be right while the thing it
-  describes is wrong, and it will be believed anyway.
+**The rule is narrower and more useful:**
 
-This is convention 6 in `docs/12` — balances are derived from the documents,
-never typed in — applied to counts. A total is **added up from its parts** and
-never stored, so it cannot disagree with them.
+> **If a number's job is to tell you whether something WORKED, it must count
+> the thing, not a record about the thing.**
 
-### And the fault underneath it, which is more common
+The counters that lied were answering *"did the load work"* by counting
+batches. The question was about rows; the answer came from batches. That is
+the fault, and it is the only one worth hunting.
+
+### So check every number that reports SUCCESS, COMPLETENESS or STATE
+
+And leave alone every number that simply counts what it says it counts.
+
+| Number | Reports | Answers from | |
+|---|---|---|---|
+| Load history counters | did the load work | **was** views over `busy_history`, refused → 0 | **fixed** — `busy_row_counts()` over the rows |
+| rows per financial year | is this year complete | `count(*)` over `busy_history` | the thing |
+| clear preview, "this will remove N" | what is about to happen | `count(*)` over `busy_history` | the thing |
+| "added N, changed N, marked gone N" | did the import work | counted as the import wrote them, and the counters refresh straight after | the thing |
+| last checked against Busy | when a sync last finished | a batch record | **the sync IS the thing** — but the wording had to say so; "as at 1:05 pm" read as "the rows are current to then" |
+| failed syncs in the last 7 days | is syncing healthy | batch records | the sync IS the thing |
+| year is "frozen" | is this year still compared | batch timestamps | the sync IS the thing |
+| uploader version | what is installed on that PC | a typed-in setting | it cannot be observed from here, so the screen says it is typed in |
+| expected row counts | what Busy should hold | typed in, from Busy | correct — this is the target, not the measurement |
+| price history row count and pager | how many match | `count(*)` over `busy_history` | counts what it says |
+| employees, vendors, approvals, salary sheets, holidays | how many | `.length` of the list being shown | counts what it says |
+| payroll totals, monthly totals, GST | how much | summed from the rows | counts what it says |
+
+**One number was wrong.** It was the one he had been told to check the load
+against.
+
+### And the fault underneath it, which is the more common one
 
 `busy_history` had a read policy for `authenticated` and **no SELECT grant
 behind it**, so every read was refused before the policy was ever consulted.
@@ -416,21 +440,52 @@ return sel.then(function (r) { return r.count || 0; });   // a refusal becomes 0
 ```
 
 **A call that fails is never turned into a number, a zero, or an empty list.**
-Three shapes of the same lie, all found on this pass:
+Four shapes of the same lie, all found on these passes:
 
 | Written as | Reads on screen as | Actually means |
 |---|---|---|
 | `r.count \|\| 0` | `0` | the read was refused |
 | `r.live_rows \|\| 0` | `0 rows this year` | the field never arrived |
 | `(res.success && res.requests) \|\| []` | `Nothing pending right now.` | the call failed |
+| `res.entries.filter(...)` | a blank screen, no message | the reply left the list out |
 
-Say what went wrong, in red, and show no number at all.
+The last one is the opposite failure and just as bad: three screens threw and
+showed nothing at all. An **absent** list is a broken reply, not an empty one.
+Say which it was, in red, and show no number.
 
 `tests/check-rls-grants.sql` asks the grant question of every table at once —
 a read policy with no grant, a grant with no policy, and no row security at
 all. Run it after any migration that adds a table, a policy or a view.
 
 **Report as:** `88 tables · all reachable on purpose`
+
+---
+
+## 5h. A FILTER SAYS WHAT IT LEFT OUT
+
+A row with no date cannot satisfy "on or after 1 April". Postgres is right to
+drop it — null is not less than, not greater than, and not equal to anything.
+But the total then quietly excludes rows that exist, and nothing says so.
+Same family as 5g: the number is not wrong, the **silence** is.
+
+So a filtered screen asks a second question with the same filters — how many
+rows match everything except the filter, and have nothing to filter on? — and
+says so in words:
+
+> `3,411 rows found · 5 rows have no date and are not included in this range`
+
+Asked only when a filter is actually set, because with no filter nothing is
+being left out and there is nothing to claim.
+
+### And what is missing is SHOWN as missing, never as blank
+
+A blank cell reads as "nobody has filled this in yet". `no date in Busy` and
+`no number in Busy` read as what they are: **this is what came out of Busy**.
+Five Credit Note rows in the real data carry no voucher number.
+
+**Never guess the value. Never hide the row.** A row that exists and cannot be
+fully described is information about the source data, not a defect to tidy
+away.
 
 ---
 

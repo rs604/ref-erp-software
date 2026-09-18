@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789740928';</script>
+<script>window.__BUILD_VERSION__ = '1789748747';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -133,6 +133,9 @@
   table.tbl tbody tr:hover td { background:#eef4f9; }
   mark { background:var(--hit); padding:0 1px; }
   .desc { color:#3c4a57; font-size:12px; }
+  /* What Busy did not give us. Said in words, in a quieter colour, so it
+     reads as a note about the source rather than as a value. */
+  .missing { color:var(--muted); font-style:italic; font-size:11.5px; white-space:nowrap; }
   .pill { display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:10px;
           border:1px solid transparent; white-space:nowrap; }
   .pill-amber { background:var(--amber-bg); color:var(--amber); border-color:#e6d2a8; }
@@ -789,6 +792,8 @@ upload_token = (shown on the download screen)</pre>
      decoded, and half the world decodes it the other way round. The month in
      letters cannot be read wrongly. The rest of this page already did it this
      way; the search table was the one place that did not. */
+  function btrim(v) { return String(v === null || v === undefined ? '' : v).trim(); }
+
   function dmy(iso) {
     if (!iso) return '';
     var p = String(iso).slice(0, 10).split('-');
@@ -983,19 +988,25 @@ upload_token = (shown on the download screen)</pre>
       .then(function (res) {
         var row = res.data && res.data[0];
         if (!row || !row.last_success_at) {
-          $('syncStamp').textContent = 'never synced';
+          $('syncStamp').textContent = 'never checked against Busy';
           $('syncStamp').style.color = 'var(--danger)';
           return;
         }
+        // "as at 1:05 pm" invited a reading this cannot support: that the rows
+        // are current to then. What this number actually knows is that a sync
+        // FINISHED then. It is the right source for that question -- the sync
+        // is the thing being asked about, and a sync that was refused is
+        // recorded as cancelled, not completed -- but the words have to say
+        // which question it is answering.
         var d = new Date(row.last_success_at);
-        $('syncStamp').textContent = 'as at ' +
+        $('syncStamp').textContent = 'last checked against Busy at ' +
           d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) + ', ' +
           d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
         $('syncStamp').style.color = '';
       })
-      .catch(function () { $('syncStamp').textContent = 'sync time unknown'; });
+      .catch(function () { $('syncStamp').textContent = 'when it was last checked is not known'; });
     setTimeout(function () {
-      if ($('syncStamp').textContent === 'checking…') $('syncStamp').textContent = 'sync time unknown';
+      if ($('syncStamp').textContent === 'checking…') $('syncStamp').textContent = 'when it was last checked is not known';
     }, SLOW_AFTER_MS);
   }
 
@@ -1154,6 +1165,11 @@ upload_token = (shown on the download screen)</pre>
       ' of ' + inr.format(totalRows);
   }
 
+  /* How many rows the date range left out because they have no date at all.
+     Nothing to do with the search: a row that exists and cannot be dated is
+     information about what came out of Busy, not a defect to tidy away. */
+  var undatedOut = 0;
+
   function run() {
     clearTimeout(typingTimer);
     var q = $('q').value.trim();
@@ -1175,13 +1191,32 @@ upload_token = (shown on the download screen)</pre>
 
     // How many match in total, so the pager can say "page 2 of 14". Counted
     // with the same filters, so it counts the same rows.
-    Promise.resolve(REF.supabase().rpc('busy_search_count', filters))
+    // p_undated_only is passed rather than left to its default, so the two
+    // calls below read as the pair they are: the rows inside the range, and
+    // the rows the range can never hold.
+    Promise.resolve(REF.supabase().rpc('busy_search_count',
+      Object.assign({}, filters, { p_undated_only: false })))
       .then(function (c) {
         if (mine !== runToken) return;
         totalRows = (c && !c.error && Number(c.data)) || 0;
         if (pageNo > pageCount()) pageNo = pageCount();
       })
       .catch(function () { totalRows = 0; });
+
+    // A row with no date cannot be inside any range, so a range silently
+    // drops it. Asked only when a range is actually set, because with no
+    // range nothing is being left out and there is nothing to say.
+    undatedOut = 0;
+    if (filters.p_date_from || filters.p_date_to) {
+      Promise.resolve(REF.supabase().rpc('busy_search_count',
+        Object.assign({}, filters, { p_undated_only: true })))
+        .then(function (c) {
+          if (mine !== runToken) return;
+          undatedOut = (c && !c.error && Number(c.data)) || 0;
+          if (undatedOut) drawRowCount();
+        })
+        .catch(function () { undatedOut = 0; });
+    }
 
     var say = intoTable('rows', cols);
     guard(REF.supabase().rpc('busy_search', Object.assign({}, filters, {
@@ -1231,10 +1266,14 @@ upload_token = (shown on the download screen)</pre>
         sr:    '<td>' + (i + 1) + '</td>',
         match: '<td>' + (kind ? '<span class="pill ' + kind.cls + '" title="' + esc(kind.why) + '">' +
                                 esc(kind.label) + '</span>' : '') + '</td>',
-        date:  '<td>' + dmy(r.vch_date) + '</td>',
+        // A missing value is shown as missing, never as blank. Blank reads as
+        // "nobody filled this in yet"; this is "Busy does not have it".
+        date:  '<td>' + (r.vch_date ? dmy(r.vch_date)
+                                    : '<span class="missing">no date in Busy</span>') + '</td>',
         fy:    '<td>' + esc(r.fy) + '</td>',
         type:  '<td>' + esc(r.doc_type) + '</td>',
-        vch:   '<td>' + esc(r.vch_no) + '</td>',
+        vch:   '<td>' + (btrim(r.vch_no) ? esc(r.vch_no)
+                                        : '<span class="missing">no number in Busy</span>') + '</td>',
         party: '<td class="l">' + hi(r.party, q) + '</td>',
         item:  '<td class="l">' + hi(r.item, q) + '</td>',
         desc:  '<td class="l desc">' + hi(r.description, q) + '</td>',
@@ -1251,6 +1290,17 @@ upload_token = (shown on the download screen)</pre>
     $('rows').innerHTML = html;
     if (grid) grid.clear();
 
+    lastShown = { rows: rows, q: q };
+    drawRowCount();
+  }
+
+  /* The line under the table. Drawn from whatever is known at the time, and
+     drawn AGAIN when the undated count arrives, because that answer comes
+     back on its own and must not be lost by having got there second. */
+  var lastShown = { rows: [], q: '' };
+
+  function drawRowCount() {
+    var rows = lastShown.rows, q = lastShown.q;
     var close = rows.filter(function (r) { return q && (r.match_tier === 3 || r.match_tier === 4); }).length;
     var split = rows.filter(function (r) { return q && r.match_tier === 4; }).length;
     var note = '';
@@ -1259,6 +1309,14 @@ upload_token = (shown on the download screen)</pre>
              ', not exact';
       if (split === close) note += ' — the words look to have been typed run together';
       else if (split) note += ' (' + split + ' of them words typed run together)';
+    }
+    // A date range cannot hold a row that has no date, so it drops it. Say
+    // so. A total that quietly shrinks is the same fault as a counter that
+    // reads zero on a full table: the number is not wrong, the silence is.
+    if (undatedOut) {
+      note += ' · ' + inr.format(undatedOut) + ' row' + (undatedOut === 1 ? '' : 's') +
+              ' ha' + (undatedOut === 1 ? 's' : 've') + ' no date and ' +
+              (undatedOut === 1 ? 'is' : 'are') + ' not included in this range';
     }
     $('rowCount').textContent =
       inr.format(totalRows || rows.length) + ' row' + ((totalRows || rows.length) === 1 ? '' : 's') +
