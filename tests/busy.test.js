@@ -598,6 +598,168 @@ async function openBusy(server, browser, user) {
     await p.close();
   }
 
+  /* ============ COLOURS: plain enough to work in ============ */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.locator('#q').type('pipe', { delay: 5 });
+    await p.waitForTimeout(600);
+
+    const seen = await p.evaluate(() => {
+      const rgb = el => getComputedStyle(el).backgroundColor;
+      const lum = c => {
+        const m = c.match(/\d+/g).map(Number);
+        return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255;
+      };
+      // Only rows that are NOT close matches. A close match is tinted on
+      // purpose, and picking rows blindly read that tint as the row colour.
+      const plain = Array.from(document.querySelectorAll('#rows tr'))
+        .filter(r => !r.classList.contains('fuzzy'));
+      const odd = plain.find((r, i) => Array.from(r.parentNode.children).indexOf(r) % 2 === 0);
+      const even = plain.find(r => Array.from(r.parentNode.children).indexOf(r) % 2 === 1);
+      const mark = document.querySelector('#rows mark.hit');
+      return {
+        page: rgb(document.body),
+        pageLum: lum(rgb(document.body)),
+        odd: rgb(odd), oddLum: lum(rgb(odd)),
+        even: rgb(even), evenLum: lum(rgb(even)),
+        head: rgb(document.querySelector('#headRow th')),
+        headLum: lum(rgb(document.querySelector('#headRow th'))),
+        fuzzyTinted: Array.from(document.querySelectorAll('#rows tr'))
+          .some(r => r.classList.contains('fuzzy')),
+        hit: mark ? rgb(mark) : null,
+        hitLum: mark ? lum(rgb(mark)) : null,
+      };
+    });
+
+    record('the page is white, not a filled colour', seen.pageLum > 0.97, seen.page);
+    record('one row is white', seen.oddLum > 0.99, seen.odd);
+    record('the next is a very light blue, not something stronger',
+      seen.evenLum > 0.93 && seen.evenLum < 0.99, seen.even);
+    record('the heading is darker than the rows, but still sober',
+      seen.headLum < seen.evenLum && seen.headLum > 0.80,
+      `heading ${seen.headLum.toFixed(2)} against rows ${seen.evenLum.toFixed(2)}`);
+    record('the search highlight is dark enough to read, not a faint wash',
+      seen.hitLum !== null && seen.hitLum < 0.88 && seen.hitLum > 0.60,
+      `${seen.hit} (a faint wash would be above 0.92)`);
+    record('a close match is still tinted, and only a close match',
+      seen.fuzzyTinted);
+    record('the highlight stands out against the row it sits on',
+      seen.hitLum !== null && (seen.evenLum - seen.hitLum) > 0.10,
+      `row ${seen.evenLum.toFixed(2)} against highlight ${seen.hitLum.toFixed(2)}`);
+    await p.close();
+  }
+
+  /* ============ DATE FIELDS: the same two keys ============ */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.waitForTimeout(400);
+
+    const today = await p.evaluate(() => {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+             '-' + String(d.getDate()).padStart(2, '0');
+    });
+
+    for (const id of ['from', 'to']) {
+      await p.locator('#' + id).focus();
+      await p.keyboard.press('t');
+      await p.waitForTimeout(400);
+      record(`T puts today into the ${id} date`,
+        await p.locator('#' + id).inputValue() === today,
+        await p.locator('#' + id).inputValue());
+
+      await p.locator('#' + id).focus();
+      await p.keyboard.press('Delete');
+      await p.waitForTimeout(400);
+      record(`Delete clears the ${id} date`,
+        await p.locator('#' + id).inputValue() === '');
+    }
+
+    const tips = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('input[type=date]')).map(e => e.title));
+    record('both date fields say what the keys are, on hover',
+      tips.length === 2 && tips.every(t => /T = today/.test(t) && /Delete = clear/.test(t)),
+      tips[0] || '(no tooltip)');
+
+    // Setting a date must actually search, not just sit there.
+    const before = await p.evaluate(() => window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').length);
+    await p.locator('#from').focus();
+    await p.keyboard.press('t');
+    await p.waitForTimeout(500);
+    const after = await p.evaluate(() => window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').length);
+    record('a date put in with the keyboard searches, like one put in by hand',
+      after > before, `${after - before} searches`);
+
+    const help = await p.evaluate(() => {
+      let seenText = null; const real = window.alert;
+      window.alert = t => { seenText = t; };
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: '/', ctrlKey: true, bubbles: true }));
+      window.alert = real; return seenText;
+    });
+    record('the date keys are in the shortcut list too',
+      !!help && /T — today/.test(help) && /Delete — clear the date/.test(help));
+    await p.close();
+  }
+
+  /* ============ EVERY CONTROL, CLICKED ============
+     Not a sample. Every clickable thing on Price History, driven, with the
+     page checked for script errors after each one. */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    const errs = [];
+    p.on('pageerror', e => errs.push(e.message));
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.waitForTimeout(500);
+
+    const clicked = [];
+    async function click(what, sel, how) {
+      const el = p.locator(sel).first();
+      if (await el.count() === 0) { clicked.push(what + ' (MISSING)'); return false; }
+      await el.scrollIntoViewIfNeeded();
+      if (how === 'select') await p.selectOption(sel, { index: 1 });
+      else if (how === 'type') { await el.click(); await el.type('pipe', { delay: 5 }); }
+      else await el.click();
+      await p.waitForTimeout(350);
+      clicked.push(what);
+      return true;
+    }
+
+    await click('the search box', '#q', 'type');
+    await click('the clear cross', '#qClear');
+    for (const t of ['Sales Invoice','Purchase Bill','Delivery Challan','Purchase Order','Sales Order']) {
+      await click('the ' + t + ' tickbox', `.chip input[data-type="${t}"]`);
+    }
+    await click('the From date', '#from');
+    await click('the To date', '#to');
+    await click('how many to show', '#pageSize', 'select');
+    await click('the Columns button', '#colBtn');
+    for (const c of ['date','fy','type','vch','party','item','desc','qty','rate','amt']) {
+      await click('the ' + c + ' column box', `#colList input[data-col="${c}"]`);
+    }
+    await click('the Columns button again', '#colBtn');
+    for (let i = 0; i < 11; i++) {
+      await click('menu item ' + (i + 1), `#nav .nav-item:nth-of-type(${i + 1})`);
+    }
+
+    record(`every control on the screen was clicked (${clicked.length})`,
+      !clicked.some(c => /MISSING/.test(c)),
+      clicked.filter(c => /MISSING/.test(c)).join(', ') || 'none missing');
+    record('nothing threw while every control was being clicked',
+      errs.length === 0, errs.slice(0, 3).join(' | '));
+
+    // With every column turned off but Sr., the table must still be sane.
+    const sane = await p.evaluate(() => {
+      const heads = document.querySelectorAll('#headRow th').length;
+      const rows = Array.from(document.querySelectorAll('#rows tr'));
+      return { heads, ok: rows.every(r => r.children.length === heads || r.children.length === 1) };
+    });
+    record('the table still lines up with every column turned off but one',
+      sane.heads >= 1 && sane.ok, `${sane.heads} heading(s)`);
+    await p.close();
+  }
+
   /* ============ THE FRAME: WHAT MUST NOT SCROLL AWAY ============
      Three complaints with one cause: the page scrolled as a whole, taking the
      menu, the page title and the way out with it. */

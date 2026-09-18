@@ -114,6 +114,21 @@ Every form. Every one of these.
 | Arrow keys inside a table | Move between cells, like a spreadsheet |
 | F6 | Deletes the row the cursor is on |
 
+**Every date field, everywhere in the ERP:**
+
+| Key | Expected |
+|---|---|
+| `T` | Puts today in |
+| `Delete` | Empties the field |
+
+Both go in the field's tooltip, so they are findable without being taught.
+Dates get typed dozens of times a day, and reaching for the mouse to empty one
+is the friction that makes people stop using a system.
+
+`Esc` is deliberately **not** a date key. On a screen where Esc already clears
+a search box, one key doing two different jobs depending on where the cursor
+happens to be is how people learn not to trust a key.
+
 **Also:**
 
 - Focus lands in the first field, or the search box, when the screen opens.
@@ -221,6 +236,34 @@ Only for the screens genuinely used on one — raising a request, approving.
 - Sign in as a supervisor: sees department attendance, **not** bank details
 - Owner-only screens are **absent from the menu**, not greyed
 - A screen reached by typing its address directly is still refused
+
+---
+
+## A CHANGE THAT SPANS TWO PLACES HAPPENS IN THREE STEPS
+
+The database, the deployed pages and the deployed functions do not change at
+the same instant. Whichever moves first, there is a window where the other one
+is wrong — and in that window, real people hit real errors.
+
+**Never remove the old shape in the same breath as adding the new one.**
+
+| Step | What |
+|---|---|
+| 1 | Add the new shape. The old one keeps working |
+| 2 | Ship the page or the function that uses the new shape, and wait for it to actually be everywhere |
+| 3 | Only then remove the old shape |
+
+This was reasoned about carefully for a permission-key rename, written down,
+and then walked straight into a day later on a search function: the old
+argument was dropped in the same migration that added the new one, and every
+browser still holding the previous copy of the page broke instantly. The
+database and the repository agreed with each other the whole time. What
+disagreed was the database and the page already open on somebody's screen.
+
+**A test cannot catch this one.** The repository was right, the database was
+right, and every check passed. Only the order of the two deployments was
+wrong. So it is a rule, not a test — and the test that goes with it is the
+cheap one: after a change that spans two places, open the thing and click it.
 
 ---
 

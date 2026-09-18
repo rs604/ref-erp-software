@@ -31,81 +31,48 @@ const MAY_OMIT = {
   },
 };
 
-function filesToScan(dir, out = []) {
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === '.git' || e.name === 'node_modules' || e.name === 'tokyo-backup') continue;
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) filesToScan(p, out);
-    else if (/\.(html|js|ts)$/.test(e.name) && !p.includes('/tests/')) out.push(p);
-  }
-  return out;
-}
+const { rpcCallSites } = require('./call-sites');
 
-/* Pulls the top-level keys out of the object literal a call passes. */
-function argsOf(src, openBraceIdx) {
-  let depth = 0, end = openBraceIdx;
-  for (let i = openBraceIdx; i < src.length; i++) {
-    if (src[i] === '{') depth++;
-    else if (src[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
-  }
-  const body = src.slice(openBraceIdx + 1, end);
-  const keys = new Set();
-  let d = 0;
-  // A key sits at the START of an entry -- at the beginning, or after a comma
-  // at depth 0 -- and nowhere else. Without that, the middle of a ternary
-  // reads as a key: `p_doc_types: list.length ? list : null` looked like a
-  // key called "list". The checker said the page passed an argument that does
-  // not exist, which was the checker misreading, not the page misbehaving.
-  let expectKey = true;
-  for (let i = 0; i < body.length; i++) {
-    const c = body[i];
-    if ('{[('.includes(c)) { d++; continue; }
-    if ('}])'.includes(c)) { d--; continue; }
-    if (d !== 0) continue;
-    if (c === ',') { expectKey = true; continue; }
-    if (/\s/.test(c)) continue;
-    // Step over comments. A comment sitting between a comma and the next key
-    // used to eat that key, so an argument that WAS passed was reported
-    // missing -- the checker reading its own blind spot as a fault.
-    if (c === '/' && body[i + 1] === '/') { i = body.indexOf('\n', i); if (i < 0) break; continue; }
-    if (c === '/' && body[i + 1] === '*') { i = body.indexOf('*/', i) + 1; if (i < 1) break; continue; }
-    if (expectKey) {
-      const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*:/.exec(body.slice(i));
-      if (m) keys.add(m[1]);
-      expectKey = false;      // the rest of this entry is a value
-    }
-  }
-  return [...keys];
-}
 
 const findings = [];
 let calls = 0;
 
-for (const file of filesToScan(ROOT)) {
-  const src = fs.readFileSync(file, 'utf8');
-  const re = /\.rpc\(\s*['"]([A-Za-z0-9_]+)['"]\s*(,\s*\{)?/g;
-  let m;
-  while ((m = re.exec(src))) {
-    calls++;
-    const name = m[1];
-    const line = src.slice(0, m.index).split('\n').length;
-    const where = `${path.relative(ROOT, file)}:${line}`;
-    const sig = SIGS.functions[name];
-    if (!sig) { findings.push(`${where}  ${name} — no such function is recorded`); continue; }
-    const passed = m[2] ? argsOf(src, src.indexOf('{', m.index + m[0].length - 1)) : [];
+/* The snapshot is a COPY of the database's signatures, and a copy drifts.
+   That is how busy_search came to be called with the wrong arguments twice.
+   So: if any migration is newer than the snapshot, the snapshot is stale and
+   this check cannot be trusted. Refresh it from the project before trusting
+   a pass -- the query is in tests/README.md. */
+{
+  const migDir = path.join(ROOT, 'supabase', 'migrations');
+  const sigFile = path.join(__dirname, 'fixtures', 'rpc-signatures.json');
+  const sigAt = fs.statSync(sigFile).mtimeMs;
+  const newer = fs.existsSync(migDir)
+    ? fs.readdirSync(migDir).filter(f => f.endsWith('.sql'))
+        .filter(f => fs.statSync(path.join(migDir, f)).mtimeMs > sigAt)
+    : [];
+  if (newer.length) {
+    findings.push('the recorded signatures are older than ' + newer.length +
+      ' migration(s) — ' + newer.slice(0, 3).join(', ') +
+      '. Refresh them from the project (see tests/README.md); until then a pass here proves nothing');
+  }
+}
 
-    for (const p of passed) {
-      if (!sig.args.includes(p)) {
-        findings.push(`${where}  ${name} is passed ${p}, which it does not take`);
-      }
+for (const site of rpcCallSites(ROOT)) {
+  calls++;
+  const where = site.where, name = site.fn, passed = site.args;
+  const sig = SIGS.functions[name];
+  if (!sig) { findings.push(`${where}  ${name} — no such function is recorded`); continue; }
+
+  for (const p of passed) {
+    if (!sig.args.includes(p)) {
+      findings.push(`${where}  ${name} is passed ${p}, which it does not take`);
     }
-    for (const a of sig.args) {
-      if (passed.includes(a)) continue;
-      const excuse = (MAY_OMIT[name] || {})[a];
-      if (!excuse) {
-        findings.push(`${where}  ${name} does not pass ${a}. If that is on purpose, ` +
-                      `say why in MAY_OMIT; otherwise it is leaning on a default`);
-      }
+  }
+  for (const a of sig.args) {
+    if (passed.includes(a)) continue;
+    if (!(MAY_OMIT[name] || {})[a]) {
+      findings.push(`${where}  ${name} does not pass ${a}. If that is on purpose, ` +
+                    `say why in MAY_OMIT; otherwise it is leaning on a default`);
     }
   }
 }
