@@ -84,11 +84,14 @@ async function openBusy(server, browser, user) {
       if (id !== seen[seen.length - 1]) seen.push(id);
       if (id === 'colBtn') break;
     }
-    const expected = ['qClear', 'chip:Sales Invoice', 'chip:Purchase Bill',
-      'chip:Delivery Challan', 'chip:Purchase Order', 'chip:Sales Order',
-      'from', 'to', 'pageSize', 'colBtn'];
+    // Built from what is on the screen, so adding a voucher type does not
+    // break a list written in here.
+    const chipOrder = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.chip input')).map(i => 'chip:' + i.dataset.type));
+    const expected = ['qClear'].concat(chipOrder, ['from', 'to', 'pageSize', 'colBtn']);
     record('Tab follows the controls across the screen, left to right',
-      JSON.stringify(seen) === JSON.stringify(expected), seen.join(' -> '));
+      JSON.stringify(seen) === JSON.stringify(expected),
+      seen.join(' -> '));
     record('Tab from the last box reaches the button rather than looping back',
       seen[seen.length - 1] === 'colBtn');
   }
@@ -477,8 +480,17 @@ async function openBusy(server, browser, user) {
     // 7 — voucher types are tickboxes, Sales Invoice only to begin with
     const chips = await p.evaluate(() => Array.from(document.querySelectorAll('.chip')).map(c => ({
       label: c.innerText.trim(), on: c.querySelector('input').checked })));
+    // Counted against the DATA, not against a number written here. The types
+    // come from busy_doc_types now, so a type the parser starts reading
+    // tomorrow gets a tickbox without anyone editing a list.
+    const typesInData = await p.evaluate(() =>
+      (window.__TEST_DATA__['rpc:busy_doc_types'] || []).map(t => t.doc_type));
     record(`voucher type is ${chips.length} tickboxes, not a dropdown`,
-      chips.length === 5 && await p.locator('select#docType').count() === 0);
+      chips.length === typesInData.length && await p.locator('select#docType').count() === 0,
+      `${chips.length} tickboxes for ${typesInData.length} types in the data`);
+    record('a voucher type that is in the data but not in the built-in five still gets a tickbox',
+      chips.some(c => c.label === 'Receipt'),
+      chips.map(c => c.label).join(', '));
     record('only Sales Invoice is ticked to begin with',
       chips.filter(c => c.on).length === 1 && chips.find(c => c.on).label === 'Sales Invoice',
       chips.filter(c => c.on).map(c => c.label).join(', ') || 'none');
@@ -607,6 +619,77 @@ async function openBusy(server, browser, user) {
     const kept = await headOf();
     record('the choice is remembered on the next visit',
       kept.includes('FY') && !kept.includes('Description'), kept.join(' · '));
+    await p.close();
+  }
+
+  /* ============ SPLITTING: BY FIRM *AND* YEAR ============
+     A rows file holding twelve years of two firms must become twenty-four
+     batches, not two. If it were split by firm alone, every year's vch_code
+     would collide with every other year's — Busy restarts the numbering in
+     each file — and the duplicate-key guard would refuse the lot.
+
+     This had no test. It is the property the whole import rests on. */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await p.waitForTimeout(400);
+
+    // Two firms, three years each, and vch_code DELIBERATELY REPEATED across
+    // years — which is what Busy actually does.
+    const head = 'company,fy,kind,vch_code,sr_no,vch_type,doc_type,vch_no,vch_date,party,item,description,qty,rate,amount,is_lump_sum,parser_version';
+    const lines = [head];
+    const years = ['2024-25', '2025-26', '2026-27'];
+    for (const co of ['REF', 'RS']) {
+      for (const fy of years) {
+        for (let i = 1; i <= 30; i++) {
+          lines.push(`${co},${fy},item,V${i},1,2,Purchase Bill,B${i},2025-04-01,P,I,LOT ${i},1,1,1,False,2026.09.17-mdbtools`);
+        }
+      }
+    }
+    await p.setInputFiles('#fileInput', {
+      name: 'all-years.csv', mimeType: 'text/csv', buffer: Buffer.from(lines.join('\n')),
+    });
+    await p.waitForTimeout(1200);
+
+    const listed = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('#uploadRows tr')).map(r => r.innerText.replace(/\s+/g, ' ')));
+    record(`a file of 2 firms x 3 years becomes 6 batches, not 2 (${listed.length})`,
+      listed.length === 6, listed.length + ' listed');
+    for (const co of ['REF', 'RS']) {
+      for (const fy of years) {
+        record(`  ${co} ${fy} is a batch of its own`,
+          listed.some(l => l.includes(co) && l.includes(fy)));
+      }
+    }
+
+    // And prove it on the wire: every staged chunk carries ONE firm and ONE year.
+    await p.evaluate(() => {
+      window.__SENT__ = [];
+      window.__TEST_DATA__['rpc:busy_import_stage'] = a => {
+        window.__SENT__.push({
+          fy: a.p_fy, company: a.p_company,
+          firmsInside: [...new Set((a.p_rows || []).map(r => r.company))],
+          yearsInside: [...new Set((a.p_rows || []).map(r => r.fy))],
+          keys: (a.p_rows || []).map(r => r.vch_code + '|' + r.sr_no),
+        });
+        return (a.p_rows || []).length;
+      };
+      window.__TEST_DATA__['rpc:busy_import_finalise'] = () => [{ inserted: 30 }];
+    });
+    await p.click('#loadBtn');
+    await p.waitForFunction(() => /Finished|did NOT load/.test(document.getElementById('uploadState').innerText),
+      null, { timeout: 30000 }).catch(() => {});
+
+    const sent = await p.evaluate(() => window.__SENT__);
+    record('every batch sent holds exactly one firm and one year',
+      sent.length > 0 && sent.every(b => b.firmsInside.length === 1 && b.yearsInside.length === 1
+                                      && b.firmsInside[0] === b.company && b.yearsInside[0] === b.fy),
+      sent.map(b => `${b.company} ${b.fy}`).join(', '));
+    const collided = sent.filter(b => new Set(b.keys).size !== b.keys.length);
+    record('no batch contains a repeated voucher key, even though the years repeat them',
+      collided.length === 0,
+      collided.map(b => `${b.company} ${b.fy}`).join(', ') || 'none');
     await p.close();
   }
 

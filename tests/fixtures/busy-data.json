@@ -4505,5 +4505,31 @@
    "deleted": 0,
    "restored": 0
   }
+ ],
+ "rpc:busy_doc_types": [
+  {
+   "doc_type": "Purchase Bill",
+   "rows": 10996
+  },
+  {
+   "doc_type": "Sales Invoice",
+   "rows": 2890
+  },
+  {
+   "doc_type": "Delivery Challan",
+   "rows": 1499
+  },
+  {
+   "doc_type": "Sales Order",
+   "rows": 1047
+  },
+  {
+   "doc_type": "Purchase Order",
+   "rows": 555
+  },
+  {
+   "doc_type": "Receipt",
+   "rows": 40
+  }
  ]
 }
