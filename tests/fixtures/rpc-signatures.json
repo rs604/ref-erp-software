@@ -9,6 +9,13 @@
    "total": 1,
    "with_defaults": 0
   },
+  "busy_doc_types": {
+   "args": [
+    "p_company"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
   "busy_gst_ledger": {
    "args": [
     "p_company"

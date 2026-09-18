@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789723432';</script>
+<script>window.__BUILD_VERSION__ = '1789724059';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -729,6 +729,7 @@ upload_token = (shown on the download screen)</pre>
     $('firmChip').title = FIRM_NAME[f] + ' only. The other firm never appears on this screen.';
     $('firmChip').className = 'firm-chip firm-' + f;
     loadSync();
+    if (chosenTypes) refreshDocTypes();   // the types a firm actually has
   }
 
   var TITLES = {
@@ -895,7 +896,28 @@ upload_token = (shown on the download screen)</pre>
   }
 
   /* ---- VOUCHER TYPES: tickboxes, so what is chosen is always on screen ---- */
+  /* The five Busy has always had. The list is REPLACED at load time by what
+     is actually in the data for this firm, so a voucher type the parser
+     starts reading tomorrow -- receipts, payments, opening balances -- shows
+     up as a tickbox on its own, instead of being invisible because nobody
+     remembered to add it to a list in here. */
   var DOC_TYPES = ['Sales Invoice','Purchase Bill','Delivery Challan','Purchase Order','Sales Order'];
+
+  function refreshDocTypes() {
+    return Promise.resolve(REF.supabase().rpc('busy_doc_types', { p_company: firm }))
+      .then(function (res) {
+        var found = (res && res.data || []).map(function (r) { return r.doc_type; })
+                      .filter(Boolean);
+        if (found.length) {
+          // Keep the familiar five in their usual order, then anything new.
+          var known = DOC_TYPES.filter(function (t) { return found.indexOf(t) !== -1; });
+          var fresh = found.filter(function (t) { return DOC_TYPES.indexOf(t) === -1; }).sort();
+          DOC_TYPES = known.concat(fresh);
+        }
+        drawChips();
+      })
+      .catch(function () { drawChips(); });   // the five are a fine fallback
+  }
   var TYPE_STORE = 'ref-busy-types';
   var chosenTypes = null;
 
