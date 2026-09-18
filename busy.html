@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789748747';</script>
+<script>window.__BUILD_VERSION__ = '1789754131';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -266,11 +266,6 @@
      was what this had before, and it made the nav a different thing here from
      everywhere else. The breakpoint is 880px in both pages for the same
      reason. */
-  .nav-open-btn {
-    display:none; background:none; border:1px solid var(--line); border-radius:8px;
-    color:var(--ink); cursor:pointer; flex-shrink:0;
-    width:44px; height:44px; align-items:center; justify-content:center;
-  }
   .nav-backdrop { display:none; }
 
   @media (max-width:880px) {
@@ -280,26 +275,11 @@
     .content { overflow:visible; }
 
     .nav-open-btn { display:inline-flex; }
-    .sidebar {
-      display:flex; flex-direction:column;
-      position:fixed; top:0; left:0; bottom:0;
-      width:272px; max-width:84vw; height:100vh; flex:none;
-      transform:translateX(-100%);
-      transition:transform 0.18s ease;
-      z-index:70;
-      box-shadow:2px 0 18px rgba(15,23,32,0.28);
-      overflow-y:auto;
-    }
     .app-shell.nav-open .sidebar { transform:none; }
     .sidebar-nav { display:block; overflow:visible; padding:10px 8px; }
     .nav-item { width:100%; min-height:44px; white-space:normal; }
     .sidebar-footer { display:none; }
 
-    .nav-backdrop {
-      display:block; position:fixed; inset:0;
-      background:rgba(15,23,32,0.45); z-index:65;
-      opacity:0; pointer-events:none; transition:opacity 0.18s ease;
-    }
     .app-shell.nav-open .nav-backdrop { opacity:1; pointer-events:auto; }
 
     .filters { grid-template-columns:1fr 1fr; }
@@ -355,34 +335,17 @@
   </div>
 </div>
 
-<div class="app-shell" id="shell" style="display:none">
-  <div class="nav-backdrop" id="navBackdrop"></div>
-  <div class="sidebar">
-    <div class="sidebar-brand"><div class="name">REF</div><div class="tag">ERP · Busy Data</div></div>
-    <nav class="sidebar-nav" id="nav">
-      <div class="nav-section-label">REF</div>
-      <button class="nav-item level-2 active" data-firm="REF" data-view="price"><svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="nav-label">Price History</span></button>
-      <button class="nav-item level-2" data-firm="REF" data-view="challans"><svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg><span class="nav-label">Challans</span></button>
-      <button class="nav-item level-2" data-firm="REF" data-view="reports"><svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg><span class="nav-label">Reports</span></button>
-      <button class="nav-item level-2 owner-only" data-firm="REF" data-view="deleted" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span class="nav-label">Deleted in Busy</span></button>
-      <div class="nav-section-label">RS</div>
-      <button class="nav-item level-2" data-firm="RS" data-view="price"><svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="nav-label">Price History</span></button>
-      <button class="nav-item level-2" data-firm="RS" data-view="challans"><svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg><span class="nav-label">Challans</span></button>
-      <button class="nav-item level-2" data-firm="RS" data-view="reports"><svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg><span class="nav-label">Reports</span></button>
-      <button class="nav-item level-2 owner-only" data-firm="RS" data-view="deleted" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span class="nav-label">Deleted in Busy</span></button>
-      <div class="nav-section-label owner-only" style="display:none">Owner only</div>
-      <button class="nav-item level-2 owner-only" data-view="upload" style="display:none"><svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><span class="nav-label">Load history</span></button>
-      <button class="nav-item level-2 owner-only" data-view="download" style="display:none"><svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span class="nav-label">Download the uploader</span></button>
-      <button class="nav-item level-2 owner-only" data-view="setup" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="nav-label">Setup instructions</span></button>
-    </nav>
-    <div class="sidebar-footer">Imported from Busy. Read only.</div>
-  </div>
+<div class="app-shell refnav-shell" id="shell" style="display:none">
+  <!-- The menu is nav.js, shared by every page. Busy Data's own screens are
+       entries in that one list, so they can be reached from anywhere in the
+       ERP and not only from inside this file. -->
+  <div id="refnav-host"></div>
 
   <div class="main">
     <div class="topbar">
       <div style="display:flex; align-items:center; gap:14px; min-width:0;">
-        <button class="nav-open-btn" id="navOpenBtn" type="button"
-                aria-label="Open the menu" aria-controls="nav" aria-expanded="false">
+        <button class="refnav-open-btn" id="navOpenBtn" type="button"
+                aria-label="Open the menu" aria-controls="refnav-host" aria-expanded="false">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
         <a class="btn btn-outline btn-back" href="admin.html">
@@ -769,6 +732,7 @@ upload_token = (shown on the download screen)</pre>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
+<script src="nav.js"></script>
 <script>
 (function () {
   'use strict';
@@ -2044,40 +2008,33 @@ upload_token = (shown on the download screen)</pre>
   }
 
   /* ---------------- wiring ---------------- */
-  document.getElementById('nav').addEventListener('click', function (e) {
-    var b = e.target.closest('.nav-item');
-    if (!b) return;
-    Array.prototype.forEach.call(document.querySelectorAll('.nav-item'), function (n) {
-      n.classList.remove('active');
-    });
-    b.classList.add('active');
-    if (b.dataset.firm) setFirm(b.dataset.firm);
-    setView(b.dataset.view);
-    setNavOpen(false);      // on a phone the drawer covers what was just chosen
-  });
+  /* ---- THE MENU ----
+     Built by nav.js, the one list every page in the ERP loads. This page's
+     own screens -- Price History, Challans, Reports, Deleted, and the owner's
+     loading screens -- are entries in that list, so they can be reached from
+     anywhere and not only from inside this file. */
+  var refnav = null;
 
-  /* ---- THE MENU DRAWER ON A PHONE ----
-     The same behaviour as admin.html, deliberately: one way to reach the menu
-     anywhere in the ERP. Opens on the hamburger, closes on the backdrop, on
-     Escape, and on picking anything. */
-  function setNavOpen(open) {
-    var shell = $('shell'), btn = $('navOpenBtn');
-    if (!shell || !btn) return;
-    shell.classList.toggle('nav-open', open);
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    btn.setAttribute('aria-label', open ? 'Close the menu' : 'Open the menu');
-    document.body.style.overflow = open ? 'hidden' : '';
-    if (open) {
-      var first = document.querySelector('#nav .nav-item');
-      if (first) first.focus();
+  function mountNav(user) {
+    refnav = REFNav.mount({
+      page: 'busy.html',
+      user: user,
+      onView: function (view, firm) {
+        if (firm) setFirm(firm);
+        setView(view);
+      }
+    });
+    var asked = REFNav.fromHash();
+    if (asked && asked.view) {
+      if (asked.firm) setFirm(asked.firm);
+      setView(asked.view);
+      if (refnav) refnav.select(asked.view, asked.firm);
+    } else if (refnav) {
+      refnav.select('price', firm);
     }
   }
-  function navIsOpen() { return $('shell').classList.contains('nav-open'); }
-  $('navOpenBtn').addEventListener('click', function () { setNavOpen(!navIsOpen()); });
-  $('navBackdrop').addEventListener('click', function () { setNavOpen(false); });
-  window.addEventListener('resize', function () {
-    if (window.innerWidth > 880 && navIsOpen()) setNavOpen(false);
-  });
+  function setNavOpen(open) { if (refnav) refnav.setOpen(open); }
+  function navIsOpen() { return !!refnav && refnav.isOpen(); }
 
   (function wireUpload() {
     var zone = $('dropZone'), input = $('fileInput');
@@ -2506,6 +2463,7 @@ upload_token = (shown on the download screen)</pre>
       grid = wireGrid('rows');
       setFirm('REF');
       setView('price');
+      mountNav(user);          // the menu comes last: it may send us elsewhere
       $('q').focus();
     }).catch(openFailed);
   } catch (err) {

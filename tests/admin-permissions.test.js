@@ -54,9 +54,8 @@ const record = (name, ok, detail) => results.push({ name, ok, detail: detail || 
   // what a fix actually changed rather than asserting that it did.
   await H.open(server, page, { file: process.env.SCREEN || 'admin.html', user: OWNER, handlers: HANDLERS });
   await page.waitForSelector('#appShell', { state: 'visible' });
-  await page.click('.nav-parent[data-toggle="tree-control-panel"]');
-  await page.waitForSelector('.nav-item[data-view="admin-panel"]', { state: 'visible' });
-  await page.click('.nav-item[data-view="admin-panel"]');
+  await page.waitForSelector('#refnav-host .refnav-item[data-view="admin-panel"]');
+  await H.go(page, 'admin-panel');   // H.go opens the module it lives in first
   await page.waitForSelector('.perm-cell-checkbox');
 
   const rowCount = await page.locator('.perm-emp-row').count();
@@ -284,14 +283,21 @@ const record = (name, ok, detail) => results.push({ name, ok, detail: detail || 
 
   /* ---- the menu must actually reach the screens ---- */
   {
-    const busyLink = await page.locator('a.nav-item[href="busy.html"]').count();
-    const position = await page.evaluate(() => {
-      const items = Array.from(document.querySelectorAll('#sidebarNav > .nav-item'));
-      return items.findIndex(n => n.getAttribute('href') === 'busy.html');
+    const menu = await page.evaluate(() => {
+      const list = document.getElementById('refnav-list');
+      // The top level only: Home, then the modules, then the owner section.
+      const top = Array.from(list.children).filter(n =>
+        n.classList.contains('refnav-item') || n.classList.contains('refnav-soon'));
+      return {
+        order: top.map(n => n.querySelector('.lbl') ? n.querySelector('.lbl').textContent.trim()
+                                                    : n.textContent.trim()),
+        reachesBusy: list.querySelectorAll('.refnav-item[data-page="busy.html"]').length,
+      };
     });
-    record('the ERP menu actually reaches Busy Data', busyLink === 1);
+    record('the ERP menu actually reaches Busy Data', menu.reachesBusy > 0,
+      `${menu.reachesBusy} Busy Data screens in the menu`);
     record('Busy Data is the second item in the main menu, straight after Home',
-      position === 1, `at position ${position + 1}`);
+      menu.order[0] === 'Home' && menu.order[1] === 'Busy Data', menu.order.join(' · '));
   }
 
   record('no script errors anywhere in the run', pageErrors.length === 0, pageErrors.slice(0, 3).join(' | '));

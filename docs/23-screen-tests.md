@@ -604,6 +604,51 @@ nothing sideways · 44px everywhere · nothing under 12px`
 
 ---
 
+## EVERY SCREEN CAN BE REACHED, AND CAN REACH BACK
+
+Raghbir asked for the menu to work on a phone. There was no menu. Three of the
+five pages had none at all, and the two that did could not reach each other's
+screens.
+
+He had been arriving at `admin.html` through a bookmark for weeks, so the ERP
+looked navigable to the one person using it.
+
+**The rule:**
+
+> A screen that can be reached must be able to reach every other screen the
+> person is allowed to open. On every page, at every width.
+
+Tested by opening each page at 380px and **going to every other page through
+the menu** — not by asserting a link exists. `tests/nav.test.js`.
+
+And the menu is **one file**. Two menus is two lists to keep in step, and the
+one nobody is looking at is the one that rots.
+
+### The larger lesson, in his words
+
+> "For weeks I have been using an ERP with no navigation and neither of us
+> noticed, because I always arrived at admin.html through a bookmark. Worth
+> asking what else is invisible because of how I happen to reach it."
+
+**How you habitually reach a thing hides everything about reaching it any
+other way.** The bookmark hid the missing menu. The desktop hid the phone. A
+test that always signs in as the owner hides what a fitter sees; one that
+always starts at the same screen hides what a cold arrival looks like.
+
+So: for anything a person uses daily, ask **how else would somebody arrive at
+this**, and try that way at least once. The answers so far —
+
+| Habit | What it hid |
+|---|---|
+| a bookmark straight to `admin.html` | there was no navigation anywhere |
+| a desktop browser | the phone had no menu, and 30px buttons |
+| signing in as the owner in every test | what a fitter's menu contains |
+| opening a screen from its own page | arriving at it from another page |
+
+**Report as:** `5 pages · every page reaches every other · 380px and desk`
+
+---
+
 ## IF THE INPUT CHANGES DURING AN INVESTIGATION, SAY SO
 
 While one question was being investigated, the parser producing the data was

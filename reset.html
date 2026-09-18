@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>Refcon ERP — Set Your Password</title>
-<script>window.__BUILD_VERSION__ = '1789748747';</script>
+<script>window.__BUILD_VERSION__ = '1789754131';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -72,6 +72,10 @@
      A password is set from wherever the person happens to be, so this screen
      has to work on a phone. "Back to sign in" was a 14px-tall line of text:
      a link that is only as tall as its letters is not a tap target. */
+  .reset-main { flex:1; min-width:0; }
+  .reset-bar { display:flex; align-items:center; gap:10px; padding:10px 14px;
+               border-bottom:1px solid #e4e8ec; font-size:13px; color:#55606b; }
+
   @media (max-width: 880px) {
     button, .linkbtn { min-height: 44px; }
     input { font-size: 16px; min-height: 44px; }
@@ -80,6 +84,20 @@
 </style>
 </head>
 <body>
+<!-- The ERP's menu, the same one every other page carries. It appears only for
+     someone who is already signed in AND is not being forced through a first
+     password change: a menu on the forced screen would be a way to walk past
+     the thing that screen exists to make them do. -->
+<div class="refnav-shell">
+  <div id="refnav-host"></div>
+  <div class="reset-main">
+  <div class="reset-bar" id="resetBar" style="display:none">
+    <button class="refnav-open-btn" id="navOpenBtn" type="button"
+            aria-label="Open the menu" aria-controls="refnav-host" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <span>Refcon ERP</span>
+  </div>
 
   <div class="card">
     <div class="simple-brand">REF</div>
@@ -108,8 +126,12 @@
     <div class="msg" id="msgBox"></div>
   </div>
 
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
+<script src="nav.js"></script>
 <script>
 (function () {
   'use strict';
@@ -124,6 +146,15 @@
     document.getElementById('heading').textContent = 'Choose Your Password';
     document.getElementById('subtitle').textContent =
       'This is your first sign-in. Set a password before you go any further.';
+  } else {
+    // Changing a password by choice: the person is already in the ERP, so the
+    // menu belongs here like anywhere else. On the forced screen it does not,
+    // which is why this is the only page that asks before mounting it.
+    REF.requireSession({ allowStarterPassword: true }).then(function (user) {
+      if (!user) return;
+      document.getElementById('resetBar').style.display = '';
+      REFNav.mount({ page: 'reset.html', user: user });
+    }).catch(function () { /* not signed in: no menu, which is correct */ });
   }
 
   function show(kind, text) { msgBox.className = 'msg ' + kind; msgBox.textContent = text; }

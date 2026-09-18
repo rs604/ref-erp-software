@@ -235,4 +235,24 @@ function diff(before, after, expected) {
   return out;
 }
 
-module.exports = { serve, open, snapshot, diff, chromium, ROOT };
+/* Go to a screen the way a person does: through the shared menu. The module
+   it lives in is opened first, because docs/11 keeps modules collapsed until
+   they are asked for. One helper, so a test never has to know the menu's
+   markup -- that knowledge belongs in nav.js and nowhere else. */
+async function go(page, view, firm) {
+  await page.evaluate(function (a) {
+    var sel = '#refnav-host .refnav-item[data-view="' + a.view + '"]' +
+              (a.firm ? '[data-firm="' + a.firm + '"]' : '');
+    var item = document.querySelector(sel);
+    if (!item) throw new Error('no menu entry for ' + a.view + (a.firm ? ' ' + a.firm : ''));
+    var kids = item.closest('.refnav-children');
+    if (kids && !kids.classList.contains('open')) {
+      var toggle = document.querySelector('.refnav-item[data-toggle="' + kids.id + '"]');
+      if (toggle) toggle.click();
+    }
+    item.click();
+  }, { view: view, firm: firm || null });
+  await page.waitForTimeout(400);
+}
+
+module.exports = { serve, open, snapshot, diff, go, chromium, ROOT };

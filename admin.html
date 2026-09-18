@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1789748747';</script>
+<script>window.__BUILD_VERSION__ = '1789754131';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -137,18 +137,6 @@
 
   .app-shell { display: flex; min-height: 100vh; }
 
-  .sidebar {
-    width: var(--sidebar-w);
-    background: var(--steel-dark);
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-  }
   .sidebar-brand { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.1); }
   .sidebar-brand .name { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 1.5px; }
   .sidebar-brand .tag { font-size: 10.5px; color: rgba(255,255,255,0.55); letter-spacing: 1.5px; margin-top: 2px; }
@@ -245,19 +233,9 @@
      40px of side padding alone left only 12px — so the text goes and the toggle stays,
      centred, since it is the only way back to the expanded menu. */
   .app-shell.nav-collapsed .sidebar .sidebar-brand .name { display: none; }
-  .app-shell.nav-collapsed .sidebar .sidebar-brand {
-    justify-content: center; padding: 18px 0;
-  }
   .app-shell.nav-collapsed .sidebar .nav-toggle-btn { margin: 0; }
   /* When collapsed, hovering an icon shows a tooltip with the item's name. */
   .app-shell.nav-collapsed .sidebar .nav-item { position: relative; }
-  .app-shell.nav-collapsed .sidebar .nav-item::after {
-    content: attr(data-tip);
-    position: absolute; left: 100%; top: 50%; transform: translateY(-50%);
-    margin-left: 8px; background: #24313d; color: #fff; font-size: 11.5px;
-    padding: 5px 9px; border-radius: 5px; white-space: nowrap;
-    opacity: 0; pointer-events: none; transition: opacity 0.12s; z-index: 300;
-  }
   .app-shell.nav-collapsed .sidebar .nav-item:hover::after { opacity: 1; }
 
   /* ---- THE MENU ON A PHONE ----
@@ -267,18 +245,8 @@
      in the top bar that slides the same menu in over the page, and a backdrop
      that closes it. Same menu, same items, same order — not a second menu that
      can drift away from the first. */
-  .nav-open-btn {
-    display: none;                       /* desktop has the menu already */
-    background: none; border: 1px solid var(--border); border-radius: 8px;
-    color: var(--ink); cursor: pointer; flex-shrink: 0;
-    width: 44px; height: 44px; align-items: center; justify-content: center;
-  }
   .nav-backdrop { display: none; }
 
-  .nav-toggle-btn {
-    background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.75);
-    padding: 5px 6px; border-radius: 5px; display: flex; align-items: center; flex-shrink: 0;
-  }
   .nav-toggle-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
   /* Spreadsheet grid. Horizontal scrolling is necessary: the full column set is wider
@@ -640,15 +608,6 @@
   .subtab-item.active { color: var(--steel); border-bottom-color: var(--steel); }
   .subtab-settings { margin-left: auto; padding: 13px 4px; }
 
-  .nav-future-note {
-    padding: 10px 20px;
-    color: rgba(255,255,255,0.35);
-    font-size: 11px;
-    font-style: italic;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    margin-top: 10px;
-    line-height: 1.5;
-  }
 
   @media (max-width: 880px) {
     /* The menu is a drawer, not a column. It is off to the left until the
@@ -656,15 +615,6 @@
        it, so nothing reflows when it opens. */
     .nav-open-btn { display: inline-flex; }
     .app-shell { position: relative; }
-    .sidebar {
-      display: flex;
-      position: fixed; top: 0; left: 0; bottom: 0;
-      width: 272px; max-width: 84vw; height: 100vh;
-      transform: translateX(-100%);
-      transition: transform 0.18s ease;
-      z-index: 70;
-      box-shadow: 2px 0 18px rgba(15,23,32,0.28);
-    }
     .app-shell.nav-open .sidebar { transform: none; }
     /* A phone never collapses the menu to icons — it is open or it is away. */
     .app-shell.nav-collapsed .sidebar { width: 272px; max-width: 84vw; }
@@ -677,11 +627,6 @@
     .app-shell.nav-collapsed .sidebar .nav-item { justify-content: flex-start; }
     .nav-toggle-btn { display: none; }     /* collapsing is a desk idea */
 
-    .nav-backdrop {
-      display: block; position: fixed; inset: 0;
-      background: rgba(15,23,32,0.45); z-index: 65;
-      opacity: 0; pointer-events: none; transition: opacity 0.18s ease;
-    }
     .app-shell.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
     /* Tapping a menu item on a phone is a tap, not a hover-and-click. */
     .sidebar .nav-item { min-height: 44px; }
@@ -807,97 +752,17 @@
 </head>
 <body>
 
-<div class="app-shell" id="appShell" style="display:none">
-  <div class="nav-backdrop" id="navBackdrop"></div>
-  <div class="sidebar">
-    <div class="sidebar-brand" style="display:flex; align-items:center; justify-content:space-between;">
-      <div style="display:flex; align-items:baseline; gap:6px;">
-        <div class="name">REF</div>
-        <div class="tag">ERP</div>
-      </div>
-      <button class="nav-toggle-btn" id="navToggleBtn" title="Collapse / expand menu" aria-label="Toggle menu">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-      </button>
-    </div>
-    <nav class="sidebar-nav" id="sidebarNav">
-      <button class="nav-item" data-view="home">
-        <svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
-        <span class="nav-label">Home</span>
-      </button>
-      <a class="nav-item" href="busy.html" style="text-decoration:none;">
-        <svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5c0-1.1 4-2 9-2s9 .9 9 2v14c0 1.1-4 2-9 2s-9-.9-9-2z"/><path d="M3 5c0 1.1 4 2 9 2s9-.9 9-2M3 12c0 1.1 4 2 9 2s9-.9 9-2"/></svg>
-        <span class="nav-label">Busy Data</span>
-      </a>
-      <button class="nav-item" data-view="km-tracker">
-        <svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg>
-        <span class="nav-label">Km Tracker</span>
-      </button>
-
-      <button class="nav-item nav-parent" data-toggle="tree-hrms">
-        <svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span class="nav-label">HRMS</span>
-        <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-      <div class="nav-children" id="tree-hrms" style="display:none">
-        <button class="nav-item level-2" data-view="salary-calculator">
-          <svg class="ic-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M13 11h3M8 15h3M13 15h3"/></svg>
-          <span class="nav-label">Salary Calculator</span>
-        </button>
-        <button class="nav-item level-2" data-view="loans-advances">
-          <svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span class="nav-label">Loans &amp; Advances</span>
-        </button>
-      </div>
-
-      <button class="nav-item nav-parent" data-toggle="tree-control-panel">
-        <svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span class="nav-label">Control Panel</span>
-        <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-      <div class="nav-children" id="tree-control-panel" style="display:none">
-
-        <div class="nav-section-label">Masters</div>
-        <button class="nav-item nav-parent level-2" data-toggle="tree-hr">
-          <svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
-          <span class="nav-label">HR</span>
-          <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
-        <div class="nav-children" id="tree-hr" style="display:none">
-          <button class="nav-item level-3" data-view="employee-master">
-            <svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
-            <span class="nav-label">Employee Master</span>
-          </button>
-          <button class="nav-item level-3" data-view="hr-dropdowns">
-            <svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h9"/></svg>
-            <span class="nav-label">HR Dropdowns</span>
-          </button>
-        </div>
-        <button class="nav-item level-2" data-view="vendor-master">
-          <svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
-          <span class="nav-label">Vendor</span>
-        </button>
-
-        <div class="nav-section-label">System</div>
-        <button class="nav-item level-2" data-view="admin-panel">
-          <svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/></svg>
-          <span class="nav-label">Admin Panel</span>
-        </button>
-        <button class="nav-item level-2" data-view="documentation">
-          <svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg>
-          <span class="nav-label">Documentation</span>
-        </button>
-      </div>
-
-      <div class="nav-future-note">More ERP modules will appear here as they're added</div>
-    </nav>
-    <div class="sidebar-footer">Raghbir Erectors &amp; Fabricators</div>
-  </div>
+<div class="app-shell refnav-shell" id="appShell" style="display:none">
+  <!-- The menu is not written here. It is nav.js, shared by every page, so a
+       screen added to the ERP appears everywhere at once and there is no
+       second copy to forget. -->
+  <div id="refnav-host"></div>
 
   <div class="main">
     <div class="topbar">
       <div style="display:flex; align-items:center; gap:12px; min-width:0;">
-        <button class="nav-open-btn" id="navOpenBtn" type="button"
-                aria-label="Open the menu" aria-controls="sidebarNav" aria-expanded="false">
+        <button class="refnav-open-btn" id="navOpenBtn" type="button"
+                aria-label="Open the menu" aria-controls="refnav-host" aria-expanded="false">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
         <div id="topbarLead" style="display:flex; align-items:center;"></div>
@@ -1020,6 +885,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
+<script src="nav.js"></script>
 <script>
   let currentUser = null;
   let dashboardData = null;
@@ -1156,54 +1022,20 @@
   let isOwnerUser = false;
   let myPermissionKeys = [];
 
-  async function applyNavVisibility() {
-    isOwnerUser = currentUser.is_owner;
-    myPermissionKeys = currentUser.permissions || [];
-    document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-      const view = btn.dataset.view;
-      if (view === 'admin-panel') {
-        btn.style.display = isOwnerUser ? '' : 'none';
-        return;
-      }
-      if (view === 'documentation' || view === 'home') return; // always visible to any logged-in ERP user
-      const requiredKey = VIEW_PERMISSION_MAP[view];
-      if (!requiredKey) return; // no mapping — leave as-is
-      const hasAccess = isOwnerUser || myPermissionKeys.includes(requiredKey);
-      btn.style.display = hasAccess ? '' : 'none';
-    });
-    // Hide any expandable parent group whose children are now all hidden — avoids an empty, pointless section
-    document.querySelectorAll('.nav-children').forEach(childrenEl => {
-      const visibleChildren = Array.from(childrenEl.children).filter(c => c.style.display !== 'none');
-      const toggleBtn = document.querySelector(`.nav-parent[data-toggle="${childrenEl.id}"]`);
-      if (toggleBtn) {
-        const wrapper = toggleBtn.parentElement;
-        const hideGroup = childrenEl.id && visibleChildren.length === 0;
-        toggleBtn.style.display = hideGroup ? 'none' : '';
-        if (hideGroup) childrenEl.style.display = 'none';
-      }
-    });
-  }
+  /* Who sees what is decided in nav.js, once, for every page. It was decided
+     here as well until the menu was shared, and two places deciding the same
+     thing is how one of them drifts. */
 
   function completeLogin(user) {
     currentUser = user;
     appShell.style.display = 'flex';
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userRole').textContent = (currentUser.is_owner ? 'OWNER' : (currentUser.roles[0] || 'STAFF')).toUpperCase();
-    applyNavVisibility();
-    switchMainView('home');
+    isOwnerUser = currentUser.is_owner;
+    myPermissionKeys = currentUser.permissions || [];
+    mountNav(currentUser);
   }
 
-  // --- Sidebar tree: expandable parents (Control Panel, Masters, HR) ---
-  document.querySelectorAll('.nav-parent').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const childrenEl = document.getElementById(btn.dataset.toggle);
-      const isOpen = childrenEl.style.display !== 'none';
-      childrenEl.style.display = isOpen ? 'none' : 'block';
-      btn.classList.toggle('expanded', !isOpen);
-    });
-  });
-
-  // --- Sidebar tree: leaf items (Km Tracker, Employee Master, HR Dropdowns, Admin Panel) ---
   const viewTitles = {
     'home': ['Home', 'Your approvals and requests'],
     'km-tracker': ['Km Tracker', 'Daily odometer tracking, approvals, and payments'],
@@ -1228,7 +1060,7 @@
       setTopbarActions(''); setTopbarLead('');
       document.querySelector('#view-salary-calculator .content')?.classList.remove('content-flush');
     }
-    document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === viewKey));
+    if (refnav) refnav.select(viewKey);
     document.querySelectorAll('.view-content').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + viewKey).style.display = 'block';
     document.getElementById('pageTitle').textContent = viewTitles[viewKey][0];
@@ -1270,27 +1102,8 @@
       loadDashboard();
     }
 
-    // Every view's full ancestor tree path — including nested sub-trees like "HR" inside "Masters" —
-    // must expand so the active item is actually visible in the nav, not just its top-level parent.
-    const VIEW_ANCESTOR_TREES = {
-      'employee-master': ['tree-control-panel', 'tree-hr'],
-      'hr-dropdowns': ['tree-control-panel', 'tree-hr'],
-      'loans-advances': ['tree-hrms'],
-      'salary-calculator': ['tree-hrms'],
-      'vendor-master': ['tree-control-panel'],
-      'admin-panel': ['tree-control-panel'],
-      'documentation': ['tree-control-panel'],
-    };
-    (VIEW_ANCESTOR_TREES[viewKey] || []).forEach(treeId => {
-      const el = document.getElementById(treeId);
-      if (el) el.style.display = 'block';
-      document.querySelector(`.nav-parent[data-toggle="${treeId}"]`)?.classList.add('expanded');
-    });
   }
 
-  document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-    btn.addEventListener('click', () => switchMainView(btn.dataset.view));
-  });
 
   // --- Km Tracker's own subtabs (Approvals / Reports / Payments / Settings) ---
   function switchTab(tab) {
@@ -5075,66 +4888,25 @@
     setTimeout(() => renderEmployeeMasterList(), empResult.generatedPin ? 3500 : 800);
   }
 
-  // --- Restore session on page refresh instead of forcing re-login ---
-  function setNavCollapsed(collapsed) {
-    const shell = document.getElementById('appShell');
-    shell.classList.toggle('nav-collapsed', collapsed);
-    sessionStorage.setItem('nav_collapsed', collapsed ? '1' : '0');
-  }
-  document.getElementById('navToggleBtn').addEventListener('click', () => {
-    setNavCollapsed(!document.getElementById('appShell').classList.contains('nav-collapsed'));
-  });
+  /* ---- THE MENU ----
+     Built by nav.js, which every page loads. Nothing about the list, the
+     drawer, the hamburger or the permissions lives here any more: that is
+     the whole point. This page only says which page it is, who is looking,
+     and what to do when something on this page is chosen. */
+  let refnav = null;
 
-  /* ---- THE MENU DRAWER ON A PHONE ----
-     Opens on the hamburger, closes on the backdrop, on Escape, and on picking
-     anything — because a menu you have to close by hand after choosing is a
-     menu that covers the thing you just chose. */
-  function setNavOpen(open) {
-    const shell = document.getElementById('appShell');
-    const btn = document.getElementById('navOpenBtn');
-    shell.classList.toggle('nav-open', open);
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    btn.setAttribute('aria-label', open ? 'Close the menu' : 'Open the menu');
-    // The page behind must not scroll under the drawer.
-    document.body.style.overflow = open ? 'hidden' : '';
-    if (open) {
-      const first = document.querySelector('#sidebarNav .nav-item');
-      if (first) first.focus();
-    }
+  function mountNav(user) {
+    refnav = REFNav.mount({
+      page: 'admin.html',
+      user: user,
+      onView: (view) => { switchMainView(view); },
+    });
+    // Arriving from another page: the address bar says which screen was asked
+    // for, so the menu works across files and not only inside one.
+    const asked = REFNav.fromHash();
+    if (asked && asked.view) switchMainView(asked.view);
+    else switchMainView('home');
   }
-  function navIsOpen() {
-    return document.getElementById('appShell').classList.contains('nav-open');
-  }
-  document.getElementById('navOpenBtn').addEventListener('click', () => setNavOpen(!navIsOpen()));
-  document.getElementById('navBackdrop').addEventListener('click', () => setNavOpen(false));
-  // Picking anything closes it. Bound to the container once, so a menu item
-  // added later is covered without anyone remembering to bind it.
-  document.getElementById('sidebarNav').addEventListener('click', (e) => {
-    if (e.target.closest('.nav-item')) setNavOpen(false);
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && navIsOpen()) { setNavOpen(false); document.getElementById('navOpenBtn').focus(); }
-  });
-  // Turning the phone sideways into a desk width must not leave the page
-  // frozen with body overflow hidden and a drawer nobody can see.
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 880 && navIsOpen()) setNavOpen(false);
-  });
-  if (sessionStorage.getItem('nav_collapsed') === '1') {
-    document.getElementById('appShell').classList.add('nav-collapsed');
-  }
-  // Tooltips for the collapsed state, taken from each item's own label.
-  document.querySelectorAll('#sidebarNav .nav-item').forEach(btn => {
-    const label = btn.querySelector('.nav-label')?.textContent?.trim();
-    if (label) btn.setAttribute('data-tip', label);
-  });
-  // Clicking a group while collapsed would otherwise appear to do nothing, since the
-  // child list is hidden — so expand the sidebar first, then let the normal toggle run.
-  document.querySelectorAll('#sidebarNav .nav-parent').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (document.getElementById('appShell').classList.contains('nav-collapsed')) setNavCollapsed(false);
-    }, true);
-  });
 
   document.getElementById('logoutBtn').addEventListener('click', () => {
     REF.signOut().then(function () { window.location.href = 'index.html'; });

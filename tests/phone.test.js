@@ -94,10 +94,10 @@ async function phonePage(server, browser, file, data, user) {
 }
 
 /* ---- 1. THE MENU OPENS AND CLOSES ---- */
-async function checkMenu(page, label, navSel, stayingItem) {
+async function checkMenu(page, label, navSel, stayView, stayFirm) {
   const where = () => page.evaluate(sel => {
     const n = document.querySelector(sel); if (!n) return null;
-    const b = n.closest('.sidebar').getBoundingClientRect();
+    const b = n.getBoundingClientRect();
     return { left: Math.round(b.left), width: Math.round(b.width) };
   }, navSel);
 
@@ -105,7 +105,7 @@ async function checkMenu(page, label, navSel, stayingItem) {
   record(`${label}: the menu is out of the way until it is asked for`,
     !!shut && shut.left < -50, JSON.stringify(shut));
 
-  const btn = page.locator('#navOpenBtn');
+  const btn = page.locator('.refnav-open-btn');
   // A hamburger that is not there must FAIL, not throw. The fault this whole
   // section exists for was exactly that: no menu, nothing to open it, and a
   // test run that fell over would have said nothing at all.
@@ -131,14 +131,14 @@ async function checkMenu(page, label, navSel, stayingItem) {
   record(`${label}: the page does not go sideways while the menu is open`,
     !(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)));
 
-  await page.locator('#navBackdrop').tap({ position: { x: 350, y: 640 } });
+  await page.locator('.refnav-backdrop').tap({ position: { x: 350, y: 640 } });
   await page.waitForTimeout(350);
   record(`${label}: tapping outside closes it`, (await where()).left < -50);
 
   await btn.tap();
   await page.waitForTimeout(350);
-  await page.locator(stayingItem).tap();
-  await page.waitForTimeout(500);
+  await H.go(page, stayView, stayFirm);
+  await page.waitForTimeout(400);
   record(`${label}: picking something closes it, so the menu is not left covering the answer`,
     (await where()).left < -50);
 }
@@ -161,15 +161,15 @@ function reportScreen(label, r) {
   /* ================= admin.html ================= */
   {
     const { page, errors } = await phonePage(server, browser, 'admin.html', null);
-    await checkMenu(page, 'ERP', '#sidebarNav', '#sidebarNav button.nav-item[data-view="km-tracker"]');
+    await checkMenu(page, 'ERP', '#refnav-host', 'km-tracker', null);
 
     const views = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('#sidebarNav button.nav-item[data-view]')).map(b => b.dataset.view));
+      Array.from(document.querySelectorAll('#refnav-host button.refnav-item[data-view]')).map(b => b.dataset.view));
     record(`the menu reaches every ERP screen from a phone (${views.length})`,
       views.length >= 8, views.join(' · '));
 
     for (const v of views) {
-      await page.evaluate(v => document.querySelector(`#sidebarNav button.nav-item[data-view="${v}"]`).click(), v);
+      await H.go(page, v);
       await page.waitForTimeout(800);
       reportScreen('ERP ' + v, await page.evaluate(PROBE, { tap: TAP, text: TEXT }));
     }
@@ -182,12 +182,12 @@ function reportScreen(label, r) {
   {
     const { page, errors } = await phonePage(server, browser, 'busy.html', BUSY);
     await page.waitForSelector('#shell', { state: 'visible' });
-    await checkMenu(page, 'Busy Data', '#nav', '#nav .nav-item[data-firm="REF"][data-view="reports"]');
+    await checkMenu(page, 'Busy Data', '#refnav-host', 'reports', 'REF');
 
     const views = await page.evaluate(() =>
-      [...new Set(Array.from(document.querySelectorAll('#nav .nav-item[data-view]')).map(b => b.dataset.view))]);
+      [...new Set(Array.from(document.querySelectorAll('#refnav-host button.refnav-item[data-view]')).map(b => b.dataset.view))]);
     for (const v of views) {
-      await page.evaluate(v => document.querySelector(`#nav .nav-item[data-view="${v}"]`).click(), v);
+      await H.go(page, v);
       await page.waitForTimeout(800);
       reportScreen('Busy ' + v, await page.evaluate(PROBE, { tap: TAP, text: TEXT }));
     }
@@ -196,7 +196,7 @@ function reportScreen(label, r) {
        The price table is wider than a phone. It must scroll INSIDE its own
        box, taking its column headings with it — not drag the whole page
        sideways, and not scroll the headings away. */
-    await page.evaluate(() => document.querySelector('#nav .nav-item[data-view="price"]').click());
+    await H.go(page, 'price');
     await page.waitForTimeout(900);
     const table = await page.evaluate(() => {
       const w = document.querySelector('.tbl-wrap');
@@ -271,8 +271,8 @@ function reportScreen(label, r) {
     await H.open(server, page, { file: 'admin.html', user: OWNER, handlers: HANDLERS, data: '{}' });
     await page.waitForTimeout(1200);
     const desk = await page.evaluate(() => {
-      const bar = document.getElementById('navOpenBtn');
-      const side = document.querySelector('.sidebar').getBoundingClientRect();
+      const bar = document.querySelector('.refnav-open-btn');
+      const side = document.getElementById('refnav-host').getBoundingClientRect();
       return {
         hamburgerHidden: getComputedStyle(bar).display === 'none',
         sidebarLeft: Math.round(side.left),

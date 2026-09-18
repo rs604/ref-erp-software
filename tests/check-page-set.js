@@ -53,6 +53,13 @@ const RULES = [
     find: /window\.__BUILD_VERSION__ = '(\d+)';/, sameAcrossPages: true },
   { what: 'the check that reloads the page when a new version ships',
     find: /(fetch\('version\.txt\?_=' \+ Date\.now\(\))/, sameAcrossPages: true },
+  // The ERP had no navigation at all outside admin.html, and nobody noticed
+  // because Raghbir always arrived there by bookmark. Every page loads the one
+  // menu now, and this is what stops a new page shipping without it.
+  { what: 'nav.js, the one menu every page loads',
+    find: /<script src="(nav\.js)"><\/script>/, sameAcrossPages: true },
+  { what: 'somewhere for that menu to be drawn',
+    find: /(id="refnav-host")/, sameAcrossPages: true },
 ];
 
 const findings = [];

@@ -14,13 +14,31 @@
 
 ### Nav order
 
-Home · **Masters** (Items, Units, Vendors, Customers, Employees) · Purchase ·
-Accounts · Production · Reports · Settings
+Home · **Busy Data** · HRMS · **Masters** (Items, Units, Vendors, Customers,
+Employees) · Purchase · Accounts · Production · Reports · Settings
 
 Then a divider, then **OWNER ONLY**: Decisions · Checklist
 
+- **Busy Data is second.** It is what Raghbir opens most
+- **HRMS** was not in this list when it was written, 10 Sep 2026 — the salary
+  sheet, the km tracker and the loans screen came later and are used daily.
+  They are in the menu rather than unreachable. Open question for Raghbir:
+  keep HRMS as its own module, or fold those three in elsewhere
 - Owner-only items are **absent** for everyone else, not greyed out
 - Only the open module expands. The list never gets long
+- A screen that does not exist yet is **shown to the owner** and says
+  "not built yet". It is not shown to anyone else, who would be reading a
+  roadmap instead of a menu
+
+### One menu, one file
+
+`nav.js` holds the list and the behaviour. **Every page loads it** — admin,
+busy, submit, reset and the sign-in page. Adding a screen is a line in that
+file and it appears everywhere at once.
+
+For weeks the only navigation in the ERP lived inside `admin.html`, and it
+only appeared once you were already there. Nobody noticed, because Raghbir
+always arrived at `admin.html` through a bookmark.
 
 ---
 

@@ -183,30 +183,31 @@ async function openBusy(server, browser, user) {
     // scroll the window or throw away what is typed in the search box.
     await page.fill('#q', 'pipe');
     await page.evaluate(() => window.scrollTo(0, 0));
-    const navs = await page.locator('#nav .nav-item:visible').count();
+    // This page's own screens, from the shared menu. A link to another page
+    // is not in this list -- leaving the page is meant to lose the search.
+    const mine = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('#refnav-host button.refnav-item[data-view]'))
+        .map(b => ({ view: b.dataset.view, firm: b.dataset.firm || null })));
     let kept = 0, moved = 0;
     const complaints = [];
-    for (let i = 0; i < navs; i++) {
-      const el = page.locator('#nav .nav-item:visible').nth(i);
-      const label = (await el.textContent()).trim();
+    for (const m of mine) {
       const before = await H.snapshot(page);
-      await el.click();
-      await page.waitForTimeout(200);
+      await H.go(page, m.view, m.firm);
       const after = await H.snapshot(page);
       const bad = [];
       if (before.windowScroll[1] !== after.windowScroll[1]) bad.push('the window scrolled');
       if (after.fields['#q'] !== before.fields['#q']) bad.push('the search box was wiped');
-      if (bad.length === 0) kept++; else { moved++; complaints.push(label + ': ' + bad[0]); }
+      if (bad.length === 0) kept++; else { moved++; complaints.push(m.view + ': ' + bad[0]); }
     }
-    record(`clicked ${navs} menu items · ${kept} kept scroll and kept the search typed · ${moved} did not`,
+    record(`clicked ${mine.length} of this page's menu items · ${kept} kept scroll and kept the search typed · ${moved} did not`,
       moved === 0, complaints.slice(0, 4).join(' | '));
-    // 4 for REF, 4 for RS, 3 owner-only.
-    record('every menu item is reachable, and the owner-only ones are shown to the owner',
-      navs === 11, `${navs} visible`);
+    // 4 for REF, 4 for RS, 3 owner-only loading screens.
+    record('every Busy Data screen is reachable from the menu, owner-only ones included',
+      mine.length === 11, `${mine.length} entries for this page`);
   }
 
   /* ============ 5. THE LIST SCREEN ============ */
-  await page.locator('#nav .nav-item[data-firm="REF"][data-view="price"]').click();
+  await H.go(page, 'price', 'REF');
   await page.waitForTimeout(200);
   {
     // The real server honours p_limit and p_offset. The stub must too, or the
@@ -325,7 +326,7 @@ async function openBusy(server, browser, user) {
   }
 
   /* ============ 3 and 8: THE UPLOAD SCREEN ============ */
-  await page.locator('#nav .nav-item[data-view="upload"]').click();
+  await H.go(page, 'upload');
   await page.waitForTimeout(300);
   {
     record('Load history opens', await page.locator('#view-upload').isVisible());
@@ -359,8 +360,8 @@ async function openBusy(server, browser, user) {
         { company: 'RS',  kind: 'opening', rows:   382, expected:   382 },
       ];
     });
-    await page.locator('#nav .nav-item[data-firm="REF"][data-view="price"]').click();
-    await page.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(page, 'price', 'REF');
+    await H.go(page, 'upload');
     await page.waitForTimeout(400);
 
     const asked = await page.evaluate(() => window.__TEST_DB_CALLS__.map(c => c.name));
@@ -385,8 +386,8 @@ async function openBusy(server, browser, user) {
         { company: 'REF', kind: 'item', rows: 6342, expected: 21470 },
       ];
     });
-    await page.locator('#nav .nav-item[data-firm="REF"][data-view="price"]').click();
-    await page.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(page, 'price', 'REF');
+    await H.go(page, 'upload');
     await page.waitForTimeout(400);
     const short = (await tiles()).join(' | ');
     record('a load that is short says how short, as a number',
@@ -397,8 +398,8 @@ async function openBusy(server, browser, user) {
       window.__TEST_DATA__['rpc:busy_row_counts'] =
         () => ({ error: { message: 'permission denied for table busy_history' } });
     });
-    await page.locator('#nav .nav-item[data-firm="REF"][data-view="price"]').click();
-    await page.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(page, 'price', 'REF');
+    await H.go(page, 'upload');
     await page.waitForTimeout(400);
     const refused = await page.locator('#loadTotals').innerText();
     record('a REFUSED read is never shown as a count',
@@ -462,7 +463,7 @@ async function openBusy(server, browser, user) {
   }
 
   /* ============ the frozen-years limit, in plain words ============ */
-  await page.locator('#nav .nav-item[data-firm="REF"][data-view="deleted"]').click();
+  await H.go(page, 'deleted', 'REF');
   await page.waitForTimeout(400);
   {
     const text = await page.locator('#view-deleted').textContent();
@@ -790,7 +791,8 @@ async function openBusy(server, browser, user) {
 
     // 9 — the nav says REF
     const heads = await p.evaluate(() =>
-      Array.from(document.querySelectorAll('.nav-section-label')).map(n => n.textContent.trim()));
+      Array.from(document.querySelectorAll('#refnav-host .refnav-section, #refnav-host .refnav-brand .n'))
+        .map(n => n.textContent.trim()));
     record('the left menu says REF, not the full company name',
       heads.includes('REF') && !heads.some(h => /Raghbir Erectors/.test(h)), heads.join(' · '));
 
@@ -993,7 +995,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(400);
     await p.evaluate(() => {
       window.__CLEARED__ = [];
@@ -1073,9 +1075,9 @@ async function openBusy(server, browser, user) {
     await p2.waitForTimeout(500);
     const reachable = await p2.evaluate(() => {
       const b = document.getElementById('clearBusyBtn');
-      const menu = document.querySelector('#nav .nav-item[data-view="upload"]');
+      const menu = document.querySelector('#refnav-host .refnav-item[data-view="upload"]');
       return {
-        loadHistoryInMenu: !!menu && menu.style.display !== 'none',
+        loadHistoryInMenu: !!menu,      // absent, not hidden: it is not built into the page at all
         clearOnScreen: !!b && b.offsetParent !== null,
       };
     });
@@ -1096,7 +1098,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(400);
 
     // Two firms, three years each, and vch_code DELIBERATELY REPEATED across
@@ -1317,7 +1319,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(400);
     await p.evaluate(() => {
       // One year refuses, the rest are fine — the shape of the real upload.
@@ -1490,8 +1492,13 @@ async function openBusy(server, browser, user) {
       await click('the ' + c + ' column box', `#colList input[data-col="${c}"]`);
     }
     await click('the Columns button again', '#colBtn');
-    for (let i = 0; i < 11; i++) {
-      await click('menu item ' + (i + 1), `#nav .nav-item:nth-of-type(${i + 1})`);
+    const menuViews = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('#refnav-host button.refnav-item[data-view]'))
+        .map(b => b.dataset.view + (b.dataset.firm ? ':' + b.dataset.firm : '')));
+    for (const v of menuViews) {
+      const [view, firm] = v.split(':');
+      clicked.push('menu ' + v);
+      await H.go(p, view, firm);
     }
 
     record(`every control on the screen was clicked (${clicked.length})`,
@@ -1539,7 +1546,7 @@ async function openBusy(server, browser, user) {
       const wrap = document.querySelector('.tbl-wrap');
       const firstRowTop = document.querySelector('#rows tr')?.getBoundingClientRect().top;
       return {
-        sidebar: box(document.querySelector('.sidebar')),
+        sidebar: box(document.getElementById('refnav-host')),
         topbar:  box(document.querySelector('.topbar')),
         back:    box(document.querySelector('.topbar a[href="admin.html"]')),
         header:  box(th),
@@ -1563,25 +1570,26 @@ async function openBusy(server, browser, user) {
     await p.close();
   }
 
-  /* ============ THE MENU LOOKS LIKE THE REST OF THE ERP ============ */
+  /* ============ THE MENU IS THE ERP'S, NOT THIS PAGE'S ============ */
+  /* What the menu looks like is tested once, in tests/nav.test.js, against
+     the one file that draws it. All this page has to prove is that it uses
+     that menu rather than keeping one of its own. */
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    const nav = await p.evaluate(() => {
-      const items = Array.from(document.querySelectorAll('#nav .nav-item'));
-      const labels = Array.from(document.querySelectorAll('.nav-section-label'));
-      return {
-        items: items.length,
-        withIcon: items.filter(n => n.querySelector('svg')).length,
-        withLabel: items.filter(n => n.querySelector('.nav-label')).length,
-        headingsBold: labels.every(l => Number(getComputedStyle(l).fontWeight) >= 700),
-        headings: labels.length,
-      };
-    });
-    record(`every menu item has an icon (${nav.withIcon} of ${nav.items})`, nav.withIcon === nav.items);
-    record('every menu item has its label in a span, as admin.html does',
-      nav.withLabel === nav.items);
-    record(`the group headings are bold (${nav.headings} of them)`, nav.headingsBold);
+    const nav = await p.evaluate(() => ({
+      shared: !!document.getElementById('refnav-host'),
+      ownMenu: !!document.querySelector('#nav, #sidebarNav'),
+      entries: document.querySelectorAll('#refnav-host .refnav-item[data-page]').length,
+      reachesOtherPages: [...new Set(Array.from(
+        document.querySelectorAll('#refnav-host .refnav-item[data-page]'))
+        .map(i => i.dataset.page))].sort(),
+    }));
+    record('this page uses the ERP\'s shared menu', nav.shared);
+    record('and does not keep a second menu of its own', !nav.ownMenu);
+    record(`the menu reaches the rest of the ERP from here (${nav.reachesOtherPages.length} pages)`,
+      nav.reachesOtherPages.includes('admin.html') && nav.reachesOtherPages.includes('busy.html'),
+      nav.reachesOtherPages.join(', '));
     await p.close();
   }
 
@@ -1591,7 +1599,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(300);
 
     // Record every call the page makes, and let staging and finalise answer.
@@ -1643,7 +1651,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(300);
     await p.evaluate(() => {
       window.__CALLS__ = [];
