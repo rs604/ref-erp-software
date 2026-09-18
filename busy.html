@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789720809';</script>
+<script>window.__BUILD_VERSION__ = '1789721781';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -86,7 +86,7 @@
   .firm-REF { background:var(--steel-tint); color:var(--steel-dark); }
   .firm-RS  { background:var(--amber-bg);  color:var(--amber); }
   .sync-stamp { font-size:11.5px; color:var(--muted); }
-  .content { padding:16px 18px 60px; flex:1; overflow-y:auto; min-height:0; }
+  .content { padding:12px 16px 16px; flex:1; overflow-y:auto; min-height:0; }
 
   .card { background:var(--surface); border:1px solid var(--border); border-radius:4px;
           padding:14px; margin-bottom:14px; }
@@ -127,8 +127,12 @@
   /* Its own scrollbox, so the column names stay put. th is sticky, and sticky
      resolves against the nearest scrolling ancestor -- which has to be this
      box, not the page, or the header leaves with everything else. */
-  .tbl-wrap { overflow:auto; max-height:70vh; border:1px solid var(--border); border-radius:4px; }
-  .rowcount { font-size:12px; color:var(--muted); margin:8px 2px; }
+  /* The content area is already a fixed frame, so the table takes what is left
+     of it rather than a guessed fraction of the window. Two paragraphs came
+     out of the top of this screen; this is where that room goes. */
+  .tbl-wrap { overflow:auto; border:1px solid var(--border); border-radius:4px;
+              max-height:calc(100vh - 210px); min-height:180px; }
+  .rowcount { font-size:12px; color:var(--muted); margin:0 2px 6px; }
 
   .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
   .kpi { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:12px; }
@@ -137,6 +141,57 @@
   .up { color:var(--green); } .down { color:var(--danger); }
 
   .shortcut-hint { position:fixed; right:12px; bottom:8px; font-size:11px; color:var(--muted); }
+  /* ---- the search bar: one row, nothing hidden behind a dropdown ---- */
+  .searchbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+               background:var(--surface); border:1px solid var(--border);
+               border-radius:4px; padding:9px 10px; margin-bottom:10px; }
+  .searchbox { position:relative; display:flex; align-items:center; flex:1 1 300px; min-width:240px; }
+  .searchbox svg { position:absolute; left:9px; width:15px; height:15px; color:var(--muted); }
+  .searchbox input { width:100%; padding:7px 26px 7px 30px; border:1px solid var(--border);
+                     border-radius:3px; font-family:inherit; font-size:13px; background:#fff; }
+  .searchbox input:focus { outline:2px solid var(--steel-tint); outline-offset:-1px; border-color:var(--steel); }
+  .searchbox button { position:absolute; right:4px; border:0; background:none; cursor:pointer;
+                      color:var(--muted); font-size:17px; line-height:1; padding:2px 5px; }
+  .searchbox button:hover { color:var(--ink); }
+
+  /* Voucher types as tickboxes. What is chosen is on the screen, always. */
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { display:inline-flex; align-items:center; gap:5px; cursor:pointer; user-select:none;
+          border:1px solid var(--border); border-radius:13px; padding:4px 11px;
+          font-size:12px; background:#fff; color:var(--muted); white-space:nowrap; }
+  .chip input { margin:0; width:12px; height:12px; accent-color:var(--steel); }
+  .chip:hover { border-color:var(--steel); }
+  .chip.on { background:var(--steel-tint); border-color:var(--steel); color:var(--steel-dark);
+             font-weight:600; }
+
+  .searchbar-end { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-left:auto; }
+  .searchbar-end .fl { margin:0 0 0 4px; }
+  .f.dt { padding:6px 7px; font-size:12px; width:132px; }
+  .f.sm { padding:6px 7px; font-size:12px; width:74px; }
+  .btn-sm { padding:5px 10px; font-size:12px; }
+  .btn-back { display:inline-flex; align-items:center; gap:6px; line-height:1;
+              padding:7px 11px; text-decoration:none; white-space:nowrap; }
+  .btn-back svg { width:14px; height:14px; }
+
+  /* ---- show and hide columns ---- */
+  .colmenu { position:relative; }
+  .colmenu-list { position:absolute; right:0; top:calc(100% + 4px); z-index:40;
+                  background:#fff; border:1px solid var(--border); border-radius:4px;
+                  box-shadow:0 6px 20px rgba(0,0,0,.14); padding:6px; min-width:172px; }
+  .colmenu-list label { display:flex; align-items:center; gap:8px; padding:5px 8px;
+                        font-size:12.5px; cursor:pointer; border-radius:3px; }
+  .colmenu-list label:hover { background:var(--slate-bg); }
+  .colmenu-list input { accent-color:var(--steel); }
+  .colmenu-note { font-size:11px; color:var(--muted); padding:5px 8px 2px;
+                  border-top:1px solid var(--border); margin-top:4px; }
+
+  /* ---- what a match looks like ---- */
+  /* The letters actually typed, picked out. Not the whole cell. */
+  mark.hit { background:#f3c623; color:#000; padding:0 1px; border-radius:2px; font-weight:600; }
+  /* A close match, not an exact one. The whole row is tinted so it cannot be
+     mistaken for one, and the count says how many there are. */
+  tr.fuzzy td { background:#fdf8e3; }
+
   .boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
           background:var(--bg); z-index:60; padding:20px; }
   .boot-card { max-width:460px; text-align:center; }
@@ -154,6 +209,7 @@
     .nav-item { white-space:nowrap; width:auto; }
     .nav-section-label, .sidebar-footer { display:none; }
     .filters { grid-template-columns:1fr 1fr; }
+    .searchbar-end { margin-left:0; }
     .tbl-wrap { max-height:none; }
     .shortcut-hint { display:none; }
   }
@@ -179,12 +235,12 @@
   <div class="sidebar">
     <div class="sidebar-brand"><div class="name">REF</div><div class="tag">ERP · Busy Data</div></div>
     <nav class="sidebar-nav" id="nav">
-      <div class="nav-section-label">Raghbir Erectors &amp; Fabricators</div>
+      <div class="nav-section-label">REF</div>
       <button class="nav-item level-2 active" data-firm="REF" data-view="price"><svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="nav-label">Price History</span></button>
       <button class="nav-item level-2" data-firm="REF" data-view="challans"><svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg><span class="nav-label">Challans</span></button>
       <button class="nav-item level-2" data-firm="REF" data-view="reports"><svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg><span class="nav-label">Reports</span></button>
       <button class="nav-item level-2 owner-only" data-firm="REF" data-view="deleted" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span class="nav-label">Deleted in Busy</span></button>
-      <div class="nav-section-label">RS Industries</div>
+      <div class="nav-section-label">RS</div>
       <button class="nav-item level-2" data-firm="RS" data-view="price"><svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="nav-label">Price History</span></button>
       <button class="nav-item level-2" data-firm="RS" data-view="challans"><svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg><span class="nav-label">Challans</span></button>
       <button class="nav-item level-2" data-firm="RS" data-view="reports"><svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg><span class="nav-label">Reports</span></button>
@@ -199,23 +255,23 @@
 
   <div class="main">
     <div class="topbar">
-      <div>
-        <div class="topbar-title" id="pageTitle">Price History</div>
-        <div class="topbar-sub" id="pageSub">Every past rate, newest first</div>
+      <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+        <a class="btn btn-outline btn-back" href="admin.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to ERP
+        </a>
+        <div style="min-width:0;">
+          <div class="topbar-title" id="pageTitle">Price History</div>
+          <div class="topbar-sub" id="pageSub">Every past rate, newest first</div>
+        </div>
       </div>
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <span class="firm-chip firm-REF" id="firmChip">REF</span>
         <span class="sync-stamp" id="syncStamp">checking…</span>
-        <a class="btn btn-outline" href="admin.html" style="line-height:28px; text-decoration:none;">Back to ERP</a>
       </div>
     </div>
 
     <div class="content">
-      <div class="note" id="topNote">
-        This is a copy of what Busy holds, as at the last sync — not live. Nothing here can be
-        edited. <strong>Raghbir Erectors &amp; Fabricators</strong> only: RS Industries
-        is a separate firm and never appears on this screen.
-      </div>
 
       <!-- ---------------- price history / challans ---------------- -->
       <div id="view-search">
@@ -227,52 +283,34 @@
           <em>repairing</em> to see every item ever sent out for repair.
         </div>
 
-        <div class="card">
-          <div class="filters">
-            <div>
-              <label class="fl" for="q">Search — party, item or description</label>
-              <input class="f" id="q" placeholder="e.g.  pipe 80x40x2.5  ·  aggarwal  ·  repairing" autocomplete="off" />
-            </div>
-            <div>
-              <label class="fl" for="docType">Document type</label>
-              <select class="f" id="docType">
-                <option value="">All</option>
-                <option>Purchase Bill</option>
-                <option>Sales Invoice</option>
-                <option>Delivery Challan</option>
-                <option>Purchase Order</option>
-                <option>Sales Order</option>
-              </select>
-            </div>
-            <div><label class="fl" for="from">From</label><input class="f" type="date" id="from" /></div>
-            <div><label class="fl" for="to">To</label><input class="f" type="date" id="to" /></div>
-            <div>
-              <label class="fl" for="pageSize">Show</label>
-              <select class="f" id="pageSize">
-                <option>10</option><option selected>25</option><option>50</option>
-                <option>100</option><option>200</option><option value="2000">All</option>
-              </select>
-            </div>
-            <div><button class="btn" id="goBtn">Search</button></div>
+        <div class="searchbar">
+          <div class="searchbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input id="q" placeholder="Search party, item or description — results appear as you type"
+                   autocomplete="off" />
+            <button type="button" id="qClear" title="Clear (Esc)" aria-label="Clear the search">&times;</button>
           </div>
-          <div style="font-size:11.5px; color:var(--muted); margin-top:9px;">
-            Type the size exactly as it appears — <strong>80X40X2.5 and 80X40X3 are different pipes</strong>,
-            so a number must match before anything is offered. Spacing and capitals do not matter,
-            and the words can be in any order.
+          <div class="chips" id="docChips"></div>
+          <div class="searchbar-end">
+            <label class="fl" for="from">From</label><input class="f dt" type="date" id="from" />
+            <label class="fl" for="to">To</label><input class="f dt" type="date" id="to" />
+            <label class="fl" for="pageSize">Show</label>
+            <select class="f sm" id="pageSize">
+              <option>25</option><option selected>50</option><option>100</option>
+              <option>200</option><option value="2000">All</option>
+            </select>
+            <div class="colmenu">
+              <button type="button" class="btn btn-outline btn-sm" id="colBtn" aria-expanded="false">Columns</button>
+              <div class="colmenu-list" id="colList" style="display:none"></div>
+            </div>
           </div>
         </div>
 
         <div class="rowcount" id="rowCount"></div>
         <div class="tbl-wrap">
           <table class="tbl">
-            <thead><tr>
-              <th style="width:44px">Sr.</th><th style="width:88px">Date</th>
-              <th style="width:74px">FY</th><th style="width:110px">Type</th>
-              <th style="width:86px">Vch No</th><th>Party</th><th>Item</th>
-              <th>Description</th><th style="width:88px">Qty</th>
-              <th style="width:110px">Rate</th><th style="width:110px">Amount</th>
-            </tr></thead>
-            <tbody id="rows"><tr><td colspan="11" class="loading">Type something, or press Search to see everything.</td></tr></tbody>
+            <thead><tr id="headRow"></tr></thead>
+            <tbody id="rows"><tr><td colspan="11" class="loading">Start typing to search, or clear the box to see everything.</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -577,15 +615,35 @@ upload_token = (shown on the download screen)</pre>
     return parseInt(p[2], 10) + ' ' + m + ' ' + p[0];
   }
   /* Highlight the letters actually typed, on an exact match. */
+  /* Pick out the letters actually typed.
+     This used to look for the WHOLE query as one run of characters, which is
+     why nothing was ever highlighted: type "pipe 80x40" and the stored text
+     reads "MS PIPE 80X40X2.5", where those characters never appear together.
+     The words are matched one at a time instead, in any order, and a word is
+     found inside a longer run too — so 80x40 lights up inside 80X40X2.5. */
   function hi(text, q) {
-    var t = esc(text);
-    if (!q) return t;
-    var needle = q.trim();
-    if (!needle) return t;
-    var i = t.toUpperCase().indexOf(needle.toUpperCase());
-    if (i === -1) return t;
-    return t.slice(0, i) + '<mark>' + t.slice(i, i + needle.length) + '</mark>' + t.slice(i + needle.length);
+    var raw = (text == null ? '' : String(text));
+    if (!q) return esc(raw);
+    var words = q.trim().split(/\s+/).filter(function (w) { return w.length > 1; });
+    if (!words.length) return esc(raw);
+    // Longest first, so a short word cannot carve up a longer match.
+    words.sort(function (a, b) { return b.length - a.length; });
+    var re = new RegExp('(' + words.map(function (w) {
+      return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }).join('|') + ')', 'gi');
+
+    // Match against the RAW text and escape each piece afterwards. Escaping
+    // first would let a search for "amp" light up the middle of an &amp;
+    // and hand the browser broken markup.
+    var out = '', last = 0, m;
+    while ((m = re.exec(raw)) !== null) {
+      out += esc(raw.slice(last, m.index)) + '<mark class="hit">' + esc(m[0]) + '</mark>';
+      last = m.index + m[0].length;
+      if (m[0].length === 0) re.lastIndex++;      // never loop for ever
+    }
+    return out + esc(raw.slice(last));
   }
+
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -636,13 +694,11 @@ upload_token = (shown on the download screen)</pre>
 
   function setFirm(f) {
     firm = f;
-    var other = (f === 'REF') ? 'RS' : 'REF';
-    $('firmChip').textContent = FIRM_NAME[f];
+    // The chip says which firm and the stamp says how fresh it is. A paragraph
+    // underneath saying the same thing again was noise, so it is gone.
+    $('firmChip').textContent = f;
+    $('firmChip').title = FIRM_NAME[f] + ' only. The other firm never appears on this screen.';
     $('firmChip').className = 'firm-chip firm-' + f;
-    $('topNote').innerHTML =
-      'This is a copy of what Busy holds, as at the last sync — not live. Nothing here can be ' +
-      'edited. <strong>' + esc(FIRM_NAME[f]) + '</strong> only: ' + esc(FIRM_NAME[other]) +
-      ' is a separate firm and never appears on this screen.';
     loadSync();
   }
 
@@ -666,12 +722,13 @@ upload_token = (shown on the download screen)</pre>
     $('view-download').style.display = (v === 'download') ? '' : 'none';
     $('view-setup').style.display    = (v === 'setup') ? '' : 'none';
     $('challanNote').style.display   = (v === 'challans') ? '' : 'none';
-    $('topNote').style.display       = FIRM_VIEWS[v] ? '' : 'none';
     $('firmChip').style.display      = FIRM_VIEWS[v] ? '' : 'none';
     $('pageTitle').textContent = TITLES[v][0];
     $('pageSub').textContent   = TITLES[v][1];
-    if (v === 'challans') { $('docType').value = 'Delivery Challan'; }
-    else if (v === 'price' && $('docType').value === 'Delivery Challan') { $('docType').value = ''; }
+    // Challans is the same table with one type ticked. Price History gets the
+    // person's own choice back when they leave it.
+    if (v === 'challans') { chosenTypes = ['Delivery Challan']; drawChips(); }
+    else if (v === 'price') { loadTypes(); drawChips(); }
     if (v === 'reports') loadReports();
     else if (v === 'deleted') loadDeleted();
     else if (v === 'upload') loadUploadScreen();
@@ -754,38 +811,139 @@ upload_token = (shown on the download screen)</pre>
     }, SLOW_AFTER_MS);
   }
 
+  /* ---- COLUMNS: any of them on or off, remembered for this person ----
+     Asked for as "hide FY", answered as a control for every column, because
+     the next column somebody wants gone should not need another change. The
+     choice is a per-person convenience, so it lives in this browser. */
+  var COLUMNS = [
+    { key: 'sr',    label: 'Sr.',         width: '44px',  always: true },
+    { key: 'date',  label: 'Date',        width: '92px'  },
+    { key: 'fy',    label: 'FY',          width: '74px', offByDefault: true },
+    { key: 'type',  label: 'Type',        width: '112px' },
+    { key: 'vch',   label: 'Vch No',      width: '86px'  },
+    { key: 'party', label: 'Party',       align: 'l' },
+    { key: 'item',  label: 'Item',        align: 'l' },
+    { key: 'desc',  label: 'Description', align: 'l' },
+    { key: 'qty',   label: 'Qty',         width: '88px'  },
+    { key: 'rate',  label: 'Rate',        width: '116px' },
+    { key: 'amt',   label: 'Amount',      width: '116px' },
+  ];
+  var COL_STORE = 'ref-busy-columns';
+  var shownCols = null;
+
+  function loadCols() {
+    var def = {};
+    COLUMNS.forEach(function (c) { def[c.key] = !c.offByDefault; });
+    try {
+      var saved = JSON.parse(localStorage.getItem(COL_STORE) || 'null');
+      if (saved && typeof saved === 'object') {
+        COLUMNS.forEach(function (c) {
+          if (typeof saved[c.key] === 'boolean') def[c.key] = saved[c.key];
+        });
+      }
+    } catch (e) { /* a browser that refuses storage still gets the defaults */ }
+    def.sr = true;
+    shownCols = def;
+  }
+  function saveCols() {
+    try { localStorage.setItem(COL_STORE, JSON.stringify(shownCols)); } catch (e) {}
+  }
+  function visibleCols() { return COLUMNS.filter(function (c) { return shownCols[c.key]; }); }
+
+  function drawHead() {
+    $('headRow').innerHTML = visibleCols().map(function (c) {
+      return '<th' + (c.width ? ' style="width:' + c.width + '"' : '') + '>' + esc(c.label) + '</th>';
+    }).join('');
+  }
+
+  function drawColMenu() {
+    $('colList').innerHTML = COLUMNS.map(function (c) {
+      return '<label><input type="checkbox" data-col="' + c.key + '"' +
+        (shownCols[c.key] ? ' checked' : '') + (c.always ? ' disabled' : '') + '>' +
+        esc(c.label) + '</label>';
+    }).join('') +
+    '<div class="colmenu-note">Kept for you on this computer.</div>';
+  }
+
+  /* ---- VOUCHER TYPES: tickboxes, so what is chosen is always on screen ---- */
+  var DOC_TYPES = ['Sales Invoice','Purchase Bill','Delivery Challan','Purchase Order','Sales Order'];
+  var TYPE_STORE = 'ref-busy-types';
+  var chosenTypes = null;
+
+  function loadTypes() {
+    // Sales Invoice only, until this person says otherwise.
+    var def = ['Sales Invoice'];
+    try {
+      var saved = JSON.parse(localStorage.getItem(TYPE_STORE) || 'null');
+      if (Array.isArray(saved)) def = saved.filter(function (t) { return DOC_TYPES.indexOf(t) !== -1; });
+    } catch (e) {}
+    chosenTypes = def;
+  }
+  function saveTypes() {
+    try { localStorage.setItem(TYPE_STORE, JSON.stringify(chosenTypes)); } catch (e) {}
+  }
+  function drawChips() {
+    $('docChips').innerHTML = DOC_TYPES.map(function (t) {
+      var on = chosenTypes.indexOf(t) !== -1;
+      return '<label class="chip' + (on ? ' on' : '') + '">' +
+             '<input type="checkbox" data-type="' + esc(t) + '"' + (on ? ' checked' : '') + '>' +
+             esc(t) + '</label>';
+    }).join('');
+  }
+
+  /* ---- THE SEARCH: as you type ---- */
+  var typingTimer = null, runToken = 0;
+
+  function runSoon() {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(run, 300);   // after the last keystroke, not each one
+  }
+
   function run() {
+    clearTimeout(typingTimer);
     var q = $('q').value.trim();
     lastQuery = q;
-    var limit = parseInt($('pageSize').value, 10) || 25;
-    $('rows').innerHTML = '<tr><td colspan="11" class="loading">Looking…</td></tr>';
+    var limit = parseInt($('pageSize').value, 10) || 50;
+    var cols = visibleCols().length;
+    var mine = ++runToken;                // an older answer must not overwrite a newer one
+    $('rows').innerHTML = '<tr><td colspan="' + cols + '" class="loading">Looking…</td></tr>';
 
-    var say = intoTable('rows', 11);
+    var say = intoTable('rows', cols);
     guard(REF.supabase().rpc('busy_search', {
       p_company: firm,
       p_query: q || null,
       p_party: null,
-      p_doc_type: $('docType').value || null,
+      // null means every type. The screen never sends an empty list, because
+      // unticking everything is answered on the screen instead.
+      p_doc_types: chosenTypes.length ? chosenTypes : null,
       p_date_from: $('from').value || null,
       p_date_to: $('to').value || null,
       p_limit: limit,
       p_offset: 0
-    }), function (t) { say(t); $('rowCount').textContent = ''; }, 'the history')
+    }), function (t) { if (mine === runToken) { say(t); $('rowCount').textContent = ''; } }, 'the history')
       .then(function (res) {
-        if (!res) return;                 // guard has already said what happened
+        if (!res || mine !== runToken) return;
         render(res.data || [], q, limit);
       });
   }
 
   function render(rows, q, limit) {
+    var cols = visibleCols();
+    if (!chosenTypes.length) {
+      $('rows').innerHTML = '<tr><td colspan="' + cols.length + '" class="loading">' +
+        'No voucher types are ticked, so there is nothing to show. Tick at least one above.</td></tr>';
+      $('rowCount').textContent = '';
+      return;
+    }
     if (!rows.length) {
-      $('rows').innerHTML = '<tr><td colspan="11" class="loading">' +
-        (q ? 'Nothing matches “' + esc(q) + '”. If you typed a size, check the numbers — they must match exactly.'
+      $('rows').innerHTML = '<tr><td colspan="' + cols.length + '" class="loading">' +
+        (q ? 'Nothing matches “' + esc(q) + '”.'
            : 'No history loaded yet — use <strong>Load history</strong> in the menu to send the Busy files up.')
         + '</td></tr>';
       $('rowCount').textContent = '';
       return;
     }
+
     var html = rows.map(function (r, i) {
       var rateCell;
       if (r.is_lump_sum) {
@@ -798,24 +956,29 @@ upload_token = (shown on the download screen)</pre>
       } else {
         rateCell = money(r.rate);
       }
-      return '<tr class="' + (r.match_tier === 3 && q ? 'fuzzy' : '') + '">' +
-        '<td>' + (i + 1) + '</td>' +
-        '<td>' + dmy(r.vch_date) + '</td>' +
-        '<td>' + esc(r.fy) + '</td>' +
-        '<td>' + esc(r.doc_type) + '</td>' +
-        '<td>' + esc(r.vch_no) + '</td>' +
-        '<td class="l">' + hi(r.party, q) + '</td>' +
-        '<td class="l">' + hi(r.item, q) + '</td>' +
-        '<td class="l desc">' + hi(r.description, q) + '</td>' +
-        '<td class="r">' + (r.qty ? inr2.format(r.qty) : '') + '</td>' +
-        '<td class="r">' + rateCell + '</td>' +
-        '<td class="r">' + money(r.amount) + '</td>' +
-        '</tr>';
+      var cell = {
+        sr:    '<td>' + (i + 1) + '</td>',
+        date:  '<td>' + dmy(r.vch_date) + '</td>',
+        fy:    '<td>' + esc(r.fy) + '</td>',
+        type:  '<td>' + esc(r.doc_type) + '</td>',
+        vch:   '<td>' + esc(r.vch_no) + '</td>',
+        party: '<td class="l">' + hi(r.party, q) + '</td>',
+        item:  '<td class="l">' + hi(r.item, q) + '</td>',
+        desc:  '<td class="l desc">' + hi(r.description, q) + '</td>',
+        qty:   '<td class="r">' + (r.qty ? inr2.format(r.qty) : '') + '</td>',
+        rate:  '<td class="r">' + rateCell + '</td>',
+        amt:   '<td class="r">' + money(r.amount) + '</td>'
+      };
+      // Tier 1 and 2 are real matches and get their letters picked out; tier 3
+      // is close but not exact, so the whole row is tinted instead.
+      return '<tr class="' + (q && r.match_tier === 3 ? 'fuzzy' : '') + '">' +
+        cols.map(function (c) { return cell[c.key]; }).join('') + '</tr>';
     }).join('');
     $('rows').innerHTML = html;
+
     var fuzzy = rows.filter(function (r) { return r.match_tier === 3 && q; }).length;
-    $('rowCount').textContent = rows.length + ' row' + (rows.length === 1 ? '' : 's') +
-      (rows.length === limit ? ' (showing the first ' + limit + ' — choose a bigger number to see more)' : '') +
+    $('rowCount').textContent = inr.format(rows.length) + ' row' + (rows.length === 1 ? '' : 's') +
+      (rows.length === limit ? ' (the first ' + inr.format(limit) + ' — choose a bigger number to see more)' : '') +
       (fuzzy ? ' · ' + fuzzy + ' shaded yellow are close matches, not exact' : '');
   }
 
@@ -1441,18 +1604,64 @@ upload_token = (shown on the download screen)</pre>
     });
   })();
 
-  $('goBtn').addEventListener('click', run);
-  $('q').addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
-  ['docType', 'from', 'to', 'pageSize'].forEach(function (id) {
+  /* Searching happens as you type, so there is no Search button. A button that
+     repeats what the screen already did is a button that looks broken. */
+  $('q').addEventListener('input', runSoon);
+  $('q').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); run(); }     // impatient, not required
+    if (e.key === 'Escape') { e.preventDefault(); clearSearch(); }
+  });
+  $('qClear').addEventListener('click', clearSearch);
+
+  function clearSearch() {
+    $('q').value = '';
+    $('q').focus();
+    run();
+  }
+
+  ['from', 'to', 'pageSize'].forEach(function (id) {
     $(id).addEventListener('change', function () { if (view !== 'reports') run(); });
   });
+
+  // The voucher-type tickboxes.
+  $('docChips').addEventListener('change', function (e) {
+    var t = e.target.dataset.type;
+    if (!t) return;
+    var at = chosenTypes.indexOf(t);
+    if (e.target.checked) { if (at === -1) chosenTypes.push(t); }
+    else if (at !== -1) chosenTypes.splice(at, 1);
+    e.target.closest('.chip').classList.toggle('on', e.target.checked);
+    saveTypes();
+    run();
+  });
+
+  // Show and hide columns.
+  $('colBtn').addEventListener('click', function () {
+    var open = $('colList').style.display !== 'none';
+    $('colList').style.display = open ? 'none' : '';
+    $('colBtn').setAttribute('aria-expanded', String(!open));
+  });
+  $('colList').addEventListener('change', function (e) {
+    var k = e.target.dataset.col;
+    if (!k) return;
+    shownCols[k] = e.target.checked;
+    saveCols();
+    drawHead();
+    run();
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.colmenu')) {
+      $('colList').style.display = 'none';
+      $('colBtn').setAttribute('aria-expanded', 'false');
+    }
+  });
+
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.key === '/') {
       e.preventDefault();
-      alert('Enter — search\nTab — next box\nEsc — clear the search box\n\n' +
-            'Type the size exactly. 80X40X2.5 and 80X40X3 are different pipes.');
+      alert('Type — the results follow as you type\nEsc — clear the search box\n' +
+            'Tab — next box');
     }
-    if (e.key === 'Escape' && document.activeElement === $('q')) { $('q').value = ''; run(); }
   });
 
   /* ---- OPENING THE SCREEN ------------------------------------------------
@@ -1519,6 +1728,8 @@ upload_token = (shown on the download screen)</pre>
           n.style.display = '';
         });
       }
+      loadCols(); loadTypes();
+      drawHead(); drawColMenu(); drawChips();
       setFirm('REF');
       setView('price');
       $('q').focus();

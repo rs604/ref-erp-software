@@ -51,13 +51,28 @@ function argsOf(src, openBraceIdx) {
   const body = src.slice(openBraceIdx + 1, end);
   const keys = new Set();
   let d = 0;
+  // A key sits at the START of an entry -- at the beginning, or after a comma
+  // at depth 0 -- and nowhere else. Without that, the middle of a ternary
+  // reads as a key: `p_doc_types: list.length ? list : null` looked like a
+  // key called "list". The checker said the page passed an argument that does
+  // not exist, which was the checker misreading, not the page misbehaving.
+  let expectKey = true;
   for (let i = 0; i < body.length; i++) {
     const c = body[i];
-    if ('{[('.includes(c)) d++;
-    else if ('}])'.includes(c)) d--;
-    else if (d === 0) {
+    if ('{[('.includes(c)) { d++; continue; }
+    if ('}])'.includes(c)) { d--; continue; }
+    if (d !== 0) continue;
+    if (c === ',') { expectKey = true; continue; }
+    if (/\s/.test(c)) continue;
+    // Step over comments. A comment sitting between a comma and the next key
+    // used to eat that key, so an argument that WAS passed was reported
+    // missing -- the checker reading its own blind spot as a fault.
+    if (c === '/' && body[i + 1] === '/') { i = body.indexOf('\n', i); if (i < 0) break; continue; }
+    if (c === '/' && body[i + 1] === '*') { i = body.indexOf('*/', i) + 1; if (i < 1) break; continue; }
+    if (expectKey) {
       const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*:/.exec(body.slice(i));
-      if (m && (i === 0 || /[,\s]/.test(body[i - 1]))) keys.add(m[1]);
+      if (m) keys.add(m[1]);
+      expectKey = false;      // the rest of this entry is a value
     }
   }
   return [...keys];
