@@ -14,12 +14,15 @@ vch_no CANNOT be used - blank on every ledger row, and it repeats among items.
 """
 import subprocess, csv, io, re, sys
 
-PARSER_VERSION = '2026.09.17-mdbtools'
+PARSER_VERSION = '2026.09.18-mdbtools'
 
 VCH = {'2':'Purchase Bill','9':'Sales Invoice','11':'Delivery Challan',
-       '12':'Purchase Order','13':'Sales Order','16':'Journal','19':'Payment'}
-ITEM_VCH   = {'2','9','11','12','13'}
-LEDGER_VCH = {'16','19'}
+       '12':'Purchase Order','13':'Sales Order','16':'Journal','19':'Payment',
+       '14':'Receipt','15':'Contra','10':'Debit Note','3':'Credit Note',
+       '17':'Purchase (no stock)','18':'Credit Note (no stock)'}
+# item lines exist on these; some also post to ledgers
+ITEM_VCH   = {'2','9','11','12','13','10','3'}
+LEDGER_VCH = {'16','19','14','15','10','3','17','18','2','9'}
 ITEM_RECTYPES = {'2','4'}
 
 def table(db, t):
@@ -48,6 +51,7 @@ def parse_fy(path, company, fy):
     subprocess.run(['cp', path, tmp], check=True)
     t1 = table(tmp,'Tran1'); t2 = table(tmp,'Tran2')
     dsc = table(tmp,'ItemDesc'); mas = table(tmp,'Master1')
+    fol = table(tmp,'Folio1')
 
     name   = {r['Code']: clean(r['Name']) for r in mas}
     parent = {r['Code']: r['ParentGrp'] for r in mas}
@@ -63,6 +67,26 @@ def parse_fy(path, company, fy):
                 d[nm] = float(r['Value3'] or 0); d['rate'] = float(r['Value1'] or 0)
 
     out = []
+
+    # ---------- OPENING BALANCES : Folio1.D1, one per ledger ----------
+    # Verified against REF 2025-26: Hindon Metaforms opening -483,537,
+    # FY movement +524,787, closing 41,250.
+    for r in fol:
+        if r.get('MasterType') != '2': continue
+        v = float(r.get('D1') or 0)
+        if v == 0: continue
+        code = r['MasterCode']
+        led = name.get(code,''); g = name.get(parent.get(code,''),'')
+        out.append(dict(kind='opening', company=company, fy=fy,
+            doc_type='Opening Balance', vch_type='', vch_code=f'OB-{code}',
+            vch_no='', vch_date='', sr_no='0', vch_total=0,
+            parser_version=PARSER_VERSION,
+            party=led, item='', description='', ledger=led, ledger_group=g,
+            debit=v if v>0 else 0, credit=-v if v<0 else 0,
+            qty=0, rate=0, amount=abs(v), is_lump_sum=False,
+            cgst=0, sgst=0, igst=0, gst_rate=0,
+            search_text=clean(f'{led} {g}').upper()))
+
     for r in t2:
         h = hdr.get(r['VchCode'])
         if not h: continue
@@ -98,7 +122,8 @@ def parse_fy(path, company, fy):
             v = float(r['Value1'] or 0)
             led = name.get(r['MasterCode1'],''); grp = name.get(parent.get(r['MasterCode1'],''),'')
             nar = clean(r.get('ShortNar'))
-            out.append(dict(base, kind='ledger', party=name.get(h['MasterCode1'],''),
+            lb = dict(base); lb['sr_no'] = 'L' + str(r['SrNo'])
+            out.append(dict(lb, kind='ledger', party=name.get(h['MasterCode1'],''),
                 item='', description=nar, ledger=led, ledger_group=grp,
                 debit=v if v>0 else 0, credit=-v if v<0 else 0,
                 qty=0, rate=0, amount=abs(v), is_lump_sum=False,
