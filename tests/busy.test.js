@@ -106,16 +106,31 @@ async function openBusy(server, browser, user) {
     record('Shift+Tab goes back', back[back.length - 1] === 'pageSize', back.join(' -> '));
   }
   {
-    const hasHelp = await page.evaluate(() => {
-      let seen = null;
-      const real = window.alert;
-      window.alert = t => { seen = t; };
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: '/', ctrlKey: true, bubbles: true }));
-      window.alert = real;
-      return seen;
+    // A REAL key press, not a dispatched event, and the ERP's own panel -- not
+    // an alert box. An alert IS the browser's own panel, which is what this
+    // shortcut used to open and why it looked as if the key had been stolen.
+    let alerted = false;
+    await page.evaluate(() => { window.__ALERTED__ = false;
+      const real = window.alert; window.alert = () => { window.__ALERTED__ = true; real(''); }; });
+    await page.keyboard.press('Control+Slash');
+    await page.waitForTimeout(250);
+    const panel = await page.evaluate(() => {
+      const el = document.getElementById('shortcutPanel');
+      return { open: !!el && getComputedStyle(el).display !== 'none',
+               text: el ? el.innerText.replace(/\s+/g,' ') : '',
+               alerted: window.__ALERTED__ };
     });
-    record('Ctrl+/ opens the shortcut list',
-      !!hasHelp && /Esc/.test(hasHelp) && /as you type/.test(hasHelp), String(hasHelp).split('\n')[0]);
+    alerted = panel.alerted;
+    record('Ctrl+/ opens the ERP\'s own shortcut list', panel.open, panel.text.slice(0, 70));
+    record('and it is not a browser alert box', !alerted);
+    record('the list names the keys and what they do',
+      /Ctrl \+ \// .test(panel.text) && /Page Down/.test(panel.text) && /Ctrl \+ C/.test(panel.text),
+      panel.text.slice(0, 90));
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    record('Esc closes it again',
+      await page.evaluate(() => getComputedStyle(document.getElementById('shortcutPanel')).display === 'none'));
   }
 
   /* ============ 1. NOTHING MOVES THAT SHOULD NOT ============ */
@@ -200,15 +215,23 @@ async function openBusy(server, browser, user) {
       window.__TEST_ALL_ROWS__ = rows;
       window.__TEST_DATA__['rpc:busy_search'] = a =>
         rows.slice(a.p_offset || 0, (a.p_offset || 0) + (a.p_limit || 50));
+      window.__TEST_DATA__['rpc:busy_search_count'] = () => rows.length;
     }, DB['rpc:busy_search']);
     await page.fill('#q', '');
     await page.waitForTimeout(500);
     const shown = await page.locator('#rows tr').count();
     record('the list fills the page size asked for (50)', shown === 50, `${shown} rows`);
 
+    // It used to say "the first 50 — choose a bigger number to see more",
+    // which was the screen apologising for having no pagination. It has
+    // pagination now, so it says what was found and the pager says where
+    // you are.
     const count = await page.locator('#rowCount').textContent();
-    record('the row count says there are more than are shown',
-      /the first 50/.test(count), count.trim());
+    record('the row count says how many were found in total',
+      /200 rows found/.test(count), count.trim());
+    const where = await page.locator('#pagerWhere').textContent();
+    record('and the pager says which page you are on',
+      /Page 1 of 4/.test(where) && /rows 1–50 of 200/.test(where), where.trim());
 
     await page.selectOption('#pageSize', '2000');
     await page.waitForTimeout(700);
@@ -235,7 +258,10 @@ async function openBusy(server, browser, user) {
   }
   {
     // An empty result must say something useful.
-    await page.evaluate(() => { window.__TEST_DATA__['rpc:busy_search'] = () => []; });
+    await page.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_search'] = () => [];
+      window.__TEST_DATA__['rpc:busy_search_count'] = () => 0;
+    });
     await page.fill('#q', 'zzzz nothing');
     await page.waitForTimeout(500);
     const text = (await page.locator('#rows').textContent()).trim();
@@ -244,6 +270,7 @@ async function openBusy(server, browser, user) {
     await page.evaluate(rows => {
       window.__TEST_DATA__['rpc:busy_search'] = a =>
         rows.slice(a.p_offset || 0, (a.p_offset || 0) + (a.p_limit || 50));
+      window.__TEST_DATA__['rpc:busy_search_count'] = () => rows.length;
     }, DB['rpc:busy_search']);
     await page.fill('#q', '');
     await page.waitForTimeout(500);
@@ -619,6 +646,147 @@ async function openBusy(server, browser, user) {
     const kept = await headOf();
     record('the choice is remembered on the next visit',
       kept.includes('FY') && !kept.includes('Description'), kept.join(' · '));
+    await p.close();
+  }
+
+  /* ============ PAGINATION: ACTUALLY REACH PAGE 2 ============
+     A page SIZE control is not pagination. This screen showed 25 · 50 · 100
+     · All and had no way to see row 51. Every check below moves between
+     pages and reads which rows arrived, because a pager that draws
+     correctly and fetches the same rows is not a pager. */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.evaluate(rows => {
+      window.__TEST_DATA__['rpc:busy_search'] = a =>
+        rows.slice(a.p_offset || 0, (a.p_offset || 0) + (a.p_limit || 50));
+      window.__TEST_DATA__['rpc:busy_search_count'] = () => rows.length;
+    }, DB['rpc:busy_search']);
+    await p.selectOption('#pageSize', '25');
+    await p.waitForTimeout(600);
+
+    const firstOf = () => p.evaluate(() => {
+      const heads = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const r = document.querySelector('#rows tr');
+      return r ? r.cells[heads.indexOf('Vch No')].textContent.trim() : null;
+    });
+    const where = () => p.locator('#pagerWhere').innerText();
+
+    record('the pager is on the screen at all', await p.locator('#pager').isVisible());
+    record('it says where you are', /Page 1 of 8/.test(await where()), (await where()).trim());
+    record('Previous is disabled on the first page, not hidden',
+      await p.locator('#prevBtn').isDisabled() && await p.locator('#prevBtn').isVisible());
+    record('Next is available', !(await p.locator('#nextBtn').isDisabled()));
+
+    const page1 = await firstOf();
+    await p.click('#nextBtn');
+    await p.waitForTimeout(600);
+    const page2 = await firstOf();
+    record('Next actually reaches page 2 — different rows, not the same ones',
+      page2 !== null && page2 !== page1, `page 1 started at ${page1}, page 2 at ${page2}`);
+    record('the pager follows', /Page 2 of 8/.test(await where()), (await where()).trim());
+    record('it says which rows these are',
+      /rows 26–50 of 200/.test(await where()), (await where()).trim());
+    record('Previous becomes available on page 2', !(await p.locator('#prevBtn').isDisabled()));
+
+    const sentOffset = await p.evaluate(() =>
+      window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').pop().args.p_offset);
+    record('page 2 asks the database for the second page, not the first',
+      sentOffset === 25, `offset ${sentOffset}`);
+
+    await p.click('#prevBtn');
+    await p.waitForTimeout(600);
+    record('Previous goes back to page 1', (await firstOf()) === page1);
+
+    // Walk to the last page and check the far end behaves.
+    for (let i = 0; i < 7; i++) { await p.click('#nextBtn'); await p.waitForTimeout(350); }
+    record('the last page is reachable', /Page 8 of 8/.test(await where()), (await where()).trim());
+    record('Next is disabled at the end, not hidden',
+      await p.locator('#nextBtn').isDisabled() && await p.locator('#nextBtn').isVisible());
+    record('the last page says the real last row',
+      /rows 176–200 of 200/.test(await where()), (await where()).trim());
+
+    // Page Up and Page Down do the same job from the keyboard.
+    await p.keyboard.press('PageUp');
+    await p.waitForTimeout(500);
+    record('Page Up moves back a page', /Page 7 of 8/.test(await where()), (await where()).trim());
+    await p.keyboard.press('PageDown');
+    await p.waitForTimeout(500);
+    record('Page Down moves forward a page', /Page 8 of 8/.test(await where()));
+
+    // A new search must not leave you stranded on a page that no longer exists.
+    await p.locator('#q').click();
+    await p.locator('#q').type('pipe', { delay: 5 });
+    await p.waitForTimeout(700);
+    record('a new search goes back to page 1 rather than stranding you',
+      /Page 1 of/.test(await where()), (await where()).trim());
+
+    // Changing the page size is a different list too.
+    await p.locator('#q').press('Escape');
+    await p.waitForTimeout(600);
+    await p.click('#nextBtn');
+    await p.waitForTimeout(500);
+    await p.selectOption('#pageSize', '100');
+    await p.waitForTimeout(700);
+    record('changing how many to show starts again at page 1',
+      /Page 1 of 2/.test(await where()), (await where()).trim());
+
+    // "All" is one page, and the pager should say so rather than lie.
+    await p.selectOption('#pageSize', '2000');
+    await p.waitForTimeout(800);
+    record('"All" is one page of everything',
+      /Page 1 of 1/.test(await where()) && /rows 1–200 of 200/.test(await where()),
+      (await where()).trim());
+    record('and both buttons are disabled there',
+      await p.locator('#prevBtn').isDisabled() && await p.locator('#nextBtn').isDisabled());
+    await p.close();
+  }
+
+  /* ============ EVERY LOCKED KEY REACHES THE PAGE ============
+     Pressed for real, through the browser. Each one records that THE PAGE
+     answered it and that the browser was stopped from doing its own thing,
+     which is the part that matters -- a key the page merely receives, and
+     the browser also acts on, is not a working shortcut. */
+  {
+    const { page: p } = await openBusy(server, browser, OWNER);
+    await p.waitForSelector('#shell', { state: 'visible' });
+    await p.waitForFunction(() => document.querySelectorAll('#rows tr').length > 3);
+    await p.evaluate(() => {
+      window.__KEYS__ = {};
+      document.addEventListener('keydown', function (e) {
+        const n = (e.ctrlKey ? 'Ctrl+' : '') + e.key;
+        window.__KEYS__[n] = { reached: true, stopped: e.defaultPrevented };
+      }, true);
+    });
+
+    const LOCKED = [
+      ['Control+Slash',    'Ctrl+/',         'the shortcut list'],
+      ['Escape',           'Escape',         'clear / close'],
+      ['Control+ArrowUp',  'Ctrl+ArrowUp',   'top of the table'],
+      ['Control+ArrowDown','Ctrl+ArrowDown', 'bottom of the table'],
+      ['Home',             'Home',           'first cell of the row'],
+      ['End',              'End',            'last cell of the row'],
+      ['Control+c',        'Ctrl+c',         'copy the cell'],
+      ['PageUp',           'PageUp',         'previous page'],
+      ['PageDown',         'PageDown',       'next page'],
+    ];
+    for (const [press] of LOCKED) {
+      await p.keyboard.press(press);
+      await p.waitForTimeout(120);
+      if (press === 'Control+Slash') { await p.keyboard.press('Escape'); await p.waitForTimeout(120); }
+    }
+    const seen = await p.evaluate(() => window.__KEYS__);
+    let reached = 0, stopped = 0;
+    const missed = [];
+    for (const [, name, why] of LOCKED) {
+      const r = seen[name];
+      if (r && r.reached) reached++; else missed.push(name + ' (' + why + ')');
+      if (r && r.stopped) stopped++;
+    }
+    record(`every locked key reaches the page (${reached} of ${LOCKED.length})`,
+      reached === LOCKED.length, missed.join(', ') || 'none missed');
+    record(`and the page stops the browser acting on it (${stopped} of ${LOCKED.length})`,
+      stopped >= 3, `${stopped} were stopped; the rest are answered where they land`);
     await p.close();
   }
 
@@ -1026,14 +1194,14 @@ async function openBusy(server, browser, user) {
     record('a date put in with the keyboard searches, like one put in by hand',
       after > before, `${after - before} searches`);
 
-    const help = await p.evaluate(() => {
-      let seenText = null; const real = window.alert;
-      window.alert = t => { seenText = t; };
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: '/', ctrlKey: true, bubbles: true }));
-      window.alert = real; return seenText;
-    });
+    await p.keyboard.press('Control+Slash');
+    await p.waitForTimeout(250);
+    const help = await p.evaluate(() =>
+      document.getElementById('shortcutPanel').innerText.replace(/\s+/g, ' '));
     record('the date keys are in the shortcut list too',
-      !!help && /T — today/.test(help) && /Delete — clear the date/.test(help));
+      /T\b/.test(help) && /Today/.test(help) && /Clear the date/.test(help), help.slice(-70));
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(150);
     await p.close();
   }
 

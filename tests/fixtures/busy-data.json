@@ -4531,5 +4531,17 @@
    "doc_type": "Receipt",
    "rows": 40
   }
+ ],
+ "rpc:busy_search_count": 200,
+ "rpc:busy_clear_preview": [
+  {
+   "history_rows": 0,
+   "ref_rows": 0,
+   "rs_rows": 0,
+   "years": 0,
+   "change_records": 0,
+   "staged_rows": 0,
+   "batches_kept": 24
+  }
  ]
 }

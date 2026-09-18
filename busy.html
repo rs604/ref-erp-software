@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789726149';</script>
+<script>window.__BUILD_VERSION__ = '1789727686';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -197,6 +197,27 @@
   .colmenu-note { font-size:11px; color:var(--muted); padding:5px 8px 2px;
                   border-top:1px solid var(--border); margin-top:4px; }
 
+  /* the ERP's own shortcut list */
+  .sc-back { position:fixed; inset:0; background:rgba(26,34,41,.38); z-index:70;
+             display:flex; align-items:center; justify-content:center; padding:20px; }
+  .sc-card { background:#fff; border:1px solid var(--border); border-radius:5px;
+             box-shadow:0 12px 40px rgba(0,0,0,.22); width:100%; max-width:430px; }
+  .sc-head { display:flex; align-items:center; justify-content:space-between;
+             padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; }
+  .sc-x { border:0; background:none; font-size:19px; line-height:1; cursor:pointer;
+          color:var(--muted); padding:2px 6px; }
+  .sc-x:hover { color:var(--ink); }
+  .sc-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .sc-table td { padding:6px 14px; border-bottom:1px solid #eef1f4; }
+  .sc-table tr:last-child td { border-bottom:0; }
+  .sc-table td.k { width:158px; font-family:'IBM Plex Mono',monospace; font-weight:600;
+                   color:var(--steel-dark); white-space:nowrap; }
+
+  /* pagination */
+  .pager { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .pager-where { font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+
   .danger-zone { border-color:#e6cfcc; background:#fefaf9; }
   .btn-danger { background:var(--danger); border-color:var(--danger); color:#fff; }
   .btn-danger:hover { background:#8c332a; border-color:#8c332a; }
@@ -346,6 +367,13 @@
             <thead><tr id="headRow"></tr></thead>
             <tbody id="rows"><tr><td colspan="11" class="loading">Start typing to search, or clear the box to see everything.</td></tr></tbody>
           </table>
+        </div>
+
+        <!-- A page SIZE is not pagination. This is how you reach row 51. -->
+        <div class="pager" id="pager">
+          <button type="button" class="btn btn-outline btn-sm" id="prevBtn" disabled>&larr; Previous</button>
+          <span class="pager-where" id="pagerWhere"></span>
+          <button type="button" class="btn btn-outline btn-sm" id="nextBtn" disabled>Next &rarr;</button>
         </div>
       </div>
 
@@ -653,6 +681,18 @@ upload_token = (shown on the download screen)</pre>
 
 <div class="shortcut-hint">Ctrl+/ for shortcuts</div>
 
+<!-- The ERP's own shortcut list. It replaced an alert(), which is drawn by
+     the browser and looks like nothing else here. -->
+<div id="shortcutPanel" class="sc-back" style="display:none">
+  <div class="sc-card" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+    <div class="sc-head">
+      <span>Keyboard shortcuts</span>
+      <button type="button" id="shortcutClose" class="sc-x" aria-label="Close">&times;</button>
+    </div>
+    <table class="sc-table"><tbody id="shortcutRows"></tbody></table>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
 <script>
@@ -771,6 +811,7 @@ upload_token = (shown on the download screen)</pre>
     $('firmChip').title = FIRM_NAME[f] + ' only. The other firm never appears on this screen.';
     $('firmChip').className = 'firm-chip firm-' + f;
     loadSync();
+    pageNo = 1;                            // a different firm is a different list
     if (chosenTypes) refreshDocTypes();   // the types a firm actually has
   }
 
@@ -799,6 +840,7 @@ upload_token = (shown on the download screen)</pre>
     $('pageSub').textContent   = TITLES[v][1];
     // Challans is the same table with one type ticked. Price History gets the
     // person's own choice back when they leave it.
+    pageNo = 1;          // a different screen is a different list
     if (v === 'challans') { chosenTypes = ['Delivery Challan']; drawChips(); }
     else if (v === 'price') { loadTypes(); drawChips(); }
     if (v === 'reports') loadReports();
@@ -986,23 +1028,55 @@ upload_token = (shown on the download screen)</pre>
 
   /* ---- THE SEARCH: as you type ---- */
   var typingTimer = null, runToken = 0, grid = null;
+  var pageNo = 1, totalRows = 0, pageSizeNow = 50;
 
   function runSoon() {
     clearTimeout(typingTimer);
-    typingTimer = setTimeout(run, 300);   // after the last keystroke, not each one
+    // A new search is a new list, so it starts at page one. Staying on page
+    // 7 of a different search is how a screen shows nothing and looks broken.
+    typingTimer = setTimeout(function () { pageNo = 1; run(); }, 300);
+  }
+
+  function pageCount() {
+    if (pageSizeNow >= 2000) return 1;               // "All" is one page
+    return Math.max(1, Math.ceil(totalRows / pageSizeNow));
+  }
+
+  function gotoPage(n) {
+    var last = pageCount();
+    n = Math.min(Math.max(n, 1), last);
+    if (n === pageNo) return;
+    pageNo = n;
+    run();
+  }
+
+  /* Disabled at the ends rather than hidden, so where you are is always on
+     the screen. A control that disappears at the edge leaves you guessing
+     whether there is more. */
+  function drawPager() {
+    var last = pageCount();
+    var show = totalRows > 0;
+    $('pager').style.display = show ? '' : 'none';
+    if (!show) return;
+    $('prevBtn').disabled = (pageNo <= 1);
+    $('nextBtn').disabled = (pageNo >= last);
+    var from = (pageNo - 1) * pageSizeNow + 1;
+    var to = Math.min(pageNo * pageSizeNow, totalRows);
+    if (pageSizeNow >= 2000) { from = 1; to = totalRows; }
+    $('pagerWhere').textContent =
+      'Page ' + inr.format(pageNo) + ' of ' + inr.format(last) +
+      '  ·  rows ' + inr.format(from) + '–' + inr.format(to) +
+      ' of ' + inr.format(totalRows);
   }
 
   function run() {
     clearTimeout(typingTimer);
     var q = $('q').value.trim();
     lastQuery = q;
-    var limit = parseInt($('pageSize').value, 10) || 50;
+    pageSizeNow = parseInt($('pageSize').value, 10) || 50;
     var cols = visibleCols().length;
     var mine = ++runToken;                // an older answer must not overwrite a newer one
-    $('rows').innerHTML = '<tr><td colspan="' + cols + '" class="loading">Looking…</td></tr>';
-
-    var say = intoTable('rows', cols);
-    guard(REF.supabase().rpc('busy_search', {
+    var filters = {
       p_company: firm,
       p_query: q || null,
       p_party: null,
@@ -1010,13 +1084,31 @@ upload_token = (shown on the download screen)</pre>
       // unticking everything is answered on the screen instead.
       p_doc_types: chosenTypes.length ? chosenTypes : null,
       p_date_from: $('from').value || null,
-      p_date_to: $('to').value || null,
-      p_limit: limit,
-      p_offset: 0
-    }), function (t) { if (mine === runToken) { say(t); $('rowCount').textContent = ''; } }, 'the history')
+      p_date_to: $('to').value || null
+    };
+    $('rows').innerHTML = '<tr><td colspan="' + cols + '" class="loading">Looking…</td></tr>';
+
+    // How many match in total, so the pager can say "page 2 of 14". Counted
+    // with the same filters, so it counts the same rows.
+    Promise.resolve(REF.supabase().rpc('busy_search_count', filters))
+      .then(function (c) {
+        if (mine !== runToken) return;
+        totalRows = (c && !c.error && Number(c.data)) || 0;
+        if (pageNo > pageCount()) pageNo = pageCount();
+      })
+      .catch(function () { totalRows = 0; });
+
+    var say = intoTable('rows', cols);
+    guard(REF.supabase().rpc('busy_search', Object.assign({}, filters, {
+      p_limit: pageSizeNow,
+      p_offset: (pageNo - 1) * pageSizeNow
+    })), function (t) {
+      if (mine === runToken) { say(t); $('rowCount').textContent = ''; $('pager').style.display = 'none'; }
+    }, 'the history')
       .then(function (res) {
         if (!res || mine !== runToken) return;
-        render(res.data || [], q, limit);
+        render(res.data || [], q, pageSizeNow);
+        drawPager();
       });
   }
 
@@ -1071,8 +1163,9 @@ upload_token = (shown on the download screen)</pre>
     if (grid) grid.clear();
 
     var fuzzy = rows.filter(function (r) { return r.match_tier === 3 && q; }).length;
-    $('rowCount').textContent = inr.format(rows.length) + ' row' + (rows.length === 1 ? '' : 's') +
-      (rows.length === limit ? ' (the first ' + inr.format(limit) + ' — choose a bigger number to see more)' : '') +
+    $('rowCount').textContent =
+      inr.format(totalRows || rows.length) + ' row' + ((totalRows || rows.length) === 1 ? '' : 's') +
+      ' found' +
       (fuzzy ? ' · ' + fuzzy + ' shaded yellow are close matches, not exact' : '');
   }
 
@@ -1972,8 +2065,15 @@ upload_token = (shown on the download screen)</pre>
   }
 
   ['from', 'to', 'pageSize'].forEach(function (id) {
-    $(id).addEventListener('change', function () { if (view !== 'reports') run(); });
+    $(id).addEventListener('change', function () {
+      if (view === 'reports') return;
+      pageNo = 1;                  // a different page size is a different list
+      run();
+    });
   });
+
+  $('prevBtn').addEventListener('click', function () { gotoPage(pageNo - 1); });
+  $('nextBtn').addEventListener('click', function () { gotoPage(pageNo + 1); });
 
   // The voucher-type tickboxes.
   $('docChips').addEventListener('change', function (e) {
@@ -1984,6 +2084,7 @@ upload_token = (shown on the download screen)</pre>
     else if (at !== -1) chosenTypes.splice(at, 1);
     e.target.closest('.chip').classList.toggle('on', e.target.checked);
     saveTypes();
+    pageNo = 1;
     run();
   });
 
@@ -2008,16 +2109,87 @@ upload_token = (shown on the download screen)</pre>
     }
   });
 
+  /* ---- SHORTCUTS -------------------------------------------------------
+     Two things were wrong with the old Ctrl+/ .
+
+     The key WAS being caught. What it then did was call alert(), and an
+     alert box IS the browser's own panel -- drawn by the browser, titled
+     with the web address, styled like nothing else in the ERP. It looked
+     like the shortcut had been stolen when it had been answered badly.
+
+     And every shortcut was a separate listener on document, in the bubble
+     phase, so anything closer to the key could have swallowed it first.
+
+     Now there is ONE listener, in the CAPTURE phase, which runs before any
+     handler on any element inside the page. A key the ERP owns is answered
+     by the ERP, and preventDefault stops the browser doing its own thing
+     with it. Nothing else gets a look in. */
+  var SHORTCUTS = [
+    { keys: ['Ctrl+/'],  label: 'Ctrl + /',  does: 'This list',
+      run: function () { toggleShortcutPanel(); } },
+    { keys: ['Escape'],  label: 'Esc',       does: 'Close this list, or clear the search box',
+      run: function () {
+        if (shortcutPanelOpen()) { closeShortcutPanel(); return; }
+        if (document.activeElement === $('q')) clearSearch();
+      } },
+    { keys: ['Ctrl+ArrowUp'],   label: 'Ctrl + ↑', does: 'First row of the table' },
+    { keys: ['Ctrl+ArrowDown'], label: 'Ctrl + ↓', does: 'Last row of the table' },
+    { keys: ['Home'],           label: 'Home',     does: 'First cell of the row' },
+    { keys: ['End'],            label: 'End',      does: 'Last cell of the row' },
+    { keys: ['Ctrl+c'],         label: 'Ctrl + C', does: 'Copy the selected cell' },
+    { keys: ['PageUp'],   label: 'Page Up',   does: 'Previous page of results',
+      run: function () { if (view !== 'reports') gotoPage(pageNo - 1); } },
+    { keys: ['PageDown'], label: 'Page Down', does: 'Next page of results',
+      run: function () { if (view !== 'reports') gotoPage(pageNo + 1); } },
+  ];
+  var TYPING_NOTE = [
+    ['Typing', 'The results follow as you type — there is no Search button'],
+    ['Tab', 'Next control'],
+    ['In a date box: T', 'Today'],
+    ['In a date box: Delete', 'Clear the date'],
+  ];
+
+  function keyName(e) {
+    var n = '';
+    if (e.ctrlKey || e.metaKey) n += 'Ctrl+';
+    if (e.altKey) n += 'Alt+';
+    if (e.shiftKey && e.key.length > 1) n += 'Shift+';
+    return n + e.key;
+  }
+
+  // CAPTURE phase: before anything inside the page can see the key.
   document.addEventListener('keydown', function (e) {
-    if (e.ctrlKey && e.key === '/') {
+    var name = keyName(e);
+    for (var i = 0; i < SHORTCUTS.length; i++) {
+      if (SHORTCUTS[i].keys.indexOf(name) === -1) continue;
+      if (!SHORTCUTS[i].run) return;          // listed, but handled where it lands
       e.preventDefault();
-      alert('Type — the results follow as you type\n' +
-            'Esc — clear the search box\n' +
-            'Tab — next control\n\n' +
-            'In a date box:\n' +
-            'T — today\n' +
-            'Delete — clear the date');
+      e.stopPropagation();
+      SHORTCUTS[i].run(e);
+      return;
     }
+  }, true);
+
+  function shortcutPanelOpen() { return $('shortcutPanel').style.display !== 'none'; }
+  function closeShortcutPanel() { $('shortcutPanel').style.display = 'none'; }
+
+  function toggleShortcutPanel() {
+    var el = $('shortcutPanel');
+    if (shortcutPanelOpen()) { closeShortcutPanel(); return; }
+    $('shortcutRows').innerHTML =
+      SHORTCUTS.map(function (sc) {
+        return '<tr><td class="k">' + esc(sc.label) + '</td><td>' + esc(sc.does) + '</td></tr>';
+      }).join('') +
+      TYPING_NOTE.map(function (r) {
+        return '<tr><td class="k">' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>';
+      }).join('');
+    el.style.display = '';
+    $('shortcutClose').focus();
+  }
+
+  $('shortcutClose').addEventListener('click', closeShortcutPanel);
+  $('shortcutPanel').addEventListener('click', function (e) {
+    if (e.target === $('shortcutPanel')) closeShortcutPanel();   // the backdrop
   });
 
   /* ---- OPENING THE SCREEN ------------------------------------------------

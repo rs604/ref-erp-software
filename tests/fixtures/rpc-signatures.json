@@ -114,6 +114,18 @@
    "total": 8,
    "with_defaults": 7
   },
+  "busy_search_count": {
+   "args": [
+    "p_company",
+    "p_query",
+    "p_party",
+    "p_doc_types",
+    "p_date_from",
+    "p_date_to"
+   ],
+   "total": 6,
+   "with_defaults": 5
+  },
   "create_login_for_party": {
    "args": [
     "p_party_id",
