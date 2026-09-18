@@ -586,6 +586,62 @@ async function openBusy(server, browser, user) {
       shading.fuzzyShaded && !shading.exactShaded,
       `exact shaded: ${shading.exactShaded}, close shaded: ${shading.fuzzyShaded}`);
 
+    // WHICH KIND OF MATCH THIS ROW IS
+    // A guess must never look like an exact hit. Every row says which layer
+    // of the search answered it, and the two guessing layers are tinted.
+    await p.evaluate(rows => {
+      window.__TEST_DATA__['rpc:busy_search'] = () => [
+        Object.assign({}, rows[0], { item: 'TIER ONE',   match_tier: 1 }),
+        Object.assign({}, rows[0], { item: 'TIER TWO',   match_tier: 2 }),
+        Object.assign({}, rows[0], { item: 'TIER THREE', match_tier: 3 }),
+        Object.assign({}, rows[0], { item: 'TIER FOUR',  match_tier: 4 }),
+      ];
+    }, DB['rpc:busy_search']);
+    await p.locator('#q').fill('');
+    await p.locator('#q').type('juneja', { delay: 10 });
+    await p.waitForTimeout(600);
+    const kinds = await p.evaluate(() => {
+      const head = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const col = head.indexOf('Match');
+      const rowFor = text => Array.from(document.querySelectorAll('#rows tr'))
+        .find(r => r.innerText.includes(text));
+      const read = text => {
+        const r = rowFor(text);
+        if (!r || col < 0) return null;
+        return { label: r.children[col].textContent.trim(), tinted: r.classList.contains('fuzzy') };
+      };
+      return { col, one: read('TIER ONE'), two: read('TIER TWO'),
+               three: read('TIER THREE'), four: read('TIER FOUR') };
+    });
+    record('there is a Match column saying which kind of match each row is',
+      kinds.col >= 0);
+    record('an exact match says so', kinds.one && kinds.one.label === 'Exact', kinds.one && kinds.one.label);
+    record('a match on spacing alone says Spacing',
+      kinds.two && kinds.two.label === 'Spacing', kinds.two && kinds.two.label);
+    record('a close SPELLING says Spelling, and is never shown as exact',
+      kinds.three && kinds.three.label === 'Spelling' && kinds.three.tinted,
+      kinds.three && `${kinds.three.label}, tinted ${kinds.three.tinted}`);
+    record('words typed RUN TOGETHER say Split, and are never shown as exact',
+      kinds.four && kinds.four.label === 'Split' && kinds.four.tinted,
+      kinds.four && `${kinds.four.label}, tinted ${kinds.four.tinted}`);
+    record('the two guesses are tinted and the two real matches are not',
+      kinds.one && kinds.two && !kinds.one.tinted && !kinds.two.tinted);
+    const saidSo = await p.evaluate(() => document.getElementById('rowCount').textContent);
+    record('the line under the table says how many are guesses',
+      /close match/.test(saidSo), saidSo);
+
+    // With nothing typed there is nothing to be a guess about, so the column
+    // stays empty rather than claiming every row is an exact match.
+    await p.locator('#q').press('Escape');
+    await p.waitForTimeout(600);
+    const blank = await p.evaluate(() => {
+      const head = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const col = head.indexOf('Match');
+      return Array.from(document.querySelectorAll('#rows tr'))
+        .every(r => !r.children[col] || r.children[col].textContent.trim() === '');
+    });
+    record('with nothing typed, no row claims to be a match of any kind', blank);
+
     // 8 — Back to ERP on the left
     const sides = await p.evaluate(() => {
       const back = document.querySelector('.topbar a[href="admin.html"]').getBoundingClientRect();
@@ -625,8 +681,16 @@ async function openBusy(server, browser, user) {
 
     await p.click('#colBtn');
     record('the columns control opens', await p.locator('#colList').isVisible());
+    // Checked against the table itself, not against a number typed here. A
+    // number typed here goes stale the moment a column is added. Turn every
+    // tickbox on and the table must show exactly that many headings: one
+    // tickbox per column, and no column without one.
     const boxes = await p.locator('#colList input').count();
-    record(`every column can be turned on or off (${boxes} of them)`, boxes === 11);
+    for (let i = 0; i < boxes; i++) await p.locator('#colList input').nth(i).check();
+    await p.waitForTimeout(600);
+    const allOn = await headOf();
+    record(`every column can be turned on or off (${boxes} tickboxes, ${allOn.length} headings)`,
+      boxes > 0 && boxes === allOn.length, allOn.join(' · '));
     record('the Sr. column cannot be turned off',
       await p.locator('#colList input[data-col="sr"]').isDisabled());
 

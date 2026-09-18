@@ -295,6 +295,65 @@ menu item — is fine. Indexing into the cells of a row is not.
 
 ---
 
+## 5d. A COUNT TYPED INTO A TEST GOES STALE
+
+The sister of 5c, and it cost a red run the day the Match column was added.
+
+```js
+record(`every column can be turned on or off (${boxes} of them)`, boxes === 11);
+```
+
+Eleven was right when it was written. The twelfth column made it wrong, and the
+test then failed for a reason that had nothing to do with what it was testing.
+Worse, a count like this can go the other way: it passes while the thing it
+claims to check has quietly gone missing, because the number still matches.
+
+**Measure the count against the thing itself.** Turn every tickbox on, then
+count the headings:
+
+```js
+const boxes = await p.locator('#colList input').count();
+for (let i = 0; i < boxes; i++) await p.locator('#colList input').nth(i).check();
+record('every column can be turned on or off', boxes === (await headOf()).length);
+```
+
+Now the test says what it means — one tickbox per column, no column without one
+— and a thirteenth column joins by existing.
+
+**Careful:** replacing the number with something that is trivially equal is
+worse than the number, because it looks like a check and is not. Counting the
+tickboxes and then comparing that with the labels beside the same tickboxes
+proves nothing. Compare across the two sides of the thing you are testing.
+
+---
+
+## 5e. A GUESS IS NEVER SHOWN AS A HIT
+
+A search that guesses must say, on every row, that it guessed.
+
+Price History answers in four layers, and the row carries which layer answered:
+
+| Layer | Shown as | What it means |
+|---|---|---|
+| 1 | Exact | the words appear as typed |
+| 2 | Spacing | the same words, different spacing or punctuation |
+| 3 | Spelling | a close spelling — **a guess** |
+| 4 | Split | words typed run together — **a guess** |
+
+Layers 3 and 4 are tinted as well as labelled, and the line under the table
+says how many of the rows on screen are guesses. Nothing typed means no label
+at all: with no search there is nothing to be right or wrong about, and a row
+that says "Exact" when nothing was typed is a lie that costs nothing until the
+day somebody believes it.
+
+**The rule under it:** numbers and codes match exactly, always. Fuzzy applies
+to words, never to digits. 80X40X2.5 and 80X40X3 are different pipes, and no
+layer of guessing is allowed to blur them.
+
+**Report as:** `Exact · Spacing · Spelling · Split · nothing typed = no label`
+
+---
+
 ## 6. POPUPS
 
 - Open one, then another from inside it. **Two deep works**

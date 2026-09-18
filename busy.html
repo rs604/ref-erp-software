@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789727686';</script>
+<script>window.__BUILD_VERSION__ = '1789730457';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -931,6 +931,7 @@ upload_token = (shown on the download screen)</pre>
      choice is a per-person convenience, so it lives in this browser. */
   var COLUMNS = [
     { key: 'sr',    label: 'Sr.',         width: '44px',  always: true },
+    { key: 'match', label: 'Match',       width: '84px' },
     { key: 'date',  label: 'Date',        width: '92px'  },
     { key: 'fy',    label: 'FY',          width: '74px', offByDefault: true },
     { key: 'type',  label: 'Type',        width: '112px' },
@@ -942,6 +943,16 @@ upload_token = (shown on the download screen)</pre>
     { key: 'rate',  label: 'Rate',        width: '116px' },
     { key: 'amt',   label: 'Amount',      width: '116px' },
   ];
+  /* ---- WHICH KIND OF MATCH THIS ROW IS ----
+     The search answers in layers, and the row says which layer answered.
+     A guess is never shown as though it were exact. */
+  var MATCH_KINDS = {
+    1: { label: 'Exact',    cls: 'pill-grey',  why: 'The words appear exactly as you typed them' },
+    2: { label: 'Spacing',  cls: 'pill-grey',  why: 'The same words, written with different spacing or punctuation' },
+    3: { label: 'Spelling', cls: 'pill-amber', why: 'A close spelling of what you typed \u2014 a guess, not an exact match' },
+    4: { label: 'Split',    cls: 'pill-amber', why: 'Words typed run together, searched for separately \u2014 a guess, not an exact match' }
+  };
+
   var COL_STORE = 'ref-busy-columns';
   var shownCols = null;
 
@@ -1141,8 +1152,11 @@ upload_token = (shown on the download screen)</pre>
       } else {
         rateCell = money(r.rate);
       }
+      var kind = q ? MATCH_KINDS[r.match_tier] : null;
       var cell = {
         sr:    '<td>' + (i + 1) + '</td>',
+        match: '<td>' + (kind ? '<span class="pill ' + kind.cls + '" title="' + esc(kind.why) + '">' +
+                                esc(kind.label) + '</span>' : '') + '</td>',
         date:  '<td>' + dmy(r.vch_date) + '</td>',
         fy:    '<td>' + esc(r.fy) + '</td>',
         type:  '<td>' + esc(r.doc_type) + '</td>',
@@ -1155,18 +1169,26 @@ upload_token = (shown on the download screen)</pre>
         amt:   '<td class="r">' + money(r.amount) + '</td>'
       };
       // Tier 1 and 2 are real matches and get their letters picked out; tier 3
-      // is close but not exact, so the whole row is tinted instead.
-      return '<tr class="' + (q && r.match_tier === 3 ? 'fuzzy' : '') + '">' +
+      // (close spelling) and tier 4 (words run together) are guesses, so the
+      // whole row is tinted and the Match column says which guess it is.
+      return '<tr class="' + (q && (r.match_tier === 3 || r.match_tier === 4) ? 'fuzzy' : '') + '">' +
         cols.map(function (c) { return cell[c.key]; }).join('') + '</tr>';
     }).join('');
     $('rows').innerHTML = html;
     if (grid) grid.clear();
 
-    var fuzzy = rows.filter(function (r) { return r.match_tier === 3 && q; }).length;
+    var close = rows.filter(function (r) { return q && (r.match_tier === 3 || r.match_tier === 4); }).length;
+    var split = rows.filter(function (r) { return q && r.match_tier === 4; }).length;
+    var note = '';
+    if (close) {
+      note = ' · ' + close + ' shaded yellow ' + (close === 1 ? 'is a close match' : 'are close matches') +
+             ', not exact';
+      if (split === close) note += ' — the words look to have been typed run together';
+      else if (split) note += ' (' + split + ' of them words typed run together)';
+    }
     $('rowCount').textContent =
       inr.format(totalRows || rows.length) + ' row' + ((totalRows || rows.length) === 1 ? '' : 's') +
-      ' found' +
-      (fuzzy ? ' · ' + fuzzy + ' shaded yellow are close matches, not exact' : '');
+      ' found' + note;
   }
 
   /* ---------------- reports ---------------- */
