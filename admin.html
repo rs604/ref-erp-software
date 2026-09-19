@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1789755258';</script>
+<script>window.__BUILD_VERSION__ = '1789786741';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -676,9 +676,63 @@
        it is tapped. scroll-margin gives the browser room to put it above. */
     input, select, textarea { scroll-margin-top: 90px; scroll-margin-bottom: 120px; }
 
-    /* Compact topbar on small screens: role text hides, name stays */
-    .topbar-title { font-size: 15.5px; }
-    .topbar-sub { font-size: 11px; }
+    /* ---- THE TOP BAR ON A PHONE ----
+       At 390px the subtitle took three lines, the name was cut to "Raghbir …"
+       and Log out wrapped onto two. The screen's name and the way out are
+       what matter there; the sentence explaining the screen is a desk thing. */
+    .topbar { gap: 10px; }
+    .topbar-title { font-size: 16px; }
+    .topbar-sub { display: none; }
+    #logoutBtn { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
+    .user-chip { display: none; }
+
+    /* ---- AN APPROVAL IS A CARD, NOT NINE LABELLED LINES ----
+       The rows already stack on a phone, but stacking a table is not laying
+       out a card: it was Employee/Date/Vehicle/Morning/Evening/KM/Cost/Status
+       one under another, every one with its heading. What matters standing on
+       the shop floor is WHO, WHEN, HOW FAR, HOW MUCH, and the two buttons.
+       The readings keep their labels because a bare number would not say
+       which end of the day it is. */
+    table.ledger tbody tr {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2px 10px;
+      padding: 10px 12px;
+      grid-template-areas:
+        "emp  date"
+        "veh  veh"
+        "km   cost"
+        "morn morn"
+        "even even"
+        "stat stat"
+        "act  act";
+    }
+    /* No borders inside a card. The desk table's column rules were showing
+       through as stray vertical lines down the middle of it. */
+    table.ledger td { padding: 3px 0; border: none !important; }
+    table.ledger td[data-label="Employee"] { grid-area: emp; font-size: 15px; font-weight: 600; }
+    table.ledger td[data-label="Date"]     { grid-area: date; justify-content: flex-end; color: var(--muted); }
+    table.ledger td[data-label="Vehicle"]  { grid-area: veh; color: var(--muted); font-size: 13px; }
+    table.ledger td[data-label="KM"]       { grid-area: km; }
+    table.ledger td[data-label="Cost"]     { grid-area: cost; justify-content: flex-end; }
+    table.ledger td[data-label="Cost"]     { font-size: 16px; font-weight: 600; }
+    /* A whole line each: squeezed into half the width, "41250" wrapped to
+       "412 / 50", which is not a number anybody can read. */
+    table.ledger td[data-label="Morning"]  { grid-area: morn; }
+    table.ledger td[data-label="Evening"]  { grid-area: even; }
+    table.ledger td[data-label="Morning"] > div,
+    table.ledger td[data-label="Evening"] > div { margin-left: auto; }
+    table.ledger .reading-cell { white-space: nowrap; }
+    table.ledger td[data-label="Status"]   { grid-area: stat; justify-content: flex-start; padding-top: 6px; }
+    table.ledger td.action-cell            { grid-area: act; padding-top: 10px; }
+    table.ledger td.action-cell > div      { width: 100%; gap: 8px; }
+    /* "Approve" was breaking across two lines inside its own button. */
+    table.ledger td.action-cell .btn       { flex: 1 1 0; min-height: 46px; white-space: nowrap; }
+    /* Where the value says what it is, the heading is noise. */
+    table.ledger td[data-label="Employee"]::before,
+    table.ledger td[data-label="Date"]::before,
+    table.ledger td[data-label="Vehicle"]::before,
+    table.ledger td[data-label="Status"]::before { content: none; }
     .user-chip { font-size: 12px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .user-chip #userRole { display: none; }
 

@@ -563,6 +563,65 @@ are different, and a narrow window will pass a page a phone cannot use:
    Prove the table is actually wider than the phone first, or the test passes
    on a table that never needed to scroll.
 
+### A TABLE IS NOT A TABLE ON A PHONE
+
+Eight columns across 390px is unreadable however it is squeezed. Below the
+breakpoint the table is **not on the screen at all** — a row becomes a card:
+
+```
+HINDON METAFORMS PVT.LTD             16 Sep 2026
+LIFT SHOE · 9 MM
+2 × ₹3,000                                ₹6,000
+```
+
+- the two or three things that **identify** it, large enough to read at arm's
+  length (15px and up)
+- the **numbers that matter**, clearly, and **right-aligned** so the eye can
+  run down a column of them
+- **everything else behind a tap** — type, voucher number, year, the rate
+  warning, the description in full
+
+Three lines, not eight columns. Short enough that several fit on one screen.
+
+**Both are in the page and only one is ever displayed.** The first build of
+this left the cards rendering *underneath* the desktop table — invisible to
+every assertion, obvious the moment anyone looked at it.
+
+**Do not restack the table.** Employee / Date / Vehicle / Morning / Evening /
+KM / Cost / Status one under another, each with its heading, is the table
+turned sideways, not a card. Group it: who and when on one line, what on the
+next, the numbers on the third, the buttons last.
+
+### FILTERS GO BEHIND A BUTTON
+
+They take the whole width on a phone and there is no room for them beside
+anything. So: a **Filters** button carrying **how many are on**, opening a
+panel over the screen, with **Apply** and **Clear** at the bottom. It closes on
+Apply, on the ×, on Escape, and on a tap outside.
+
+**Move the controls into the panel, do not copy them.** Two sets of the same
+inputs is two things to keep in step, and the one nobody is looking at drifts.
+Moving the real nodes also means every piece of wiring already written keeps
+working.
+
+And: the search box gets the **full width** — it is the first thing anyone
+uses. Date fields **side by side, alone on their row**. Pagination as
+Previous · where you are · Next, each big enough to tap.
+
+### WHICH SCREENS MUST BE GOOD, AND WHICH MUST ONLY NOT BREAK
+
+| | |
+|---|---|
+| **Good** | Price History · Ledgers · Challans · approvals. The ones opened standing on the shop floor or before a call |
+| **Reflow without breaking** | everything else. Nobody builds a purchase order on a phone, and pretending otherwise would ruin the desktop screen |
+
+### THE DESKTOP DOES NOT MOVE
+
+Everything frozen in `docs/11` stays exactly as it is. This is a **separate
+layout below the breakpoint**, not a compromise between the two. Every phone
+change ships with a desk-width check that the table, the columns, the filters
+in the bar and the Columns control are all still there.
+
 ### TEXT IS MADE BIGGER, NEVER SMALLER
 
 **Do not shrink text to fit.** A screen that "works" at 10px is a screen that

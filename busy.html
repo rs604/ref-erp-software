@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789755258';</script>
+<script>window.__BUILD_VERSION__ = '1789786741';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -268,7 +268,111 @@
      reason. */
   .nav-backdrop { display:none; }
 
+  /* ---- A PHONE IS NOT A NARROW DESK ----
+     Everything below the breakpoint is a SEPARATE layout, not the desktop
+     squeezed. Nothing in here can reach a desk width, and nothing frozen in
+     docs/11 or docs/23 changes. */
+  /* The card a row becomes on a phone. Eight columns across 390px is
+     unreadable however it is squeezed, so a row stops being a row: the two
+     or three things that identify it, large; the numbers that matter,
+     clearly; everything else behind a tap.
+
+     DISPLAY:NONE by default. The cards and the table are both in the page and
+     only one may ever be on screen -- the first build of this left the cards
+     rendering UNDERNEATH the desktop table, which is exactly the kind of
+     thing that only shows up by looking at it. */
+  .rc-list { display:none; flex-direction:column; gap:8px; }
+  .rc { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+        padding:11px 12px; cursor:pointer; }
+  .rc.fuzzy { background:var(--hit-row); border-color:#efe4b8; }
+  .rc-top { display:flex; align-items:baseline; gap:10px; }
+  .rc-party { flex:1; min-width:0; font-size:15px; font-weight:600; color:var(--ink);
+              line-height:1.3; overflow-wrap:anywhere; }
+  .rc-date { flex:0 0 auto; font-size:12.5px; color:var(--muted);
+             font-variant-numeric:tabular-nums; }
+  .rc-item { margin-top:4px; font-size:13.5px; color:#3c4a57; line-height:1.4;
+             overflow-wrap:anywhere; }
+  .rc-money { margin-top:8px; display:flex; align-items:baseline; gap:10px; }
+  .rc-calc { flex:1; min-width:0; font-size:13px; color:var(--muted);
+             font-variant-numeric:tabular-nums; }
+  /* Right-aligned, so the eye can run down a column of them. */
+  .rc-amt { flex:0 0 auto; font-size:16px; font-weight:600; color:var(--ink);
+            font-variant-numeric:tabular-nums; text-align:right; }
+  .rc-more { display:none; margin-top:9px; padding-top:9px; border-top:1px solid var(--border); }
+  .rc.open .rc-more { display:block; }
+  .rc-pair { display:flex; gap:10px; padding:3px 0; font-size:13px; }
+  .rc-k { flex:0 0 108px; color:var(--muted); }
+  .rc-v { flex:1; min-width:0; color:var(--ink); overflow-wrap:anywhere; }
+  .rc-v.r { text-align:right; font-variant-numeric:tabular-nums; }
+  .rc-tap { margin-top:7px; font-size:12px; color:var(--steel); }
+
+  /* Filters live behind a button, because they take the whole width and
+     there is no room for them beside anything. */
+  .filters-btn { display:none; align-items:center; gap:8px; }
+  .filters-btn .n { background:var(--steel); color:#fff; border-radius:10px;
+                    font-size:12px; padding:0 7px; line-height:18px; min-width:18px;
+                    text-align:center; }
+  .sheet { position:fixed; inset:0; z-index:80; background:rgba(26,34,41,.45);
+           display:flex; align-items:flex-end; }
+  .sheet-card { background:var(--surface); width:100%; max-height:88vh;
+                border-radius:12px 12px 0 0; display:flex; flex-direction:column; }
+  .sheet-head { display:flex; align-items:center; justify-content:space-between;
+                padding:14px 16px; border-bottom:1px solid var(--border);
+                font-size:15px; font-weight:600; }
+  .sheet-x { border:0; background:none; font-size:24px; line-height:1; cursor:pointer;
+             color:var(--muted); min-width:44px; min-height:44px; }
+  .sheet-body { padding:14px 16px; overflow-y:auto; flex:1; }
+  .sheet-foot { display:flex; gap:10px; padding:12px 16px;
+                border-top:1px solid var(--border); }
+  .sheet-foot .btn { flex:1; min-height:48px; }
+  .sheet-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .sheet-row .fl { display:block; margin:0 0 4px; }
+  .sheet-label { font-size:12px; text-transform:uppercase; letter-spacing:.5px;
+                 color:var(--muted); margin:0 0 7px; }
+
   @media (max-width:880px) {
+    .filters-btn { display:inline-flex; }
+
+    /* The search box is the first thing anyone uses, so it gets the width. */
+    .searchbar { gap:8px; }
+    .searchbox { flex:1 1 100%; min-width:0; }
+    /* Room for the clear x, which was sitting on top of the words. */
+    .searchbox input { padding:11px 48px 11px 34px; }
+
+    /* Columns choose what a TABLE shows. There is no table here. */
+    .colmenu { display:none; }
+
+    /* The menu reaches the whole ERP from every page now, so a Back to ERP
+       button is a second way to do one thing, taking room the title needs. */
+    .btn-back { display:none; }
+
+    /* In the sheet the headings do the labelling, so the control's own
+       label would say the same thing twice. Dates keep theirs: From and To
+       are not interchangeable. */
+    #sheetSize .fl { display:none; }
+    #sheetSize select { width:100%; }
+    /* Tickboxes in an even grid rather than a ragged wrap. */
+    #sheetChips .chips { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    #sheetChips .chip { width:100%; }
+    #sheetDates input { width:100%; }
+
+    /* A card opens where it is; the corner mark says it can. */
+    .rc { position:relative; padding-right:26px; }
+    .rc::after { content:''; position:absolute; right:12px; top:15px;
+                 width:7px; height:7px; border-right:2px solid var(--muted);
+                 border-bottom:2px solid var(--muted); transform:rotate(45deg);
+                 transition:transform .15s ease; }
+    .rc.open::after { transform:rotate(-135deg); }
+
+    /* A table becomes cards. The table is not shrunk, it is not there. */
+    .tbl-wrap { display:none; }
+    .rc-list { display:flex; }
+
+    /* Pagination big enough to tap, and on its own line. */
+    .pager { gap:8px; }
+    .pager .btn { flex:1 1 0; min-height:48px; }
+    .pager-where { flex:1 1 100%; order:-1; text-align:center; font-size:13px; }
+
     /* A phone has no room for a fixed frame; the page scrolls as one again. */
     .app-shell { flex-direction:column; height:auto; overflow:visible; position:relative; }
     .main { height:auto; overflow:visible; }
@@ -382,6 +486,12 @@
                    autocomplete="off" />
             <button type="button" id="qClear" title="Clear (Esc)" aria-label="Clear the search">&times;</button>
           </div>
+          <!-- On a phone the filters do not fit beside anything, so they go
+               behind this, and the button says how many are on. -->
+          <button type="button" class="btn btn-outline filters-btn" id="filtersBtn" aria-expanded="false">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+            Filters<span class="n" id="filterCount" style="display:none">0</span>
+          </button>
           <div class="chips" id="docChips"></div>
           <div class="searchbar-end">
             <label class="fl" for="from">From</label><input class="f dt" type="date" id="from" data-datekeys />
@@ -404,6 +514,32 @@
             <thead><tr id="headRow"></tr></thead>
             <tbody id="rows"><tr><td colspan="11" class="loading">Start typing to search, or clear the box to see everything.</td></tr></tbody>
           </table>
+        </div>
+        <!-- The same rows, as cards. Only one of the two is ever on screen. -->
+        <div class="rc-list" id="cards"></div>
+
+        <!-- The filters, on a phone. The controls are MOVED in here rather
+             than copied: two sets of the same inputs is two things to keep in
+             step, and the one nobody is looking at drifts. -->
+        <div class="sheet" id="filterSheet" style="display:none">
+          <div class="sheet-card">
+            <div class="sheet-head">
+              <span>Filters</span>
+              <button type="button" class="sheet-x" id="filterClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="sheet-body">
+              <div class="sheet-label">Dates</div>
+              <div class="sheet-row" id="sheetDates"></div>
+              <div class="sheet-label">Voucher types</div>
+              <div id="sheetChips"></div>
+              <div class="sheet-label" style="margin-top:14px">Rows per page</div>
+              <div id="sheetSize"></div>
+            </div>
+            <div class="sheet-foot">
+              <button type="button" class="btn btn-outline" id="filterClear">Clear all</button>
+              <button type="button" class="btn" id="filterApply">Apply</button>
+            </div>
+          </div>
         </div>
 
         <!-- A page SIZE is not pagination. This is how you reach row 51. -->
@@ -1078,6 +1214,7 @@ upload_token = (shown on the download screen)</pre>
     try { localStorage.setItem(TYPE_STORE, JSON.stringify(chosenTypes)); } catch (e) {}
   }
   function drawChips() {
+    if (typeof countFilters === 'function') countFilters();
     $('docChips').innerHTML = DOC_TYPES.map(function (t) {
       var on = chosenTypes.indexOf(t) !== -1;
       return '<label class="chip' + (on ? ' on' : '') + '">' +
@@ -1255,7 +1392,96 @@ upload_token = (shown on the download screen)</pre>
     if (grid) grid.clear();
 
     lastShown = { rows: rows, q: q };
+    drawCards(rows, q);
     drawRowCount();
+  }
+
+  /* ---- A ROW BECOMES A CARD ----
+     Below the breakpoint the table is not on screen at all, so this is not a
+     restacking of it: it is the four lines a person can actually read
+     standing on the shop floor.
+
+         HINDON METAFORMS PVT.LTD            16 Sep 2026
+         LIFT SHOE · 9 MM
+         2 × ₹3,000                               ₹6,000
+
+     Everything else -- type, voucher number, year, the rate warning, the
+     description in full -- is behind a tap. Built from the same rows the
+     table is built from, in the same pass, so the two cannot disagree. */
+  function drawCards(rows, q) {
+    var box = $('cards');
+    if (!box) return;
+
+    if (!chosenTypes.length) {
+      box.innerHTML = '<div class="loading">No voucher types are ticked, so there is nothing ' +
+        'to show. Tap <strong>Filters</strong> and tick at least one.</div>';
+      return;
+    }
+    if (!rows.length) {
+      box.innerHTML = '<div class="loading">' +
+        (q ? 'Nothing matches “' + esc(q) + '”.'
+           : 'No history loaded yet — use <strong>Load history</strong> in the menu.') + '</div>';
+      return;
+    }
+
+    box.innerHTML = rows.map(function (r, i) {
+      var kind = q ? MATCH_KINDS[r.match_tier] : null;
+      var guess = q && (r.match_tier === 3 || r.match_tier === 4);
+
+      // The first part of the description, but only if it says something the
+      // item name does not. "MS PIPE 80X40X2.5 · SIZE MS PIPE 80X40X2.5" is
+      // one fact printed twice, and on a phone that is a whole line wasted.
+      var extra = r.description ? String(r.description).split(' | ')[0].trim() : '';
+      if (extra) {
+        var a = busyish(r.item), b = busyish(extra);
+        if (!b || b === a || b.indexOf(a) !== -1 || a.indexOf(b) !== -1) extra = '';
+      }
+
+
+      // Line 3: how the amount was arrived at, then the amount.
+      var calc = '';
+      if (r.is_lump_sum) calc = 'billed as one job';
+      else if (r.qty && r.rate) calc = inr2.format(r.qty) + ' × ' + money(r.rate);
+      else if (r.qty) calc = inr2.format(r.qty);
+
+      var more =
+        pair('Type', esc(r.doc_type)) +
+        pair('Voucher', btrim(r.vch_no) ? esc(r.vch_no) : '<span class="missing">no number in Busy</span>') +
+        pair('Year', esc(r.fy)) +
+        (r.qty ? pair('Qty', inr2.format(r.qty), true) : '') +
+        (r.is_lump_sum
+          ? pair('Rate', '<span class="pill pill-grey">no rate · one job</span>')
+          : (r.rate ? pair('Rate', money(r.rate) +
+              (r.is_extreme_rate ? ' <span class="pill pill-amber">usually ' +
+                money(r.median_rate) + '</span>' : ''), true) : '')) +
+        (r.description && String(r.description).indexOf(' | ') !== -1
+          ? pair('Description', esc(r.description)) : '') +
+        (kind ? pair('Match', '<span class="pill ' + kind.cls + '">' + esc(kind.label) + '</span>') : '');
+
+      return '<article class="rc' + (guess ? ' fuzzy' : '') + '" data-card="' + i + '">' +
+        '<div class="rc-top">' +
+          '<span class="rc-party">' + hi(r.party, q) + '</span>' +
+          '<span class="rc-date">' + (r.vch_date ? dmy(r.vch_date)
+                                     : '<span class="missing">no date</span>') + '</span>' +
+        '</div>' +
+        '<div class="rc-item">' + hi(r.item || '', q) +
+          (extra ? ' · ' + hi(extra, q) : '') + '</div>' +
+        '<div class="rc-money"><span class="rc-calc">' + calc + '</span>' +
+          '<span class="rc-amt">' + money(r.amount) + '</span></div>' +
+        '<div class="rc-more">' + more + '</div>' +
+      '</article>';
+    }).join('');
+  }
+
+  /* Letters and digits only, for comparing two bits of Busy text that mean
+     the same thing written differently. */
+  function busyish(v) {
+    return String(v === null || v === undefined ? '' : v).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+
+  function pair(k, v, right) {
+    return '<div class="rc-pair"><span class="rc-k">' + esc(k) + '</span>' +
+           '<span class="rc-v' + (right ? ' r' : '') + '">' + v + '</span></div>';
   }
 
   /* The line under the table. Drawn from whatever is known at the time, and
@@ -2007,6 +2233,102 @@ upload_token = (shown on the download screen)</pre>
     });
   }
 
+  /* ---- THE FILTER SHEET, AND THE CARDS' OWN WIRING ----------------------
+     The controls are MOVED between the search bar and the sheet as the width
+     crosses the breakpoint, never copied. One set of inputs means one set of
+     values, and every piece of wiring already written keeps working. */
+  var PHONE = window.matchMedia('(max-width: 880px)');
+  var barHomes = null;
+
+  function rememberHomes() {
+    if (barHomes) return;
+    barHomes = {
+      from:  { el: $('from'),     label: document.querySelector('label[for="from"]') },
+      to:    { el: $('to'),       label: document.querySelector('label[for="to"]') },
+      size:  { el: $('pageSize'), label: document.querySelector('label[for="pageSize"]') },
+      chips: { el: $('docChips') },
+      end:   $('searchbarEnd') || document.querySelector('.searchbar-end'),
+      bar:   document.querySelector('.searchbar')
+    };
+  }
+
+  function layoutFilters() {
+    rememberHomes();
+    var toSheet = PHONE.matches;
+    var dates = $('sheetDates'), chips = $('sheetChips'), size = $('sheetSize');
+    if (!dates) return;
+    if (toSheet) {
+      ['from', 'to'].forEach(function (k) {
+        var cell = document.createElement('div');
+        cell.appendChild(barHomes[k].label);
+        cell.appendChild(barHomes[k].el);
+        dates.appendChild(cell);
+      });
+      chips.appendChild(barHomes.chips.el);
+      size.appendChild(barHomes.size.label);
+      size.appendChild(barHomes.size.el);
+    } else {
+      var end = barHomes.end;
+      end.insertBefore(barHomes.from.label, end.firstChild);
+      end.insertBefore(barHomes.from.el, barHomes.from.label.nextSibling);
+      barHomes.from.el.after(barHomes.to.label);
+      barHomes.to.label.after(barHomes.to.el);
+      barHomes.to.el.after(barHomes.size.label);
+      barHomes.size.label.after(barHomes.size.el);
+      barHomes.bar.insertBefore(barHomes.chips.el, end);
+    }
+    countFilters();
+    // The desk placeholder explains the screen; on a phone it does not fit
+    // and gets cut off mid-word, which explains nothing.
+    $('q').placeholder = toSheet ? 'Search party, item or description'
+      : 'Search party, item or description — results appear as you type';
+  }
+
+  /* The button says how many are on, so nobody has to open it to find out. */
+  function countFilters() {
+    var n = 0;
+    if ($('from').value) n++;
+    if ($('to').value) n++;
+    // Every type ticked is the default, not a filter.
+    if (chosenTypes.length && chosenTypes.length !== DOC_TYPES.length) n++;
+    var chip = $('filterCount');
+    if (chip) {
+      chip.textContent = n;
+      chip.style.display = n ? '' : 'none';
+    }
+  }
+
+  function openFilters(open) {
+    $('filterSheet').style.display = open ? 'flex' : 'none';
+    $('filtersBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+  function filtersOpen() { return $('filterSheet').style.display !== 'none'; }
+
+  $('filtersBtn').addEventListener('click', function () { openFilters(!filtersOpen()); });
+  $('filterClose').addEventListener('click', function () { openFilters(false); });
+  $('filterApply').addEventListener('click', function () { openFilters(false); run(); });
+  $('filterSheet').addEventListener('click', function (e) {
+    if (e.target === $('filterSheet')) openFilters(false);   // a tap outside
+  });
+  $('filterClear').addEventListener('click', function () {
+    $('from').value = ''; $('to').value = '';
+    chosenTypes = DOC_TYPES.slice();
+    drawChips();
+    countFilters();
+    run();
+  });
+  if (PHONE.addEventListener) PHONE.addEventListener('change', layoutFilters);
+  else PHONE.addListener(layoutFilters);
+
+  /* A card opens where it is. Bound once to the list, so a card drawn later
+     needs no wiring of its own. */
+  $('cards').addEventListener('click', function (e) {
+    var card = e.target.closest('.rc');
+    if (!card) return;
+    card.classList.toggle('open');
+  });
+
   /* ---------------- wiring ---------------- */
   /* ---- THE MENU ----
      Built by nav.js, the one list every page in the ERP loads. This page's
@@ -2266,6 +2588,7 @@ upload_token = (shown on the download screen)</pre>
     $(id).addEventListener('change', function () {
       if (view === 'reports') return;
       pageNo = 1;                  // a different page size is a different list
+      countFilters();              // the Filters button counts what is on
       run();
     });
   });
@@ -2327,6 +2650,7 @@ upload_token = (shown on the download screen)</pre>
       run: function () { toggleShortcutPanel(); } },
     { keys: ['Escape'],  label: 'Esc',       does: 'Close the menu or this list, or clear the search box',
       run: function () {
+        if (filtersOpen()) { openFilters(false); return; }
         if (navIsOpen()) { setNavOpen(false); $('navOpenBtn').focus(); return; }
         if (shortcutPanelOpen()) { closeShortcutPanel(); return; }
         if (document.activeElement === $('q')) clearSearch();
@@ -2463,6 +2787,7 @@ upload_token = (shown on the download screen)</pre>
       grid = wireGrid('rows');
       setFirm('REF');
       setView('price');
+      layoutFilters();         // the filters go where this width wants them
       mountNav(user);          // the menu comes last: it may send us elsewhere
       $('q').focus();
     }).catch(openFailed);

@@ -193,34 +193,110 @@ function reportScreen(label, r) {
     }
 
     /* ---- 5. A TABLE CAN BE READ ----
-       The price table is wider than a phone. It must scroll INSIDE its own
-       box, taking its column headings with it — not drag the whole page
-       sideways, and not scroll the headings away. */
-    await H.go(page, 'price');
+       This used to check that the price table scrolled inside its own box
+       with its headings staying put. At a phone width there is no table any
+       more -- a row is a card -- so that question moved to the desk-width
+       check at the end of this file, where it is still the right one. */
+
+    /* ---- A ROW IS A CARD, NOT A SQUEEZED TABLE ----
+       Eight columns across 390px is unreadable however it is squeezed. Below
+       the breakpoint the table is not on screen at all. */
+    await H.go(page, 'price', 'REF');
     await page.waitForTimeout(900);
-    const table = await page.evaluate(() => {
-      const w = document.querySelector('.tbl-wrap');
-      if (!w) return null;
-      const before = { x: w.scrollLeft, y: w.scrollTop };
-      w.scrollLeft = 400; w.scrollTop = 300;
-      const after = { x: w.scrollLeft, y: w.scrollTop };
-      const th = document.querySelector('#headRow th');
-      const wrapTop = w.getBoundingClientRect().top;
-      const headTop = th ? th.getBoundingClientRect().top : null;
+    const card = await page.evaluate(() => {
+      const wrap = document.querySelector('.tbl-wrap');
+      const list = document.getElementById('cards');
+      const one = list.querySelector('.rc');
+      const box = el => el ? el.getBoundingClientRect() : null;
+      const party = box(one && one.querySelector('.rc-party'));
+      const amt = box(one && one.querySelector('.rc-amt'));
+      const cs = el => el ? getComputedStyle(el) : null;
       return {
-        widerThanBox: w.scrollWidth > w.clientWidth + 1,
-        scrolledSideways: after.x > before.x,
-        scrolledDown: after.y > before.y,
-        headingsStayed: headTop !== null && Math.abs(headTop - wrapTop) < 4,
-        pageWentSideways: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        tableHidden: getComputedStyle(wrap).display === 'none',
+        cards: list.querySelectorAll('.rc').length,
+        partySize: party ? parseFloat(cs(one.querySelector('.rc-party')).fontSize) : 0,
+        amtSize: amt ? parseFloat(cs(one.querySelector('.rc-amt')).fontSize) : 0,
+        amtRightAligned: !!(party && amt) && (amt.right > party.right - 2),
+        blocks: one ? one.querySelectorAll(':scope > .rc-top, :scope > .rc-item, :scope > .rc-money').length : 0,
+        height: one ? Math.round(one.getBoundingClientRect().height) : 0,
+        moreHidden: !!one && getComputedStyle(one.querySelector('.rc-more')).display === 'none',
       };
     });
-    record('Busy price: the table is wider than the phone, so this proves something',
-      !!table && table.widerThanBox);
-    record('Busy price: it scrolls inside its own box, not the page',
-      !!table && table.scrolledSideways && !table.pageWentSideways, JSON.stringify(table));
-    record('Busy price: the column headings stay put while the rows scroll under them',
-      !!table && table.scrolledDown && table.headingsStayed, JSON.stringify(table));
+    record('Busy price: the table is not on the screen at all — a row is a card',
+      card.tableHidden && card.cards > 0, `${card.cards} cards`);
+    record('Busy price: who it is, big enough to read at arm\'s length',
+      card.partySize >= 15, `${card.partySize}px`);
+    record('Busy price: the amount is large and right-aligned, so the eye can run down them',
+      card.amtSize >= 15 && card.amtRightAligned, `${card.amtSize}px`);
+    record('Busy price: the card is three lines, not eight columns',
+      card.blocks === 3, `${card.blocks} blocks, ${card.height}px tall`);
+    record('Busy price: and short enough that several fit on one screen',
+      card.height > 0 && card.height < 140, `${card.height}px tall`);
+    record('Busy price: everything else is behind a tap', card.moreHidden);
+
+    await page.locator('#cards .rc').first().tap();
+    await page.waitForTimeout(300);
+    const opened = await page.evaluate(() => {
+      const one = document.querySelector('#cards .rc');
+      return {
+        open: getComputedStyle(one.querySelector('.rc-more')).display !== 'none',
+        holds: Array.from(one.querySelectorAll('.rc-k')).map(k => k.textContent.trim()),
+      };
+    });
+    record('Busy price: tapping it shows the rest', opened.open, opened.holds.join(' · '));
+    record('Busy price: and the rest is what a table column would have held',
+      ['Type', 'Voucher', 'Year'].every(k => opened.holds.includes(k)), opened.holds.join(' · '));
+
+    /* ---- THE FILTERS ---- */
+    const filt = await page.evaluate(() => {
+      const btn = document.querySelector('.filters-btn');
+      const b = btn.getBoundingClientRect();
+      return {
+        onScreen: getComputedStyle(btn).display !== 'none',
+        size: Math.round(b.width) + '×' + Math.round(b.height),
+        says: btn.innerText.replace(/\s+/g, ' ').trim(),
+        datesInBar: !!document.querySelector('.searchbar-end #from'),
+        datesInSheet: document.querySelectorAll('#sheetDates input').length,
+        chipsInSheet: !!document.querySelector('#sheetChips #docChips'),
+        searchWidth: Math.round(document.querySelector('.searchbox').getBoundingClientRect().width),
+        barWidth: Math.round(document.querySelector('.searchbar').getBoundingClientRect().width),
+      };
+    });
+    record('Busy price: the filters are behind a button that says how many are on',
+      filt.onScreen && /Filters/.test(filt.says), filt.says);
+    record('Busy price: and the button is big enough to tap',
+      parseInt(filt.size.split('×')[1], 10) >= 44, filt.size);
+    record('Busy price: the date fields and tickboxes are IN the panel, not copied into it',
+      !filt.datesInBar && filt.datesInSheet === 2 && filt.chipsInSheet,
+      `${filt.datesInSheet} date fields, chips moved: ${filt.chipsInSheet}`);
+    record('Busy price: the search box gets the full width',
+      filt.searchWidth > filt.barWidth * 0.85, `${filt.searchWidth} of ${filt.barWidth}`);
+
+    await page.locator('#filtersBtn').tap();
+    await page.waitForTimeout(350);
+    record('Busy price: the panel opens over the screen',
+      await page.locator('#filterSheet').isVisible());
+    const feet = await page.evaluate(() => ({
+      apply: !!document.getElementById('filterApply'),
+      clear: !!document.getElementById('filterClear'),
+      h: Math.round(document.getElementById('filterApply').getBoundingClientRect().height),
+      dates: Array.from(document.querySelectorAll('#sheetDates > div'))
+        .map(d => Math.round(d.getBoundingClientRect().top)),
+    }));
+    record('Busy price: Apply and Clear are at the bottom, big enough to tap',
+      feet.apply && feet.clear && feet.h >= 44, `${feet.h}px tall`);
+    record('Busy price: the two date fields sit side by side, alone on their row',
+      feet.dates.length === 2 && feet.dates[0] === feet.dates[1], JSON.stringify(feet.dates));
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    record('Busy price: Escape closes the panel',
+      !(await page.locator('#filterSheet').isVisible()));
+    await page.locator('#filtersBtn').tap();
+    await page.waitForTimeout(300);
+    await page.locator('#filterSheet').tap({ position: { x: 195, y: 60 } });
+    await page.waitForTimeout(300);
+    record('Busy price: a tap outside closes it too',
+      !(await page.locator('#filterSheet').isVisible()));
 
     record('no script errors anywhere in Busy Data at phone width',
       errors.length === 0, errors.slice(0, 2).join(' | '));
@@ -280,6 +356,31 @@ function reportScreen(label, r) {
       };
     });
     record('at a desk the hamburger is not there at all', desk.hamburgerHidden);
+
+    // The question that used to be asked at phone width, asked where the
+    // table actually is.
+    const deskPage = await browser.newPage({ viewport: { width: 1360, height: 800 } });
+    await H.open(server, deskPage, { file: 'busy.html', user: OWNER, handlers: HANDLERS, data: JSON.stringify(BUSY) });
+    await deskPage.waitForSelector('#shell', { state: 'visible' });
+    await deskPage.waitForTimeout(1400);
+    const deskTable = await deskPage.evaluate(() => {
+      const w = document.querySelector('.tbl-wrap');
+      w.scrollTop = 300;
+      const th = document.querySelector('#headRow th');
+      return {
+        tableShown: getComputedStyle(w).display !== 'none',
+        cardsHidden: getComputedStyle(document.getElementById('cards')).display === 'none',
+        scrolledDown: w.scrollTop > 0,
+        headingsStayed: Math.abs(th.getBoundingClientRect().top - w.getBoundingClientRect().top) < 4,
+        pageWentSideways: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      };
+    });
+    record('at a desk the table is what is on screen, and the cards are not',
+      deskTable.tableShown && deskTable.cardsHidden, JSON.stringify(deskTable));
+    record('at a desk the headings still stay put while the rows scroll under them',
+      deskTable.scrolledDown && deskTable.headingsStayed && !deskTable.pageWentSideways,
+      JSON.stringify(deskTable));
+    await deskPage.close();
     record('at a desk the menu is still a column down the left, not a drawer',
       desk.sidebarLeft === 0 && desk.sidebarWidth > 180, JSON.stringify(desk));
     await page.close();

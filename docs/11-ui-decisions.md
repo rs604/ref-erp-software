@@ -20,10 +20,9 @@ Employees) · Purchase · Accounts · Production · Reports · Settings
 Then a divider, then **OWNER ONLY**: Decisions · Checklist
 
 - **Busy Data is second.** It is what Raghbir opens most
-- **HRMS** was not in this list when it was written, 10 Sep 2026 — the salary
-  sheet, the km tracker and the loans screen came later and are used daily.
-  They are in the menu rather than unreachable. Open question for Raghbir:
-  keep HRMS as its own module, or fold those three in elsewhere
+- **HRMS is its own module**, with Km Tracker, Salary Calculator and Loans &
+  Advances inside it. It was not in this list when it was written on 10 Sep
+  2026 — those screens came later and are used daily. Decided 19 Sep 2026
 - Owner-only items are **absent** for everyone else, not greyed out
 - Only the open module expands. The list never gets long
 - A screen that does not exist yet is **shown to everyone**, greyed and not
