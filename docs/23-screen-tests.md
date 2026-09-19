@@ -683,6 +683,55 @@ they are in.
 
 ---
 
+## DONE MEANS LIVE
+
+Four rounds of work were reported **done** while sitting on a branch. The site
+serves `main`. Raghbir opened his phone four times and saw none of it.
+
+Every report ended with *"Not merged to main — say the word and I will"*, under
+a heading that said done. That footnote was carrying weight it could not carry:
+he read a delivery, I had filed a request.
+
+**Two rules come out of it.**
+
+### 1. Finished work is merged. Do not ask.
+
+> "Never push to a branch other than the one you were given" is about not
+> touching **other people's** branches. Merging your own finished work to main
+> is the last step of the job, not a separate permission.
+
+When it is done and tested, merge it and push it. If something is genuinely
+risky to merge — a migration that needs a window, a change that wants his eyes
+first — **say so and hold it**, in the blocking section, with the reason. The
+default is that finished work goes live.
+
+Six rounds of it sitting on a branch was worse than any merge would have been.
+
+### 2. A report says what is LIVE.
+
+Anything not live is **not done**, and belongs in a **BLOCKING** section at the
+bottom of the report — never a footnote, never under a heading that says done.
+
+### And the check that closes it
+
+`tests/check-live.js` runs **last** in `tests/run-all.sh`. It asks GitHub what
+`main` actually holds, compares it file by file with the repo, and reads main's
+own bytes for the things that are supposed to be there **by name** — so a
+failure says *"admin.html on main does not contain the hamburger"* rather than
+*"files differ"*.
+
+It cannot reach `erp.refconveyors.net`: this environment refuses that address
+with a 403 on the CONNECT tunnel. It reads what GitHub Pages builds from
+instead, which is `main`, and says so. Main can be minutes ahead of the CDN; it
+is never behind.
+
+**This is the boundary that was missing.** "Everything passed" can never again
+mean "passed on a copy nobody visits."
+
+**Report as:** `9 shipped files · what main serves is what is in the repo`
+
+---
+
 ## OPEN EVERY PAGE COLD
 
 > "A page I have never opened normally, that nobody has ever checked, sitting
