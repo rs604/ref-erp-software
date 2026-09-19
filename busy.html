@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789786741';</script>
+<script>window.__BUILD_VERSION__ = '1789788757';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -290,8 +290,15 @@
               line-height:1.3; overflow-wrap:anywhere; }
   .rc-date { flex:0 0 auto; font-size:12.5px; color:var(--muted);
              font-variant-numeric:tabular-nums; }
-  .rc-item { margin-top:4px; font-size:13.5px; color:#3c4a57; line-height:1.4;
-             overflow-wrap:anywhere; }
+  .rc-item { margin-top:4px; font-size:13.5px; font-weight:600; color:#3c4a57;
+             line-height:1.4; overflow-wrap:anywhere; }
+  /* Two lines while the card is shut, all of it once it is open. Clamped,
+     never dropped: the fault this replaced hid it altogether. */
+  .rc-desc { margin-top:2px; font-size:13px; color:#55606b; line-height:1.4;
+             overflow-wrap:anywhere;
+             display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+             overflow:hidden; }
+  .rc.open .rc-desc { -webkit-line-clamp:unset; overflow:visible; }
   .rc-money { margin-top:8px; display:flex; align-items:baseline; gap:10px; }
   .rc-calc { flex:1; min-width:0; font-size:13px; color:var(--muted);
              font-variant-numeric:tabular-nums; }
@@ -1428,14 +1435,24 @@ upload_token = (shown on the download screen)</pre>
       var kind = q ? MATCH_KINDS[r.match_tier] : null;
       var guess = q && (r.match_tier === 3 || r.match_tier === 4);
 
-      // The first part of the description, but only if it says something the
-      // item name does not. "MS PIPE 80X40X2.5 · SIZE MS PIPE 80X40X2.5" is
-      // one fact printed twice, and on a phone that is a whole line wasted.
-      var extra = r.description ? String(r.description).split(' | ')[0].trim() : '';
-      if (extra) {
-        var a = busyish(r.item), b = busyish(extra);
-        if (!b || b === a || b.indexOf(a) !== -1 || a.indexOf(b) !== -1) extra = '';
-      }
+      /* THE DESCRIPTION IS THE MOST IMPORTANT LINE ON THE CARD, and it is
+         never hidden, never truncated away, never replaced by anything.
+
+         It was. The rule here used to drop a description that CONTAINED the
+         item name, on the theory that it repeated it. So "SKD CONVEYOR" with
+         the description "Extension Charges of SKD Conveyor 38 Fee" showed as
+         a ₹3,25,000 SKD CONVEYOR -- a machine, when it was an extension of
+         one by 38 feet. The card was not cramped. It was wrong.
+
+         Two rows in the real data make the point better than any rule:
+           SKD (CYCLE ASSEMBLY CONVEYOR)  ₹6,65,000   no description
+           SKD (CYCLE ASSEMBLY CONVEYOR)  ₹12,00,000  "130 FEET LENGTH"
+         Without the second line those are the same item at two prices.
+
+         The only thing dropped now is a description that is EXACTLY the item
+         written differently, letter for letter, which genuinely adds nothing. */
+      var full = r.description ? String(r.description).replace(/\s*\|\s*/g, ' · ').trim() : '';
+      if (full && busyish(full) === busyish(r.item)) full = '';
 
 
       // Line 3: how the amount was arrived at, then the amount.
@@ -1444,6 +1461,10 @@ upload_token = (shown on the download screen)</pre>
       else if (r.qty && r.rate) calc = inr2.format(r.qty) + ' × ' + money(r.rate);
       else if (r.qty) calc = inr2.format(r.qty);
 
+      // What a column would have held. The description is NOT in here: it is
+      // on the face of the card, above, open or shut. And "Match" is gone --
+      // it says how the search engine matched, not anything about the
+      // business, and the yellow already says the row is a guess.
       var more =
         pair('Type', esc(r.doc_type)) +
         pair('Voucher', btrim(r.vch_no) ? esc(r.vch_no) : '<span class="missing">no number in Busy</span>') +
@@ -1453,10 +1474,7 @@ upload_token = (shown on the download screen)</pre>
           ? pair('Rate', '<span class="pill pill-grey">no rate · one job</span>')
           : (r.rate ? pair('Rate', money(r.rate) +
               (r.is_extreme_rate ? ' <span class="pill pill-amber">usually ' +
-                money(r.median_rate) + '</span>' : ''), true) : '')) +
-        (r.description && String(r.description).indexOf(' | ') !== -1
-          ? pair('Description', esc(r.description)) : '') +
-        (kind ? pair('Match', '<span class="pill ' + kind.cls + '">' + esc(kind.label) + '</span>') : '');
+                money(r.median_rate) + '</span>' : ''), true) : ''));
 
       return '<article class="rc' + (guess ? ' fuzzy' : '') + '" data-card="' + i + '">' +
         '<div class="rc-top">' +
@@ -1464,8 +1482,8 @@ upload_token = (shown on the download screen)</pre>
           '<span class="rc-date">' + (r.vch_date ? dmy(r.vch_date)
                                      : '<span class="missing">no date</span>') + '</span>' +
         '</div>' +
-        '<div class="rc-item">' + hi(r.item || '', q) +
-          (extra ? ' · ' + hi(extra, q) : '') + '</div>' +
+        '<div class="rc-item">' + hi(r.item || '', q) + '</div>' +
+        (full ? '<div class="rc-desc">' + hi(full, q) + '</div>' : '') +
         '<div class="rc-money"><span class="rc-calc">' + calc + '</span>' +
           '<span class="rc-amt">' + money(r.amount) + '</span></div>' +
         '<div class="rc-more">' + more + '</div>' +

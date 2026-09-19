@@ -247,6 +247,57 @@ function reportScreen(label, r) {
     record('Busy price: and the rest is what a table column would have held',
       ['Type', 'Voucher', 'Year'].every(k => opened.holds.includes(k)), opened.holds.join(' · '));
 
+    /* ---- THE DESCRIPTION IS NEVER HIDDEN ----
+       These are Raghbir's own rows. "SKD CONVEYOR" at ₹3,25,000 read as a
+       machine; the description said it was an extension of one by 38 feet.
+       The card dropped it, because the description happened to contain the
+       item name. Two more rows make the point: the same item at ₹6,65,000
+       and ₹12,00,000, told apart only by "130 FEET LENGTH". */
+    await page.evaluate(() => {
+      const v = window.__TEST_DATA__['rpc:busy_search'];
+      const base = (typeof v === 'function' ? v() : v)[0];
+      const rows = [
+        { party:'AVON NEWAGE CYCLES PVT.LTD', item:'SKD CONVEYOR',
+          description:'Extension Charges of SKD Conveyor 38 Fee',
+          qty:1, rate:325000, amount:325000, is_lump_sum:false, match_tier:2 },
+        { party:'AVON CYCLES LTD', item:'SKD (CYCLE ASSEMBLY CONVEYOR)', description:null,
+          qty:1, rate:665000, amount:665000, is_lump_sum:false, match_tier:1 },
+        { party:'AVON CYCLES LTD', item:'SKD (CYCLE ASSEMBLY CONVEYOR)', description:'130 FEET LENGTH',
+          qty:1, rate:1200000, amount:1200000, is_lump_sum:false, match_tier:1 },
+        { party:'AVON CYCLES LTD', item:'MS PIPE 80X40X2.5', description:'MS PIPE 80X40X2.5',
+          qty:1, rate:100, amount:100, is_lump_sum:false, match_tier:1 },
+      ];
+      window.__TEST_DATA__['rpc:busy_search'] = () => rows.map(r => Object.assign({}, base, r));
+      window.__TEST_DATA__['rpc:busy_search_count'] = () => rows.length;
+    });
+    await page.locator('#q').fill('');
+    await page.locator('#q').type('avon skd', { delay: 10 });
+    await page.waitForTimeout(800);
+    const desc = await page.evaluate(() => Array.from(document.querySelectorAll('#cards .rc'))
+      .map(c => ({ item: c.querySelector('.rc-item').textContent.trim(),
+                   desc: c.querySelector('.rc-desc') ? c.querySelector('.rc-desc').textContent.trim() : null })));
+    record('Busy price: a description that adds to the item name is SHOWN on the card',
+      desc[0] && desc[0].desc === 'Extension Charges of SKD Conveyor 38 Fee',
+      desc[0] ? `${desc[0].item} | ${desc[0].desc}` : 'no card');
+    record('Busy price: two rows with the same item name are told apart by it',
+      desc[1] && desc[2] && desc[1].desc === null && desc[2].desc === '130 FEET LENGTH',
+      JSON.stringify(desc.slice(1, 3)));
+    record('Busy price: a description that is only the item written again is dropped',
+      desc[3] && desc[3].desc === null, JSON.stringify(desc[3]));
+
+    await page.locator('#cards .rc').first().tap();
+    await page.waitForTimeout(300);
+    const afterTap = await page.evaluate(() => {
+      const c = document.querySelector('#cards .rc');
+      const d = c.querySelector('.rc-desc');
+      return { still: !!d && d.offsetParent !== null && d.textContent.trim(),
+               keys: Array.from(c.querySelectorAll('.rc-k')).map(k => k.textContent.trim()) };
+    });
+    record('Busy price: EXPANDING the card does not take the description away',
+      afterTap.still === 'Extension Charges of SKD Conveyor 38 Fee', String(afterTap.still));
+    record('Busy price: and "Match" is not behind the tap — it is about the search, not the business',
+      !afterTap.keys.includes('Match'), afterTap.keys.join(' · '));
+
     /* ---- THE FILTERS ---- */
     const filt = await page.evaluate(() => {
       const btn = document.querySelector('.filters-btn');
@@ -300,6 +351,129 @@ function reportScreen(label, r) {
 
     record('no script errors anywhere in Busy Data at phone width',
       errors.length === 0, errors.slice(0, 2).join(' | '));
+    await page.close();
+  }
+
+  /* ================= THE HEADER AND TAB PATTERNS =================
+     Not two screens: two patterns. Every screen with actions in its header
+     breaks the same way, and every tab strip breaks once there are more than
+     three tabs. */
+  {
+    const { page } = await phonePage(server, browser, 'admin.html', null);
+
+    // Nothing may be printed through anything else. The salary sheet had the
+    // hamburger, "Back", the title, "Reset Columns" and "Save Draft" all in
+    // one 390px row, overprinting each other.
+    const overlaps = async () => page.evaluate(() => {
+      const box = el => el.getBoundingClientRect();
+      const pick = Array.from(document.querySelectorAll(
+        '.topbar *, .subtabs *, .panel-header *, button, a, select'))
+        .filter(e => {
+          const b = box(e), cs = getComputedStyle(e);
+          if (b.right < 1 || b.left > innerWidth - 1 || b.bottom < 1) return false;
+          return b.width > 4 && b.height > 4 && cs.display !== 'none' && cs.visibility !== 'hidden'
+            && (e.textContent || '').trim().length > 0
+            && (e.children.length === 0 || /^(BUTTON|A|SELECT)$/.test(e.tagName));
+        });
+      const hits = [];
+      for (let i = 0; i < pick.length; i++) for (let j = i + 1; j < pick.length; j++) {
+        const a = pick[i], b = pick[j];
+        if (a.contains(b) || b.contains(a)) continue;
+        const ra = box(a), rb = box(b);
+        if (Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left) > 3 &&
+            Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top) > 3) {
+          hits.push((a.textContent || '').trim().slice(0, 16) + ' ↔ ' + (b.textContent || '').trim().slice(0, 16));
+        }
+      }
+      return [...new Set(hits)].slice(0, 5);
+    });
+
+    const views = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('#refnav-host button.refnav-item[data-view]')).map(b => b.dataset.view));
+    let printedThrough = [];
+    for (const v of views) {
+      await H.go(page, v);
+      await page.waitForTimeout(700);
+      const tabs = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.subtab-item')).filter(t => t.offsetParent)
+          .map(t => t.dataset.tab || t.dataset.ddtab || t.textContent.trim()));
+      const here = await overlaps();
+      if (here.length) printedThrough.push(v + ': ' + here[0]);
+      for (const t of tabs) {
+        await page.evaluate(t => {
+          const b = [...document.querySelectorAll('.subtab-item')]
+            .find(x => (x.dataset.tab || x.dataset.ddtab || x.textContent.trim()) === t);
+          if (b) b.click();
+        }, t);
+        await page.waitForTimeout(450);
+        const inTab = await overlaps();
+        if (inTab.length) printedThrough.push(v + ' › ' + t + ': ' + inTab[0]);
+      }
+    }
+    record(`nothing is printed through anything else, on any ERP screen or tab (${views.length} screens)`,
+      printedThrough.length === 0, printedThrough.slice(0, 4).join(' | '));
+
+    // The tab strip scrolls inside itself, and the page does not move.
+    // Km Tracker's four tabs are there whatever the data is.
+    await H.go(page, 'km-tracker');
+    await page.waitForTimeout(900);
+    const strip = await page.evaluate(() => {
+      const s = document.querySelector('#subtabsNav');
+      if (!s) return { none: true };
+      return { tabs: s.querySelectorAll('.subtab-item').length,
+               scrolls: s.scrollWidth > s.clientWidth + 1,
+               pageStill: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1 };
+    });
+    record('a tab strip with more tabs than fit scrolls INSIDE itself, page still',
+      !strip.none && strip.scrolls && strip.pageStill, JSON.stringify(strip));
+    const chosen = await page.evaluate(() => {
+      const s = document.querySelector('#subtabsNav');
+      const tabs = [...s.querySelectorAll('.subtab-item')];
+      s.scrollLeft = 0;
+      tabs[tabs.length - 1].click();
+      const a = s.querySelector('.subtab-item.active') || tabs[tabs.length - 1];
+      const ab = a.getBoundingClientRect(), sb = s.getBoundingClientRect();
+      return { label: a.textContent.trim(), onScreen: ab.left >= sb.left - 2 && ab.right <= sb.right + 2 };
+    });
+    record('and choosing a tab that is off the edge brings it into view',
+      chosen.onScreen, `${chosen.label}: on screen ${chosen.onScreen}`);
+    await page.close();
+  }
+
+  /* ================= SCREENS THAT CANNOT WORK ON A PHONE SAY SO ================= */
+  {
+    const { page } = await phonePage(server, browser, 'admin.html', null);
+    for (const [view, words] of [['salary-calculator', 'salary sheet needs a computer'],
+                                 ['admin-panel', 'needs a computer']]) {
+      await H.go(page, view);
+      await page.waitForTimeout(800);
+      const said = await page.evaluate(v => {
+        const note = document.querySelector('#view-' + v + ' .desk-only-note');
+        const body = document.querySelector('#view-' + v + ' .desk-only-hide');
+        return { note: note ? note.textContent.trim() : null,
+                 noteShown: !!note && note.offsetParent !== null,
+                 bodyHidden: !!body && body.offsetParent === null };
+      }, view);
+      record(`${view}: says it needs a computer, and shows nothing else`,
+        said.noteShown && said.bodyHidden && new RegExp(words, 'i').test(said.note || ''),
+        said.note || 'no notice');
+    }
+    await page.close();
+  }
+  {
+    // ...and at a desk they are the screens they always were.
+    const page = await browser.newPage({ viewport: { width: 1360, height: 800 } });
+    await H.open(server, page, { file: 'admin.html', user: OWNER, handlers: HANDLERS, data: '{}' });
+    await page.waitForTimeout(1400);
+    await H.go(page, 'salary-calculator');
+    await page.waitForTimeout(900);
+    const atDesk = await page.evaluate(() => {
+      const note = document.querySelector('#view-salary-calculator .desk-only-note');
+      const body = document.querySelector('#view-salary-calculator .desk-only-hide');
+      return { noteHidden: !note || note.offsetParent === null, bodyShown: !!body && body.offsetParent !== null };
+    });
+    record('at a desk the salary sheet is the salary sheet, with no notice',
+      atDesk.noteHidden && atDesk.bodyShown, JSON.stringify(atDesk));
     await page.close();
   }
 

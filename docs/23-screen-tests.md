@@ -592,6 +592,42 @@ KM / Cost / Status one under another, each with its heading, is the table
 turned sideways, not a card. Group it: who and when on one line, what on the
 next, the numbers on the third, the buttons last.
 
+### THE DESCRIPTION IS NEVER HIDDEN, ANYWHERE
+
+The card showed `SKD CONVEYOR · ₹3,25,000`. The row's description said
+**"Extension Charges of SKD Conveyor 38 Fee"** — an extension of an existing
+conveyor by 38 feet, not a machine. The card dropped the description because
+it *contained* the item name, on a rule meant to stop `MS PIPE 80X40X2.5 ·
+SIZE MS PIPE 80X40X2.5` printing one fact twice.
+
+Two rows from the real data settle it:
+
+```
+SKD (CYCLE ASSEMBLY CONVEYOR)   ₹6,65,000    (no description)
+SKD (CYCLE ASSEMBLY CONVEYOR)  ₹12,00,000    130 FEET LENGTH
+```
+
+Without the second line those are the same item at two prices, and the pricing
+looks inconsistent. With it, one of them is 130 feet long.
+
+**The rule:** the description stays visible, collapsed or expanded, directly
+under the item name and before anything a column would have held. Two lines
+while the card is shut, all of it once it is open. **Never replaced, never
+dropped.** The only thing dropped is a description that is *exactly* the item
+written differently, letter for letter.
+
+**And expanding must never take information away.** That is what happened
+here: opening the card replaced the description with Type, Voucher, Year, Qty,
+Rate and Match. Whatever is on the face of a card stays on the face of it.
+
+`Match` was removed altogether. It says how the search engine matched, not
+anything about the business, and the yellow tint already says the row is a
+guess.
+
+**Check the desk view for the same fault whenever a phone view hides
+something** — that is where it is read most. Here it was clean: the
+Description column wraps, is not clipped and holds the full text.
+
 ### FILTERS GO BEHIND A BUTTON
 
 They take the whole width on a phone and there is no room for them beside
@@ -607,6 +643,59 @@ working.
 And: the search box gets the **full width** — it is the first thing anyone
 uses. Date fields **side by side, alone on their row**. Pagination as
 Previous · where you are · Next, each big enough to tap.
+
+### THE HEADER PATTERN
+
+Every screen with actions in its header breaks the same way on a phone. The
+salary sheet printed its title **through** the hamburger, "Back", "Reset
+Columns" and "Save Draft" — five controls fighting for one 390px row. PO
+create, the vendor form, the item form and invoice entry would all have done
+the same, because it is the pattern that is wrong, not the screen.
+
+Below the breakpoint:
+
+- the way out and the **title on the first line**, full width
+- everything the screen can **do on the next line**, wrapping, each at least
+  44px
+- or the secondary actions behind a ⋮, leaving the primary one visible
+
+Fix the pattern, not the two screens you happened to open.
+
+### THE TAB PATTERN
+
+Six tabs across 390px were squeezed until "Employee Category" printed through
+"Relationship". Below the breakpoint a tab strip **scrolls sideways inside
+itself** and the page stays still. One choice, used everywhere.
+
+And **scroll the chosen tab into view**: a strip that scrolls can leave the
+tab you just picked off the right-hand edge, with nothing on screen showing
+which one is on.
+
+### SOME SCREENS CANNOT WORK ON A PHONE, AND SHOULD SAY SO
+
+A screen that needs a keyboard, a mouse and width is not improved by being
+squeezed or turned into cards — it is made worse, and so is the desk version
+that gets compromised for it.
+
+Below the breakpoint, one plain line and nothing else:
+
+> The salary sheet needs a computer. Open it on a desktop.
+
+Desk-only so far: the **salary sheet** (a spreadsheet with arrow-key editing
+and draggable columns) and **Who can do what** (61 permissions across five
+columns per person, a grid that has to be read across).
+
+### OVERLAP IS INVISIBLE TO EVERY OTHER CHECK
+
+Nothing else in this folder catches it. Overlapping elements do not overflow
+the page, are not too small, and are not unreadable in isolation — they are
+just printed through each other. The check compares the boxes of every button,
+link, tab and heading on screen against every other, skipping anything
+off-screen or nested inside the other.
+
+**Include elements that have children.** The first version of this check
+skipped them, so it read the overprinted tabs — buttons with an icon and a
+span inside — as clean.
 
 ### WHICH SCREENS MUST BE GOOD, AND WHICH MUST ONLY NOT BREAK
 
