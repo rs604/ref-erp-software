@@ -1725,6 +1725,34 @@ async function openBusy(server, browser, user) {
     await p2.close();
   }
 
+  /* ---------- NEITHER FIRM'S NUMBER ON THE OTHER FIRM'S PAPER ----------
+     The ledger prints on a letterhead, and that sheet goes to a customer.
+     Putting REF's GSTIN on an RS ledger is not a formatting slip: it is a
+     wrong tax document, sent out, over a signature.
+
+     There are exactly two firms and exactly two GST numbers, so the rule
+     is simply stated and worth stating: each letterhead carries its own
+     number and never the other one. */
+  {
+    const REF_GSTIN = '03ADVPS6303E1ZI';
+    const RS_GSTIN  = '03CCTPS7440B1ZI';
+    // LETTERHEAD lives inside the page's own scope, which is right -- it is
+    // not a global for anything to reach. So the source is what is read.
+    const src = require('fs').readFileSync(require('path').join(H.ROOT, 'busy.html'), 'utf8');
+    const block = src.slice(src.indexOf('var LETTERHEAD'), src.indexOf('function stamp'));
+    const refPart = block.slice(block.indexOf('REF:'), block.indexOf('RS:'));
+    const rsPart  = block.slice(block.indexOf('RS:'));
+    record('the REF letterhead carries REF\'s GST number',
+      refPart.includes(REF_GSTIN) && !refPart.includes(RS_GSTIN));
+    record('the RS letterhead carries RS\'s GST number, and never REF\'s',
+      rsPart.includes(RS_GSTIN) && !rsPart.includes(REF_GSTIN));
+    // The PAN is the middle ten characters of the GSTIN. Checked rather than
+    // trusted, because it was derived and not copied off the invoice.
+    record('each PAN is the one inside its own GST number',
+      refPart.includes(REF_GSTIN.slice(2, 12)) && rsPart.includes(RS_GSTIN.slice(2, 12)),
+      `${REF_GSTIN.slice(2, 12)} and ${RS_GSTIN.slice(2, 12)}`);
+  }
+
   await browser.close();
   server.close();
 

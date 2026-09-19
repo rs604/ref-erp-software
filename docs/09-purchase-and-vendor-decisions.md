@@ -15,6 +15,21 @@ reason gets changed back in a year.
 - GST **03ADVPS6303E1ZI** · Jurisdiction Ludhiana · Phone 6283363824
 - **"Ref Conveyors" is dropped entirely.** One firm, one GST, one number series
 
+### The second firm — RS Industries
+
+Taken from an RS tax invoice, 19 Sep 2026. Two firms, two GST numbers, and
+**neither number ever appears on the other firm's paper** — `busy.test.js`
+refuses it.
+
+- **RS Industries** — proprietorship, Ludhiana, Punjab
+- #304F, Sua Road, Industrial Area-C, Dhandari Kalan, Ludhiana - 141014
+- GST **03CCTPS7440B1ZI** · Phone 99154-58452 · rsindustries.ldh@gmail.com
+- PAN **CCTPS7440B** — **derived, not copied.** The invoice left its PAN field
+  blank. It did not need to be filled: the PAN is the middle ten characters of
+  the GSTIN by construction, and that rule reproduces REF's own known PAN from
+  REF's own GSTIN exactly. The fourth letter, P, agrees with a proprietorship.
+  Correct it here if it is ever shown to be wrong.
+
 ### Email
 
 - Sends **from** `accounts@refconveyors.net` — the only DNS-verified domain

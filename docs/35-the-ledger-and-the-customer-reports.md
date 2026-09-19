@@ -249,9 +249,35 @@ md5 against the database's own fingerprint.
 
 ---
 
+## The RS letterhead — closed the same day
+
+He sent an RS tax invoice. Both firms now print their own registration
+details, and neither prints the other's:
+
+```
+RS INDUSTRIES
+#304F, Sua Road, Industrial Area-C, Dhandari Kalan, Ludhiana - 141014
+GSTIN 03CCTPS7440B1ZI · PAN CCTPS7440B · 99154-58452 · rsindustries.ldh@gmail.com
+```
+
+**The PAN is derived, not copied.** The invoice left its PAN field blank. The
+PAN is the middle ten characters of the GSTIN by construction, and that rule
+reproduces REF's own known PAN from REF's own GSTIN exactly, so it was checked
+before it was trusted. The fourth letter, P, agrees with a proprietorship.
+
+And it is now a rule the tests keep: **each letterhead carries its own GST
+number and never the other firm's**, and each PAN is the one inside its own
+GSTIN. Proved by putting REF's number on the RS sheet on purpose — the test
+named it.
+
+Both sheets were rendered and looked at, not merely asserted. That is where
+the last fault came from: `Cr` and `Dr` were printing flush against the figure
+— `4,83,537.00Cr` — because the screen's stylesheet is not in the print
+window.
+
+---
+
 ## BLOCKING
 
-- **RS Industries has no GSTIN or PAN in the ERP.** Its ledger prints without
-  registration details. Give me the numbers and it is a two-line change.
 - **The simple-average headline** on material prices, above. My call, made
   against the brief, with the evidence and a one-line way back.

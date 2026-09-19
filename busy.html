@@ -2256,10 +2256,17 @@ upload_token = (shown on the download screen)</pre>
       reg:  'GSTIN 03ADVPS6303E1ZI &nbsp;·&nbsp; PAN ADVPS6303E &nbsp;·&nbsp; 6283363824'
     },
     RS: {
-      name: 'R. S. INDUSTRIES',
-      addr: 'Ludhiana, Punjab',
-      reg:  'The GST and PAN for this firm are not held in the ERP yet, ' +
-            'so they are not printed here.'
+      name: 'RS INDUSTRIES',
+      addr: '#304F, Sua Road, Industrial Area-C,<br>' +
+            'Dhandari Kalan, Ludhiana - 141014',
+      /* The PAN was not written on the invoice this came from -- the field
+         was left blank. It did not need to be: the PAN is the middle ten
+         characters of the GSTIN by construction, and that rule reproduces
+         REF's own known PAN from REF's own GSTIN exactly. So this is
+         derived, not guessed, and the fourth letter P agrees with a
+         proprietorship. */
+      reg:  'GSTIN 03CCTPS7440B1ZI &nbsp;·&nbsp; PAN CCTPS7440B &nbsp;·&nbsp; ' +
+            '99154-58452 &nbsp;·&nbsp; rsindustries.ldh@gmail.com'
     }
   };
 
@@ -2303,6 +2310,10 @@ upload_token = (shown on the download screen)</pre>
       'th,td{border:1px solid #c8d2da;padding:4px 6px;text-align:center}' +
       'th{background:#eef4f9}td:nth-child(5){text-align:left}.r{text-align:right}' +
       'tr.edge td{background:#eef4f9;font-weight:bold}' +
+      /* The screen's stylesheet is not in this window, so the Cr and Dr were
+         printing flush against the figure -- "4,83,537.00Cr" on a sheet going
+         to a customer. */
+      '.drcr-sfx{margin-left:4px;font-size:10px;color:#55606b}' +
       '.foot{margin-top:14px;font-size:10.5px;color:#55606b;line-height:1.6}' +
       '@media print{.noprint{display:none}}</style></head><body>' +
       '<div class="lh"><h1>' + head.name + '</h1><div>' + head.addr + '</div>' +
