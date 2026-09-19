@@ -1,16 +1,26 @@
 {
   "$comment": [
-    "Raghbir, 19 Sep 2026: 'STOP ASKING ME TO APPROVE EVERY ACTION. I have",
-    "approved over 100 prompts on this one task. That is not safety, it is",
-    "friction, and it means I stop reading them -- which is worse than not",
-    "asking.' The same rule was already in docs/00 from 11 Sep and slipped.",
-    "It is a setting now, not a good intention.",
+    "Raghbir, 19 Sep 2026: 'STOP ASKING ME TO APPROVE EVERY ACTION.'",
     "",
-    "ASK ONLY BEFORE: deleting a Supabase project; dropping a table or a",
-    "column; deleting a file Claude did not create; anything that destroys",
-    "data that cannot be got back. Those are deliberately NOT allowed below."
+    "permissions.defaultMode is 'acceptEdits'. It is the ONLY value that a",
+    "project settings file can set AND that a cloud session (claude.ai/code)",
+    "honours. Per the Claude Code permission-modes docs:",
+    "  - 'auto' set in .claude/settings.json DOES NOT TAKE EFFECT.",
+    "  - 'bypassPermissions' set here DOES NOT TAKE EFFECT either.",
+    "  - 'dontAsk' AUTO-DENIES every call that would have prompted, and cloud",
+    "    sessions ignore it from settings files anyway. It is not 'stop",
+    "    asking', it is 'silently refuse', which is worse.",
+    "",
+    "For a cloud session the mode dropdown (Auto) is the lever, not this file.",
+    "",
+    "THE FOUR EXCEPTIONS BELOW ARE SAFE IN EVERY MODE. The docs list 'tools",
+    "matched by an explicit ask rule' among the actions NO mode auto-approves,",
+    "including bypassPermissions. So these still stop and ask:",
+    "  deleting a Supabase project; dropping a table or column; deleting a",
+    "  file Claude did not create; anything unrecoverable."
   ],
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
       "Bash",
       "Edit",

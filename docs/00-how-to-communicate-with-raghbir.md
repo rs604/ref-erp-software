@@ -26,8 +26,27 @@ Not commits. Not pushes.
 - anything that destroys data that cannot be got back
 
 A prompt he has stopped reading is worse than no prompt, because it is a guard
-everyone believes in and nobody uses. `.claude/settings.json` in this repo
-carries the allowlist so the rule is enforced and not merely intended.
+everyone believes in and nobody uses. Anthropic's own figure is that people
+accept 93% of these prompts.
+
+`.claude/settings.json` carries the allowlist and
+`permissions.defaultMode: "acceptEdits"`.
+
+**What a settings file cannot do, checked against the docs on 19 Sep:**
+
+- `"auto"` set in `.claude/settings.json` **does not take effect**
+- `"bypassPermissions"` set there **does not take effect** either
+- `"dontAsk"` **auto-DENIES** every call that would have prompted — that is
+  "silently refuse", not "stop asking", and it would be worse than the prompts
+- **Cloud sessions (claude.ai/code) ignore `dontAsk` and `bypassPermissions`
+  from settings files, silently**
+
+So for a cloud session the lever is the **mode dropdown → Auto**, set once in
+the claude.ai/code UI. No file in this repo can set it.
+
+**The four exceptions are safe in every mode.** The docs list "tools matched by
+an explicit ask rule" among the actions *no* mode auto-approves, including
+`bypassPermissions`. So they keep asking whatever mode is on.
 
 ---
 
