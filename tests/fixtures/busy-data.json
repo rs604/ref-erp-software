@@ -3604,483 +3604,59 @@
  "rpc:busy_monthly_totals": [
   {
    "fy": "2025-26",
-   "month_start": "2026-01-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 1693727.09,
-   "voucher_total": 2125406.62,
-   "voucher_tax": 212567.69,
-   "voucher_count": 17,
-   "line_count": 97
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2026-01-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 954773.04,
-   "voucher_total": 3551326.89,
-   "voucher_tax": 224076.37,
-   "voucher_count": 11,
-   "line_count": 113
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2026-02-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 3959864.65,
-   "voucher_total": 3931151.34,
-   "voucher_tax": 254356.73,
-   "voucher_count": 3,
-   "line_count": 28
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2026-02-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 2576703.59,
-   "voucher_total": 3543446.23,
-   "voucher_tax": 140607.4,
-   "voucher_count": 6,
-   "line_count": 31
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2026-03-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 2727865.18,
-   "voucher_total": 1647350.78,
-   "voucher_tax": 161664.01,
-   "voucher_count": 21,
-   "line_count": 163
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2026-03-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 1120409.15,
-   "voucher_total": 1313622.27,
-   "voucher_tax": 148646.82,
-   "voucher_count": 13,
-   "line_count": 78
-  },
-  {
-   "fy": "2025-26",
    "month_start": "2025-04-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 1894133.51,
-   "voucher_total": 1200323.65,
-   "voucher_tax": 289300.23,
-   "voucher_count": 38,
-   "line_count": 92
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-04-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 1128896.68,
-   "voucher_total": 3869533.73,
-   "voucher_tax": 106673.42,
-   "voucher_count": 25,
-   "line_count": 56
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-05-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 204061.88,
-   "voucher_total": 1650181.11,
-   "voucher_tax": 152900.22,
-   "voucher_count": 35,
-   "line_count": 177
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-05-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 963724.21,
-   "voucher_total": 2117995.43,
-   "voucher_tax": 21386.15,
-   "voucher_count": 19,
-   "line_count": 32
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-06-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 746687.54,
-   "voucher_total": 2429842.78,
-   "voucher_tax": 130314.02,
-   "voucher_count": 22,
-   "line_count": 87
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-06-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 2592745.53,
-   "voucher_total": 521034.3,
-   "voucher_tax": 288138.41,
-   "voucher_count": 12,
-   "line_count": 178
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-07-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 3592644.45,
-   "voucher_total": 3179356.2,
-   "voucher_tax": 187036.61,
-   "voucher_count": 23,
-   "line_count": 194
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-07-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 3941970.52,
-   "voucher_total": 767959.97,
-   "voucher_tax": 222763.62,
-   "voucher_count": 12,
-   "line_count": 21
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-08-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 3334457.12,
-   "voucher_total": 2917041.8,
-   "voucher_tax": 163634.74,
-   "voucher_count": 30,
-   "line_count": 197
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-08-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 2864002.5,
-   "voucher_total": 2121055.93,
-   "voucher_tax": 274768.54,
-   "voucher_count": 35,
-   "line_count": 155
+   "gross_sales": 13000000,
+   "credit_notes": 120000,
+   "net_sales": 12880000,
+   "gross_purchases": 1500000,
+   "debit_notes": 8000,
+   "net_purchases": 1492000,
+   "output_tax": 378000,
+   "input_tax": 270000,
+   "sale_vouchers": 24,
+   "purchase_vouchers": 61
   },
   {
    "fy": "2025-26",
    "month_start": "2025-09-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 3372762.86,
-   "voucher_total": 3257774.9,
-   "voucher_tax": 251394.55,
-   "voucher_count": 40,
-   "line_count": 192
+   "gross_sales": 12460792,
+   "credit_notes": 0,
+   "net_sales": 12460792,
+   "gross_purchases": 1700000,
+   "debit_notes": 0,
+   "net_purchases": 1700000,
+   "output_tax": 468000,
+   "input_tax": 306000,
+   "sale_vouchers": 31,
+   "purchase_vouchers": 70
   },
   {
-   "fy": "2025-26",
-   "month_start": "2025-09-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 2795002.4,
-   "voucher_total": 2834639.31,
-   "voucher_tax": 84383.4,
-   "voucher_count": 4,
-   "line_count": 20
+   "fy": "2026-27",
+   "month_start": "2026-04-01",
+   "gross_sales": 12244255,
+   "credit_notes": 1500000,
+   "net_sales": 10744255,
+   "gross_purchases": 8809653,
+   "debit_notes": 30384,
+   "net_purchases": 8779269,
+   "output_tax": 2203966,
+   "input_tax": 1585737,
+   "sale_vouchers": 96,
+   "purchase_vouchers": 210
   },
   {
-   "fy": "2025-26",
-   "month_start": "2025-10-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 705754.15,
-   "voucher_total": 1570688.41,
-   "voucher_tax": 49376.61,
-   "voucher_count": 31,
-   "line_count": 152
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-10-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 392965.2,
-   "voucher_total": 271594.57,
-   "voucher_tax": 168804.28,
-   "voucher_count": 18,
-   "line_count": 135
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-11-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 1202413.0,
-   "voucher_total": 1936404.39,
-   "voucher_tax": 39631.23,
-   "voucher_count": 35,
-   "line_count": 147
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-11-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 549379.33,
-   "voucher_total": 2198762.58,
-   "voucher_tax": 228803.81,
-   "voucher_count": 33,
-   "line_count": 74
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-12-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 3275031.36,
-   "voucher_total": 3415307.79,
-   "voucher_tax": 85739.97,
-   "voucher_count": 16,
-   "line_count": 69
-  },
-  {
-   "fy": "2025-26",
-   "month_start": "2025-12-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 3011348.65,
-   "voucher_total": 3907793.36,
-   "voucher_tax": 158305.66,
-   "voucher_count": 27,
-   "line_count": 29
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2025-01-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 2020238.62,
-   "voucher_total": 2798046.94,
-   "voucher_tax": 234751.63,
-   "voucher_count": 15,
-   "line_count": 29
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2025-01-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 2478880.04,
-   "voucher_total": 1460737.17,
-   "voucher_tax": 202429.62,
-   "voucher_count": 22,
-   "line_count": 169
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2025-02-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 2357494.45,
-   "voucher_total": 247383.01,
-   "voucher_tax": 36985.08,
-   "voucher_count": 20,
-   "line_count": 182
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2025-02-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 578172.47,
-   "voucher_total": 1027235.15,
-   "voucher_tax": 157092.01,
-   "voucher_count": 36,
-   "line_count": 83
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2025-03-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 1965718.84,
-   "voucher_total": 1972088.79,
-   "voucher_tax": 53180.8,
-   "voucher_count": 38,
-   "line_count": 61
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2025-03-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 1384363.71,
-   "voucher_total": 526246.19,
-   "voucher_tax": 152424.65,
-   "voucher_count": 21,
-   "line_count": 127
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-04-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 490564.12,
-   "voucher_total": 2125150.35,
-   "voucher_tax": 298490.56,
-   "voucher_count": 20,
-   "line_count": 109
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-04-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 997381.44,
-   "voucher_total": 3793231.65,
-   "voucher_tax": 78998.46,
-   "voucher_count": 40,
-   "line_count": 33
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-05-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 738614.58,
-   "voucher_total": 2191449.71,
-   "voucher_tax": 286767.29,
-   "voucher_count": 11,
-   "line_count": 164
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-05-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 3316824.64,
-   "voucher_total": 2133228.54,
-   "voucher_tax": 268321.4,
-   "voucher_count": 26,
-   "line_count": 69
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-06-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 2091974.22,
-   "voucher_total": 3529351.88,
-   "voucher_tax": 130342.55,
-   "voucher_count": 13,
-   "line_count": 10
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-06-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 3809846.37,
-   "voucher_total": 2790034.84,
-   "voucher_tax": 133517.41,
-   "voucher_count": 12,
-   "line_count": 116
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-07-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 1507048.56,
-   "voucher_total": 1401096.57,
-   "voucher_tax": 255264.69,
-   "voucher_count": 3,
-   "line_count": 93
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-07-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 3052789.36,
-   "voucher_total": 3388621.02,
-   "voucher_tax": 53611.58,
-   "voucher_count": 15,
-   "line_count": 192
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-08-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 244542.15,
-   "voucher_total": 3011649.74,
-   "voucher_tax": 90899.42,
-   "voucher_count": 7,
-   "line_count": 110
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-08-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 1682612.06,
-   "voucher_total": 3505893.33,
-   "voucher_tax": 41392.19,
-   "voucher_count": 30,
-   "line_count": 80
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-09-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 3446170.01,
-   "voucher_total": 1266423.28,
-   "voucher_tax": 34452.9,
-   "voucher_count": 21,
-   "line_count": 172
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-09-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 3755241.58,
-   "voucher_total": 1147433.92,
-   "voucher_tax": 94403.84,
-   "voucher_count": 35,
-   "line_count": 90
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-10-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 921426.38,
-   "voucher_total": 1618727.28,
-   "voucher_tax": 287726.27,
-   "voucher_count": 4,
-   "line_count": 171
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-10-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 1720158.31,
-   "voucher_total": 3527760.21,
-   "voucher_tax": 175162.83,
-   "voucher_count": 16,
-   "line_count": 194
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-11-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 506192.21,
-   "voucher_total": 3747168.34,
-   "voucher_tax": 135048.08,
-   "voucher_count": 11,
-   "line_count": 174
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-11-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 3504019.62,
-   "voucher_total": 2045185.31,
-   "voucher_tax": 275333.47,
-   "voucher_count": 38,
-   "line_count": 42
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-12-01",
-   "doc_type": "Sales Invoice",
-   "line_amount": 848898.65,
-   "voucher_total": 1776493.27,
-   "voucher_tax": 98888.89,
-   "voucher_count": 19,
-   "line_count": 199
-  },
-  {
-   "fy": "2024-25",
-   "month_start": "2024-12-01",
-   "doc_type": "Purchase Bill",
-   "line_amount": 3007232.06,
-   "voucher_total": 2680707.73,
-   "voucher_tax": 133738.59,
-   "voucher_count": 18,
-   "line_count": 87
+   "fy": "2026-27",
+   "month_start": "2026-09-01",
+   "gross_sales": 8000000,
+   "credit_notes": 663948,
+   "net_sales": 7336052,
+   "gross_purchases": 5000000,
+   "debit_notes": 25000,
+   "net_purchases": 4975000,
+   "output_tax": 1440000,
+   "input_tax": 900000,
+   "sale_vouchers": 62,
+   "purchase_vouchers": 148
   }
  ],
  "rpc:busy_gst_ledger": [
@@ -4673,18 +4249,37 @@
    "this_fy": 0,
    "last_fy": 490936,
    "change_pct": -100,
+   "lifetime_gross": 5987562,
+   "lifetime_credit_notes": 0,
    "lifetime": 5987562,
    "invoices": 84,
+   "credit_note_count": 0,
    "last_sale": "2026-03-18",
    "quiet_days": 185
+  },
+  {
+   "customer": "GURSEWAK SINGH NIJJAR",
+   "this_fy": 1200000,
+   "last_fy": 0,
+   "change_pct": null,
+   "lifetime_gross": 2300000,
+   "lifetime_credit_notes": 1100000,
+   "lifetime": 1200000,
+   "invoices": 6,
+   "credit_note_count": 1,
+   "last_sale": "2026-05-14",
+   "quiet_days": 128
   },
   {
    "customer": "ATLAS CYCLE HARYANA LTD.",
    "this_fy": 0,
    "last_fy": 0,
    "change_pct": null,
+   "lifetime_gross": 15808968,
+   "lifetime_credit_notes": 0,
    "lifetime": 15808968,
    "invoices": 76,
+   "credit_note_count": 0,
    "last_sale": "2020-09-07",
    "quiet_days": 2203
   },
@@ -4693,20 +4288,13 @@
    "this_fy": 1842000,
    "last_fy": 1203500,
    "change_pct": 53.1,
+   "lifetime_gross": 9450400,
+   "lifetime_credit_notes": 330000,
    "lifetime": 9120400,
    "invoices": 51,
+   "credit_note_count": 2,
    "last_sale": "2026-09-08",
    "quiet_days": 11
-  },
-  {
-   "customer": "HINDON METAFORMS PVT.LTD",
-   "this_fy": 0,
-   "last_fy": 28285,
-   "change_pct": -100,
-   "lifetime": 1944820,
-   "invoices": 37,
-   "last_sale": "2026-03-25",
-   "quiet_days": 178
   }
  ],
  "rpc:busy_customer_detail": {
@@ -4714,22 +4302,23 @@
   "customer": "SPUR TECHNOLOGIES PVT. LTD.",
   "years": [
    {
-    "fy": "2022-23",
-    "value": 1204000,
-    "invoices": 18
-   },
-   {
     "fy": "2023-24",
+    "gross": 1876300,
+    "credit_notes": 0,
     "value": 1876300,
     "invoices": 24
    },
    {
     "fy": "2024-25",
+    "gross": 2616326,
+    "credit_notes": 200000,
     "value": 2416326,
     "invoices": 31
    },
    {
     "fy": "2025-26",
+    "gross": 490936,
+    "credit_notes": 0,
     "value": 490936,
     "invoices": 11
    }
@@ -4737,15 +4326,19 @@
   "invoices": [
    {
     "date": "2026-03-18",
-    "vch_no": "REF/2025-26/281",
+    "vch_no": "281",
+    "kind": "sale",
+    "what": "Sales Invoice",
     "net": 84000,
     "gross": 99120
    },
    {
-    "date": "2026-01-22",
-    "vch_no": "REF/2025-26/196",
-    "net": 146500,
-    "gross": 172870
+    "date": "2025-11-02",
+    "vch_no": "144",
+    "kind": "credit_note",
+    "what": "Credit Note",
+    "net": 200000,
+    "gross": 236000
    }
   ],
   "items": [
@@ -4765,7 +4358,9 @@
   {
    "item": "INCLINED SLAT CONVEYOR",
    "times_sold": 34,
-   "total_value": 18840700,
+   "gross_value": 18840700,
+   "credit_notes": 1635000,
+   "total_value": 17205700,
    "last_sold_to": "GURSEWAK SINGH NIJJAR",
    "last_sold_on": "2026-05-14",
    "last_rate": 1200000
@@ -4773,6 +4368,8 @@
   {
    "item": "SKD (CYCLE ASSEMBLY CONVEYOR)",
    "times_sold": 15,
+   "gross_value": 11408907,
+   "credit_notes": 0,
    "total_value": 11408907,
    "last_sold_to": "AVON NEWAGE CYCLES PVT.LTD",
    "last_sold_on": "2024-12-02",
@@ -4781,7 +4378,9 @@
   {
    "item": "GOODS LIFT",
    "times_sold": 23,
-   "total_value": 11172500,
+   "gross_value": 11172500,
+   "credit_notes": 650000,
+   "total_value": 10522500,
    "last_sold_to": "R.S.INDUSTRIES",
    "last_sold_on": "2026-09-07",
    "last_rate": 250000
@@ -4789,6 +4388,8 @@
   {
    "item": "FABRICATED MATERIALS",
    "times_sold": 88,
+   "gross_value": 3487484,
+   "credit_notes": 0,
    "total_value": 3487484,
    "last_sold_to": "HERO MOTORS LIMITED",
    "last_sold_on": "2025-03-12",
@@ -4804,7 +4405,8 @@
    "qty": 1,
    "rate": 1200000,
    "amount": 1200000,
-   "is_lump_sum": false
+   "is_lump_sum": false,
+   "is_return": false
   },
   {
    "vch_date": "2024-08-02",
@@ -4814,7 +4416,19 @@
    "qty": 1,
    "rate": 680000,
    "amount": 680000,
-   "is_lump_sum": false
+   "is_lump_sum": false,
+   "is_return": false
+  },
+  {
+   "vch_date": "2026-06-02",
+   "party": "GURSEWAK SINGH NIJJAR",
+   "vch_no": "CN/26-27/1",
+   "description": "returned \u2014 L 24 FT X 3 FT W",
+   "qty": 1,
+   "rate": 1100000,
+   "amount": 1100000,
+   "is_lump_sum": false,
+   "is_return": true
   }
  ],
  "rpc:busy_item_price_history": [

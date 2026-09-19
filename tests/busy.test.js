@@ -1725,6 +1725,52 @@ async function openBusy(server, browser, user) {
     await p2.close();
   }
 
+  /* ---------- A SALES FIGURE IS TAXABLE, AND NET OF RETURNS ----------
+     He checked 2026-27 against a number he already knew. The screen said
+     2.39 crore; the truth is 1.8 crore. Two faults, both mine: the figure
+     carried GST, and it never subtracted what came back -- ten credit
+     notes worth 21.6 lakh, including 11 lakh from Gursewak Singh Nijjar.
+
+     These three numbers are HIS, verified against Busy:
+         gross 2,02,44,255  -  credit notes 21,63,948  =  net 1,80,80,307
+     so the fixture carries them and the screen is held to them. */
+  {
+    const { page: p3 } = await openBusy(server, browser, OWNER);
+    await p3.waitForTimeout(1300);
+    await H.go(p3, 'reports', 'REF');
+    await p3.waitForTimeout(1300);
+
+    const kpi = await p3.evaluate(() => {
+      const first = document.querySelector('#kpis .kpi');
+      return first ? first.textContent.replace(/\s+/g, ' ').trim() : '';
+    });
+    const digits = t => (t.match(/[\d,]{6,}/g) || []).map(x => Number(x.replace(/,/g, '')));
+    const shown = digits(kpi);
+    record('the headline sales figure is NET, not gross and not GST-inclusive',
+      shown.includes(18080307) && !shown.includes(23887252), kpi.slice(0, 90));
+    record('and the deduction is shown on the card, not hidden',
+      shown.includes(20244255) && shown.includes(2163948) && /credit notes/i.test(kpi),
+      kpi.slice(0, 120));
+    record('the card says the figure excludes GST',
+      /excluding GST/i.test(kpi));
+
+    // No screen anywhere may print the GST-inclusive total as a sale.
+    const anywhere = await p3.evaluate(() =>
+      document.getElementById('view-reports').textContent.replace(/\s+/g, ' '));
+    record('the GST-inclusive total appears nowhere on the reports screen',
+      !/2,38,87,252|23887252/.test(anywhere));
+
+    // Sum the parts, compare against the whole -- his rule, now standard.
+    await p3.evaluate(() => document.querySelector('.rep-tab[data-rep="items"]').click());
+    await p3.waitForTimeout(900);
+    const recon = await p3.evaluate(() => document.getElementById('itemCount').textContent
+      .replace(/\s+/g, ' ').trim());
+    record('the items report sums its parts and compares them with the whole',
+      /net sales/i.test(recon) && /cannot be put against a machine|they agree/i.test(recon),
+      recon.slice(0, 130));
+    await p3.close();
+  }
+
   /* ---------- NEITHER FIRM'S NUMBER ON THE OTHER FIRM'S PAPER ----------
      The ledger prints on a letterhead, and that sheet goes to a customer.
      Putting REF's GSTIN on an RS ledger is not a formatting slip: it is a

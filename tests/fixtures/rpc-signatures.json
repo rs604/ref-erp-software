@@ -1,6 +1,6 @@
 {
  "_refresh": "see tests/check-rpc-calls.js",
- "_taken_from": "public schema of refcon-erp, 19 Sep 2026, after migration 67",
+ "_taken_from": "public schema of refcon-erp, 19 Sep 2026, after migration 70",
  "functions": {
   "busy_clear_history": {
    "args": [
@@ -106,6 +106,21 @@
     "p_rows"
    ],
    "total": 4,
+   "with_defaults": 0
+  },
+  "busy_is_tax_line": {
+   "args": [
+    "p_group"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_is_value_line": {
+   "args": [
+    "p_group",
+    "p_ledger"
+   ],
+   "total": 2,
    "with_defaults": 0
   },
   "busy_item_price_history": {
@@ -226,6 +241,13 @@
     "p_words"
    ],
    "total": 2,
+   "with_defaults": 0
+  },
+  "busy_vouchers": {
+   "args": [
+    "p_company"
+   ],
+   "total": 1,
    "with_defaults": 0
   },
   "busy_word_matches": {

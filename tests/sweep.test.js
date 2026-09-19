@@ -313,6 +313,7 @@ async function look(page, name, file) {
   await look(desk, 'DESK — ledger', 'desk-ledger');
   await H.go(desk, 'reports', 'REF');
   await desk.waitForTimeout(1200);
+  await look(desk, 'DESK — reports > month by month', 'desk-reports-months');
   for (const tab of ['customers', 'items', 'materials']) {
     await desk.evaluate(t => {
       const b = document.querySelector('.rep-tab[data-rep="' + t + '"]');

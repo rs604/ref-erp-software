@@ -761,7 +761,10 @@
               <thead><tr>
                 <th style="width:44px">Sr.</th><th>Customer</th>
                 <th style="width:120px">This FY</th><th style="width:120px">Last FY</th>
-                <th style="width:96px">Change</th><th style="width:130px">Lifetime</th>
+                <th style="width:96px">Change</th>
+                <th style="width:130px">Lifetime gross</th>
+                <th style="width:120px">less returns</th>
+                <th style="width:130px">Lifetime net</th>
                 <th style="width:82px">Invoices</th><th style="width:120px">Quiet for</th>
               </tr></thead>
               <tbody id="custRows"></tbody>
@@ -784,9 +787,12 @@
             <table class="tbl">
               <thead><tr>
                 <th style="width:44px">Sr.</th><th>Item</th>
-                <th style="width:92px">Times sold</th><th style="width:140px">Total value</th>
+                <th style="width:88px">Times sold</th>
+                <th style="width:130px">Gross</th>
+                <th style="width:120px">less returns</th>
+                <th style="width:140px">Net value</th>
                 <th>Last sold to</th><th style="width:100px">When</th>
-                <th style="width:120px">At what rate</th>
+                <th style="width:118px">At what rate</th>
               </tr></thead>
               <tbody id="itemRows"></tbody>
             </table>
@@ -2382,6 +2388,7 @@ upload_token = (shown on the download screen)</pre>
 
   /* ================= THE THREE CUSTOMER REPORTS ====================== */
   var repTab = 'months', custRows = [], custPage = 1, itemRows = [], itemPage = 1;
+  var reportWhole = null;   // net sales for the parts-against-the-whole check
   var quietPick = 0;
   var REP_PAGE = 50;
 
@@ -2444,8 +2451,8 @@ upload_token = (shown on the download screen)</pre>
     var from = (custPage - 1) * REP_PAGE, slice = list.slice(from, from + REP_PAGE);
 
     $('custCount').textContent = list.length + ' of ' + all.length +
-      ' customers — ' + (firm === 'REF' ? 'Raghbir Erectors & Fabricators' : 'R. S. Industries') +
-      ' only. Value excludes GST.';
+      ' customers — ' + (firm === 'REF' ? 'Raghbir Erectors & Fabricators' : 'RS Industries') +
+      ' only. Taxable value, excluding GST, net of credit notes.';
 
     $('custRows').innerHTML = slice.map(function (r, i) {
       return '<tr class="cust-row" data-cust="' + esc(r.customer) + '">' +
@@ -2454,10 +2461,14 @@ upload_token = (shown on the download screen)</pre>
         '<td class="r">' + moneyShort(r.this_fy) + '</td>' +
         '<td class="r">' + moneyShort(r.last_fy) + '</td>' +
         '<td class="r">' + changeCell(r.change_pct) + '</td>' +
-        '<td class="r">' + moneyShort(r.lifetime) + '</td>' +
+        '<td class="r">' + moneyShort(r.lifetime_gross) + '</td>' +
+        '<td class="r">' + (Number(r.lifetime_credit_notes)
+              ? '<span class="down">−' + inr.format(Math.round(r.lifetime_credit_notes)) +
+                '</span><span class="missing"> ' + r.credit_note_count + '</span>' : '') + '</td>' +
+        '<td class="r"><strong>' + moneyShort(r.lifetime) + '</strong></td>' +
         '<td class="r">' + r.invoices + '</td>' +
         '<td>' + quietWords(r.quiet_days) + '</td></tr>';
-    }).join('') || '<tr><td colspan="8" class="loading">No customers in this list.</td></tr>';
+    }).join('') || '<tr><td colspan="10" class="loading">No customers in this list.</td></tr>';
 
     $('custCards').innerHTML = slice.map(function (r) {
       return '<div class="rc cust-row" data-cust="' + esc(r.customer) + '">' +
@@ -2465,6 +2476,9 @@ upload_token = (shown on the download screen)</pre>
         '<div class="rc-date">' + quietWords(r.quiet_days) + '</div></div>' +
         '<div class="rc-desc">This FY ' + moneyShort(r.this_fy) +
           ' · Last FY ' + moneyShort(r.last_fy) + ' · ' + changeCell(r.change_pct) + '</div>' +
+        (Number(r.lifetime_credit_notes)
+          ? '<div class="rc-desc">' + moneyShort(r.lifetime_gross) + ' gross − ' +
+            moneyShort(r.lifetime_credit_notes) + ' returned</div>' : '') +
         '<div class="rc-money"><div class="rc-calc">' + r.invoices + ' invoices</div>' +
         '<div class="rc-amt">' + moneyShort(r.lifetime) + '</div></div></div>';
     }).join('');
@@ -2492,14 +2506,18 @@ upload_token = (shown on the download screen)</pre>
           '<div class="card"><div style="display:flex; align-items:baseline; gap:10px;">' +
           '<div style="font-weight:600; font-size:15px; flex:1;">' + esc(name) + '</div>' +
           '<button type="button" class="btn btn-outline btn-sm" id="custClose">Close</button></div>' +
-          '<div class="method">Year by year, excluding GST.</div>' +
+          '<div class="method">Year by year. Taxable value, excluding GST, ' +
+          'net of credit notes.</div>' +
           '<div style="margin-top:12px">' + years.map(function (y) {
             return '<div style="display:flex; align-items:center; gap:10px; margin:5px 0;">' +
               '<div style="flex:0 0 62px; font-size:12px; color:var(--muted)">' + esc(y.fy) + '</div>' +
               '<div style="flex:1; background:var(--surface-sunken); border-radius:3px; height:16px;">' +
                 '<div style="height:16px; border-radius:3px; background:var(--steel); width:' +
                   Math.max(1, Math.round(Number(y.value) / top * 100)) + '%"></div></div>' +
-              '<div style="flex:0 0 116px; text-align:right; font-variant-numeric:tabular-nums;">' +
+              '<div style="flex:0 0 190px; text-align:right; font-variant-numeric:tabular-nums;">' +
+                (Number(y.credit_notes)
+                  ? '<span class="missing">' + moneyShort(y.gross) + ' − ' +
+                    moneyShort(y.credit_notes) + ' = </span>' : '') +
                 moneyShort(y.value) + '</div></div>';
           }).join('') + '</div>' +
           '<div style="font-weight:600; margin:14px 0 6px">What he buys most</div>' +
@@ -2509,13 +2527,20 @@ upload_token = (shown on the download screen)</pre>
                    return { cells: [esc(t.item), String(t.times), moneyShort(t.value)] };
                  }), 'No item lines for this customer.') +
           '<div style="font-weight:600; margin:14px 0 6px">Every invoice, newest first</div>' +
-          twoWay([{ label: 'Voucher no', cls: 'l' },
-                  { label: 'Excl GST', w: '130px', cls: 'r' },
-                  { label: 'Incl GST', w: '130px', cls: 'r' },
+          twoWay([{ label: 'Document', cls: 'l' },
+                  { label: 'Taxable', w: '130px', cls: 'r' },
+                  { label: 'With GST', w: '130px', cls: 'r' },
                   { label: 'Date', w: '96px' }],
                  invs.map(function (v) {
-                   return { cells: [esc(v.vch_no || ''), moneyShort(v.net),
-                                    moneyShort(v.gross), dmy(v.date)] };
+                   var back = v.kind === 'credit_note';
+                   return { cells: [
+                     esc(v.what || '') +
+                       (back ? ' <span class="pill pill-amber">returned</span>' : ''),
+                     (back ? '<span class="down">−' + inr.format(Math.round(v.net)) + '</span>'
+                           : moneyShort(v.net)),
+                     (back ? '<span class="down">−' + inr.format(Math.round(v.gross)) + '</span>'
+                           : moneyShort(v.gross)),
+                     dmy(v.date)] };
                  }), 'No invoices.') + '</div>';
         if ($('custClose')) $('custClose').onclick = function () { box.style.display = 'none'; };
         box.scrollIntoView({ block: 'start' });
@@ -2544,24 +2569,51 @@ upload_token = (shown on the download screen)</pre>
     var pages = Math.max(1, Math.ceil(itemRows.length / REP_PAGE));
     if (itemPage > pages) itemPage = pages;
     var from = (itemPage - 1) * REP_PAGE, slice = itemRows.slice(from, from + REP_PAGE);
-    $('itemCount').textContent = itemRows.length + ' items ever sold';
+    /* ---- SUM THE PARTS, COMPARE AGAINST THE WHOLE ----
+       His rule, and it earned its place immediately: the first version of
+       this report came out at 24.78 crore against net sales of 21.34, and
+       this line is what said so. The cause was `doc_type like 'Sales%'`
+       also matching SALES ORDER -- 3.52 crore of things merely ordered.
+
+       A difference remains, and it is named rather than hidden: invoice
+       lines that carry no item name, which are service charges and
+       freight, and credit notes with no item line. They are real sales
+       value; there is simply no machine to put them against. */
+    var partsNet = itemRows.reduce(function (a, r) { return a + Number(r.total_value || 0); }, 0);
+    var whole = reportWhole && reportWhole.net_sales;
+    var gap = whole ? whole - partsNet : 0;
+    $('itemCount').innerHTML = itemRows.length + ' items ever sold · ' +
+      moneyShort(partsNet) + ' net' +
+      (whole ? ' against ' + moneyShort(whole) + ' of net sales' : '') +
+      (Math.abs(gap) > 1
+        ? ' — <strong>' + moneyShort(Math.abs(gap)) + '</strong> of it is on invoice lines that ' +
+          'name no item (service charges, freight) and on credit notes with no item line, ' +
+          'so it cannot be put against a machine'
+        : (whole ? ' — they agree' : ''));
+
     $('itemRows').innerHTML = slice.map(function (r, i) {
       return '<tr class="item-row" data-item="' + esc(r.item) + '">' +
         '<td>' + (from + i + 1) + '</td>' +
         '<td class="l"><a href="#" class="item-open">' + esc(r.item) + '</a></td>' +
         '<td>' + r.times_sold + '</td>' +
-        '<td class="r">' + moneyShort(r.total_value) + '</td>' +
+        '<td class="r">' + moneyShort(r.gross_value) + '</td>' +
+        '<td class="r">' + (Number(r.credit_notes)
+              ? '<span class="down">−' + inr.format(Math.round(r.credit_notes)) + '</span>' : '') + '</td>' +
+        '<td class="r"><strong>' + moneyShort(r.total_value) + '</strong></td>' +
         '<td class="l">' + esc(r.last_sold_to || '') + '</td>' +
         '<td>' + dmy(r.last_sold_on) + '</td>' +
         '<td class="r">' + (Number(r.last_rate) ? moneyShort(r.last_rate)
                             : '<span class="missing">no rate · one job</span>') + '</td></tr>';
-    }).join('') || '<tr><td colspan="7" class="loading">Nothing sold yet.</td></tr>';
+    }).join('') || '<tr><td colspan="9" class="loading">Nothing sold yet.</td></tr>';
 
     $('itemCards').innerHTML = slice.map(function (r) {
       return '<div class="rc item-row" data-item="' + esc(r.item) + '">' +
         '<div class="rc-top"><div class="rc-party">' + esc(r.item) + '</div>' +
         '<div class="rc-date">' + dmy(r.last_sold_on) + '</div></div>' +
         '<div class="rc-desc">Last to ' + esc(r.last_sold_to || '—') + '</div>' +
+        (Number(r.credit_notes)
+          ? '<div class="rc-desc">' + moneyShort(r.gross_value) + ' gross − ' +
+            moneyShort(r.credit_notes) + ' returned</div>' : '') +
         '<div class="rc-money"><div class="rc-calc">sold ' + r.times_sold + ' times</div>' +
         '<div class="rc-amt">' + moneyShort(r.total_value) + '</div></div></div>';
     }).join('');
@@ -2590,13 +2642,16 @@ upload_token = (shown on the download screen)</pre>
                   { label: 'Date', w: '96px' }],
                  rows.map(function (r) {
                    return { cells: [
-                     esc(r.party || ''),
+                     esc(r.party || '') +
+                       (r.is_return ? ' <span class="pill pill-amber">returned</span>' : ''),
                      '<span class="clip"' + (r.description ? ' title="' + esc(r.description) + '"' : '') +
                        '>' + esc(r.description || '') + '</span>',
                      (r.qty === null ? '' : inr2.format(r.qty)),
                      (r.is_lump_sum || !Number(r.rate)
                         ? '<span class="missing">no rate · one job</span>' : moneyShort(r.rate)),
-                     moneyShort(r.amount), dmy(r.vch_date)] };
+                     (r.is_return ? '<span class="down">−' + inr.format(Math.round(r.amount)) +
+                        '</span>' : moneyShort(r.amount)),
+                     dmy(r.vch_date)] };
                  }), 'No sales.') + '</div>';
         if ($('itemClose')) $('itemClose').onclick = function () { box.style.display = 'none'; };
         box.scrollIntoView({ block: 'start' });
@@ -2871,6 +2926,20 @@ upload_token = (shown on the download screen)</pre>
     return dt.getMonth() >= 3 ? dt.getFullYear() : dt.getFullYear() - 1;
   }
 
+  /* ---- MONTH BY MONTH: THREE FIGURES, NOT ONE ----------------------
+
+     Every sales figure this screen showed was wrong, and wrong in the
+     flattering direction, on two counts he found against a number he
+     already knew:
+
+       1. it carried GST. A business owner thinks in TAXABLE VALUE.
+       2. it never subtracted what came back. Ten credit notes in
+          2026-27 alone, 21.6 lakh, including 11 lakh from Gursewak
+          Singh Nijjar and 3.85 lakh from Yanmar.
+
+     So the deduction is never hidden. Three figures, always:
+         Gross sales  ·  less credit notes  ·  NET SALES
+     and the same shape on purchases with debit notes.                */
   function buildReports(rows) {
     if (!rows.length) {
       $('kpis').innerHTML = '<div class="loading">Nothing loaded yet.</div>';
@@ -2879,40 +2948,50 @@ upload_token = (shown on the download screen)</pre>
     var fys = rows.map(function (r) { return fyOf(r.month_start); });
     var thisFy = Math.max.apply(null, fys), lastFy = thisFy - 1;
 
-    function total(fy, type) {
-      return rows.filter(function (r) { return fyOf(r.month_start) === fy && r.doc_type === type; })
-                 .reduce(function (a, r) { return a + Number(r.line_amount || 0); }, 0);
+    function sum(fy, field) {
+      return rows.filter(function (r) { return fyOf(r.month_start) === fy; })
+                 .reduce(function (a, r) { return a + Number(r[field] || 0); }, 0);
     }
-    var salesNow = total(thisFy, 'Sales Invoice'), salesPrev = total(lastFy, 'Sales Invoice');
-    var buyNow  = total(thisFy, 'Purchase Bill'), buyPrev  = total(lastFy, 'Purchase Bill');
+    var sNow = sum(thisFy, 'net_sales'),     sPrev = sum(lastFy, 'net_sales');
+    var pNow = sum(thisFy, 'net_purchases'), pPrev = sum(lastFy, 'net_purchases');
 
-    function kpi(k, v, extra) {
-      return '<div class="kpi"><div class="k">' + k + '</div><div class="v">' + v + '</div>' +
-             (extra || '') + '</div>';
-    }
+    function fyName(y) { return 'FY ' + y + '-' + String(y + 1).slice(2); }
     function delta(now, prev) {
       if (!prev) return '';
       var pc = Math.round(((now - prev) / prev) * 100);
       return '<div class="sub ' + (pc >= 0 ? 'up' : 'down') + '">' +
              (pc >= 0 ? '+' : '') + pc + '% against last year</div>';
     }
+    /* The deduction is shown on the card itself, under the number, so
+       nobody has to go looking for why net is not gross. */
+    function netKpi(label, gross, notes, net, notesWord, extra) {
+      return '<div class="kpi kpi-lead"><div class="k">' + label + '</div>' +
+        '<div class="v">' + moneyShort(net) + '</div>' + (extra || '') +
+        '<div class="method">' + moneyShort(gross) + ' gross' +
+        (notes ? ' &nbsp;−&nbsp; ' + moneyShort(notes) + ' ' + notesWord : '') +
+        '<br>excluding GST</div></div>';
+    }
     $('kpis').innerHTML =
-      kpi('Sales, FY ' + thisFy + '-' + String(thisFy + 1).slice(2), moneyShort(salesNow), delta(salesNow, salesPrev)) +
-      kpi('Purchases, FY ' + thisFy + '-' + String(thisFy + 1).slice(2), moneyShort(buyNow), delta(buyNow, buyPrev)) +
-      kpi('Sales, FY ' + lastFy + '-' + String(lastFy + 1).slice(2), moneyShort(salesPrev)) +
-      kpi('Purchases, FY ' + lastFy + '-' + String(lastFy + 1).slice(2), moneyShort(buyPrev));
+      netKpi('Net sales, ' + fyName(thisFy), sum(thisFy,'gross_sales'),
+             sum(thisFy,'credit_notes'), sNow, 'credit notes', delta(sNow, sPrev)) +
+      netKpi('Net purchases, ' + fyName(thisFy), sum(thisFy,'gross_purchases'),
+             sum(thisFy,'debit_notes'), pNow, 'debit notes', delta(pNow, pPrev)) +
+      netKpi('Net sales, ' + fyName(lastFy), sum(lastFy,'gross_sales'),
+             sum(lastFy,'credit_notes'), sPrev, 'credit notes') +
+      netKpi('Net purchases, ' + fyName(lastFy), sum(lastFy,'gross_purchases'),
+             sum(lastFy,'debit_notes'), pPrev, 'debit notes');
 
     var names = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
-    function monthTotal(fy, monthIdx, type) {
+    function monthly(fy, monthIdx, field) {
       var real = (monthIdx + 3) % 12;
       return rows.filter(function (r) {
         var d = new Date(r.month_start);
-        return fyOf(r.month_start) === fy && d.getMonth() === real && r.doc_type === type;
-      }).reduce(function (a, r) { return a + Number(r.line_amount || 0); }, 0);
+        return fyOf(r.month_start) === fy && d.getMonth() === real;
+      }).reduce(function (a, r) { return a + Number(r[field] || 0); }, 0);
     }
     $('yoyRows').innerHTML = names.map(function (m, i) {
-      var sN = monthTotal(thisFy, i, 'Sales Invoice'), sP = monthTotal(lastFy, i, 'Sales Invoice');
-      var pN = monthTotal(thisFy, i, 'Purchase Bill'), pP = monthTotal(lastFy, i, 'Purchase Bill');
+      var sN = monthly(thisFy, i, 'net_sales'),     sP = monthly(lastFy, i, 'net_sales');
+      var pN = monthly(thisFy, i, 'net_purchases'), pP = monthly(lastFy, i, 'net_purchases');
       function diff(a, b) {
         if (!a && !b) return '';
         var d = a - b;
@@ -2928,12 +3007,12 @@ upload_token = (shown on the download screen)</pre>
         '<td class="r">' + diff(pN, pP) + '</td></tr>';
     }).join('');
 
-    /* GST — estimate only, and said so on the screen. Tax is counted once
-       per voucher by the server, never once per item line. */
-    var out = rows.filter(function (r) { return fyOf(r.month_start) === thisFy && r.doc_type === 'Sales Invoice'; })
-                  .reduce(function (a, r) { return a + Number(r.voucher_tax || 0); }, 0);
-    var inp = rows.filter(function (r) { return fyOf(r.month_start) === thisFy && r.doc_type === 'Purchase Bill'; })
-                  .reduce(function (a, r) { return a + Number(r.voucher_tax || 0); }, 0);
+    /* Net sales and net purchases for the whole company, kept here so the
+       items report can check its own parts against them. */
+    reportWhole = { net_sales: rows.reduce(function (a, r) {
+                      return a + Number(r.net_sales || 0); }, 0) };
+
+    var out = sum(thisFy, 'output_tax'), inp = sum(thisFy, 'input_tax');
     $('gstKpis').innerHTML =
       '<div class="kpi"><div class="k">Output tax on sales, this FY</div><div class="v">' + moneyShort(out) + '</div></div>' +
       '<div class="kpi"><div class="k">Input tax on purchases, this FY</div><div class="v">' + moneyShort(inp) + '</div></div>' +
