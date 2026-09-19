@@ -185,7 +185,60 @@
      out of the top of this screen; this is where that room goes. */
   .tbl-wrap { overflow:auto; border:1px solid var(--border); border-radius:4px;
               max-height:calc(100vh - 210px); min-height:180px; }
+  /* A short report table does not need to be 180px tall. The floor is
+     there so the main price-history list does not jump about while it
+     loads; a four-row comparison just gets an empty strip under it. */
+  .tbl-wrap.fit { min-height:0; }
   .rowcount { font-size:12px; color:var(--muted); margin:0 2px 6px; }
+
+  /* ---------------- THE LEDGER AND THE REPORTS ---------------- */
+  /* Four cards across at a desk, two rows of two on a phone. The plain
+     .kpis goes to a single column on a phone, which is right for three
+     unrelated figures and wrong for four that are read against each
+     other -- opening and closing belong side by side. */
+  .kpis-4 { grid-template-columns:repeat(4, 1fr); }
+  .kpi.kpi-lead .v { font-size:22px; }
+  .kpi .way { font-size:11px; font-weight:600; letter-spacing:.4px;
+              text-transform:uppercase; margin-top:2px; }
+  .way-pay { color:var(--danger); }
+  .way-rec { color:var(--green); }
+  .kpi .drcr { font-size:13px; font-weight:600; color:var(--muted); margin-left:3px; }
+  .kpis-4 .v { white-space:nowrap; }
+
+  .lg-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+  .lg-pick { flex:1 1 320px; min-width:0; }
+  .lg-dates { display:flex; gap:8px; align-items:flex-end; }
+  .lg-ranges { display:flex; gap:6px; flex-wrap:wrap; }
+  .lg-acts { margin-left:auto; display:flex; gap:8px; }
+  .lg-party input { width:100%; }
+  /* A cell in a control row. It grows sideways at a desk and is sized by its
+     content on a phone -- written here rather than inline, because an inline
+     flex-basis beats the media query that has to undo it, and a basis meant
+     as a width becomes a HEIGHT the moment the row turns into a column. */
+  .lg-cell { flex:0 0 auto; }
+  .lg-grow { flex:1 1 220px; }
+
+  /* The opening and closing lines are the ledger's own rows, not entries.
+     Shaded so the eye finds where the range starts and stops. */
+  tr.lg-edge td { background:var(--row-head) !important; font-weight:600; }
+  tr.lg-edge td.l { color:#16222c; }
+  .drcr-sfx { font-size:11px; color:var(--muted); margin-left:3px; font-weight:600; }
+
+  /* Report tabs. Same pattern as the HR tabs in admin: they scroll
+     sideways rather than wrapping into an overlapping heap. */
+  .rep-tabs { display:flex; gap:2px; border-bottom:1px solid var(--border);
+              margin-bottom:14px; overflow-x:auto; flex-wrap:nowrap;
+              -webkit-overflow-scrolling:touch; }
+  .rep-tab { flex:0 0 auto; background:none; border:none; cursor:pointer;
+             padding:9px 14px; font-size:13px; font-weight:600; color:var(--muted);
+             border-bottom:2px solid transparent; white-space:nowrap; }
+  .rep-tab.on { color:var(--steel); border-bottom-color:var(--steel); }
+  .up { color:var(--green); } .down { color:var(--danger); }
+  .quiet-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+
+  /* The method under a number, so nobody has to guess which average it is. */
+  .method { font-size:11.5px; color:var(--muted); margin-top:4px; }
+  .warn-note { border-left-color:var(--amber); background:var(--amber-bg); }
 
   .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
   .kpi { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:12px; }
@@ -401,8 +454,13 @@
     #sheetChips .chip { width:100%; }
     #sheetDates input { width:100%; }
 
-    /* A card opens where it is; the corner mark says it can. */
+    /* A card opens where it is; the corner mark says it can. A ledger card
+       has nothing folded inside it, so it must not wear the mark -- a
+       control that says it does something and then does nothing is worse
+       than no control. */
     .rc { position:relative; padding-right:26px; }
+    .rc.flat { padding-right:14px; }
+    .rc.flat::after { display:none; }
     .rc::after { content:''; position:absolute; right:12px; top:15px;
                  width:7px; height:7px; border-right:2px solid var(--muted);
                  border-bottom:2px solid var(--muted); transform:rotate(45deg);
@@ -453,7 +511,14 @@
     table.tbl { font-size:13px; }
     .desc { font-size:12.5px; }
     .pill, .kpi .k, .colmenu-note, .nav-section-label,
-    .sidebar-brand .tag, .rowcount { font-size:12px; }
+    .sidebar-brand .tag, .rowcount, .method { font-size:12px; }
+    /* label.fl, not .fl. The base rule is written label.fl, which outranks a
+       bare class, so the bump to 12px was simply ignored and the labels
+       stayed at 10.5px. */
+    label.fl { font-size:12px; }
+    /* A tab is a control, so it obeys the same 44px floor as a button. The
+       report tabs came in at 35. */
+    .rep-tab { min-height:44px; padding:11px 14px; }
     .topbar-sub, #syncStamp, .sub, .sync-stamp { font-size:12.5px; }
 
     /* ---- THE TABLE SCROLLS IN ITS OWN BOX, NOT THE PAGE ----
@@ -461,6 +526,28 @@
        for a 200-row table and took the column headings away with it. */
     .tbl-wrap { max-height:68vh; min-height:220px; overflow:auto; -webkit-overflow-scrolling:touch; }
     .kpis { grid-template-columns:1fr; }
+    /* Four figures read against each other stay two-by-two: opening beside
+       debits, credits beside closing. Closing is the one he came for, so it
+       carries the big type -- but it does NOT span the row, or the two-by-two
+       he asked for becomes three rows. */
+    .kpis-4 { grid-template-columns:1fr 1fr; }
+    .kpi.kpi-lead .v { font-size:21px; }
+    .kpi .v { overflow-wrap:anywhere; }
+
+    /* Party, then the two dates side by side, then the one-tap ranges. */
+    .lg-controls { flex-direction:column; align-items:stretch; }
+    /* flex-basis runs along the MAIN axis, and the main axis is now down the
+       page. So `flex:1 1 320px` on the party box stopped meaning "320px wide
+       at least" and started meaning "320px TALL" -- half a phone screen of
+       empty card between the name and the dates. Every child here is sized by
+       its content now. */
+    .lg-controls > *, .lg-cell, .lg-grow { flex:0 0 auto; }
+    .lg-pick, .lg-dates, .lg-ranges, .lg-acts { width:100%; }
+    .lg-dates > div { flex:1 1 0; min-width:0; }
+    .lg-dates input { width:100%; }
+    .lg-ranges .chip { flex:1 1 calc(50% - 3px); justify-content:center; }
+    .lg-acts { margin-left:0; }
+    .lg-acts .btn { flex:1 1 0; }
     .pager { flex-wrap:wrap; }
 
     /* A field tapped near the bottom must not end up under the keyboard. */
@@ -596,7 +683,139 @@
       </div>
 
       <!-- ---------------- reports ---------------- -->
+      <!-- ---------------- THE PARTY LEDGER ---------------- -->
+      <div id="view-ledger" style="display:none">
+        <div class="card lg-controls">
+          <div class="lg-pick">
+            <label class="fl" for="lgParty">Party</label>
+            <input id="lgParty" class="f" list="lgPartyList" autocomplete="off"
+                   placeholder="Type a name — supplier or customer">
+            <datalist id="lgPartyList"></datalist>
+          </div>
+          <div class="lg-dates">
+            <div><label class="fl" for="lgFrom">From</label>
+                 <input type="date" id="lgFrom" class="f dt" data-datekeys></div>
+            <div><label class="fl" for="lgTo">To</label>
+                 <input type="date" id="lgTo" class="f dt" data-datekeys></div>
+          </div>
+          <div class="chips lg-ranges" id="lgRanges">
+            <button type="button" class="chip" data-range="thisfy">This FY</button>
+            <button type="button" class="chip" data-range="lastfy">Last FY</button>
+            <button type="button" class="chip" data-range="month">This month</button>
+            <button type="button" class="chip" data-range="all">All</button>
+          </div>
+          <div class="lg-acts">
+            <button type="button" class="btn btn-outline" id="lgPrint">Print / save as PDF</button>
+            <button type="button" class="btn btn-outline" id="lgExcel">Download for Excel</button>
+          </div>
+        </div>
+
+        <div id="lgHint" class="note">
+          Pick a party above. The range starts at <strong>1 April</strong> — eleven years of
+          entries on opening is not a ledger, it is a wall.
+        </div>
+
+        <div id="lgBody" style="display:none">
+          <div class="kpis kpis-4" id="lgKpis"></div>
+          <div id="lgNotes"></div>
+
+          <div class="card" style="margin-top:14px">
+            <div class="rowcount" id="lgCount"></div>
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr>
+                  <th style="width:44px">Sr.</th>
+                  <th style="width:106px">Date</th>
+                  <th style="width:112px">Type</th>
+                  <th style="width:138px">Voucher no</th>
+                  <th>Particulars</th>
+                  <th style="width:118px">Debit</th>
+                  <th style="width:118px">Credit</th>
+                  <th style="width:140px">Balance</th>
+                </tr></thead>
+                <tbody id="lgRows"></tbody>
+              </table>
+            </div>
+            <div class="rc-list" id="lgCards"></div>
+            <div class="pager" id="lgPager"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="view-reports" style="display:none">
+        <!-- Four reports on one screen rather than four menu entries: the
+             menu order is locked in doc 11 and Reports is one line of it. -->
+        <div class="rep-tabs" id="repTabs">
+          <button type="button" class="rep-tab on" data-rep="months">Month by month</button>
+          <button type="button" class="rep-tab" data-rep="customers">Customers</button>
+          <button type="button" class="rep-tab" data-rep="items">Items sold</button>
+          <button type="button" class="rep-tab" data-rep="materials">Material prices</button>
+        </div>
+
+        <!-- ---- customers ---- -->
+        <div id="rep-customers" style="display:none">
+          <div class="quiet-chips" id="quietChips"></div>
+          <div class="rowcount" id="custCount"></div>
+          <div class="tbl-wrap fit">
+            <table class="tbl">
+              <thead><tr>
+                <th style="width:44px">Sr.</th><th>Customer</th>
+                <th style="width:120px">This FY</th><th style="width:120px">Last FY</th>
+                <th style="width:96px">Change</th><th style="width:130px">Lifetime</th>
+                <th style="width:82px">Invoices</th><th style="width:120px">Quiet for</th>
+              </tr></thead>
+              <tbody id="custRows"></tbody>
+            </table>
+          </div>
+          <div class="rc-list" id="custCards"></div>
+          <div id="custDetail" style="display:none; margin-top:14px"></div>
+        </div>
+
+        <!-- ---- items sold ---- -->
+        <div id="rep-items" style="display:none">
+          <div class="note">
+            <strong>No lowest-to-highest rate column, on purpose.</strong> An Inclined Slat
+            Conveyor runs ₹1,55,000 to ₹12,00,000 because the machine type is the item and the
+            size lives in the description. A range column would read as a pricing problem
+            where there is none. Open an item to see each sale with its size.
+          </div>
+          <div class="rowcount" id="itemCount"></div>
+          <div class="tbl-wrap fit">
+            <table class="tbl">
+              <thead><tr>
+                <th style="width:44px">Sr.</th><th>Item</th>
+                <th style="width:92px">Times sold</th><th style="width:140px">Total value</th>
+                <th>Last sold to</th><th style="width:100px">When</th>
+                <th style="width:120px">At what rate</th>
+              </tr></thead>
+              <tbody id="itemRows"></tbody>
+            </table>
+          </div>
+          <div class="rc-list" id="itemCards"></div>
+          <div id="itemDetail" style="display:none; margin-top:14px"></div>
+        </div>
+
+        <!-- ---- material prices ---- -->
+        <div id="rep-materials" style="display:none">
+          <div class="card lg-controls">
+            <div class="lg-cell">
+              <label class="fl" for="matOn">Machine sold on</label>
+              <input type="date" id="matOn" class="f dt" data-datekeys>
+            </div>
+            <div class="lg-cell">
+              <label class="fl" for="matBefore">Months before that</label>
+              <input type="number" id="matBefore" class="f sm" min="0" max="240" step="1" value="2"
+                     style="width:110px">
+            </div>
+            <div class="lg-cell lg-grow" style="align-self:flex-end">
+              <div class="method">Typed, not a fixed button — you buy before you deliver, and
+              how long before is different every time.</div>
+            </div>
+          </div>
+          <div id="matBody"></div>
+        </div>
+
+        <div id="rep-months">
         <div class="kpis" id="kpis"></div>
         <div class="card" style="margin-top:14px">
           <div style="font-weight:600; margin-bottom:8px;">This year against last year, same months</div>
@@ -610,6 +829,7 @@
               <tbody id="yoyRows"></tbody>
             </table>
           </div>
+          <div class="rc-list" id="yoyCards"></div>
         </div>
 
         <div class="card">
@@ -631,6 +851,7 @@
               <tbody id="gstRows"></tbody>
             </table>
           </div>
+          <div class="rc-list" id="gstCards"></div>
         </div>
 
         <div class="card">
@@ -643,6 +864,7 @@
           </div>
           <div class="kpis" id="gstKpis"></div>
         </div>
+        </div><!-- /rep-months -->
       </div>
 
       <!-- ---------------- deleted in busy (owner only) ---------------- -->
@@ -668,6 +890,7 @@
               <tbody id="fyRows"></tbody>
             </table>
           </div>
+          <div class="rc-list" id="fyCards"></div>
         </div>
 
         <div class="card">
@@ -687,6 +910,7 @@
               <tbody id="deletedRows"></tbody>
             </table>
           </div>
+          <div class="rc-list" id="deletedCards"></div>
         </div>
       </div>
 
@@ -749,6 +973,7 @@
               </tbody>
             </table>
           </div>
+          <div class="rc-list" id="uploadCards"></div>
         </div>
 
         <!-- ---- start again ----
@@ -922,6 +1147,7 @@ upload_token = (shown on the download screen)</pre>
   var view = 'price';
   var lastQuery = '';
 
+  var lastSyncAt = null;
   var inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
   var inr2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -1039,17 +1265,19 @@ upload_token = (shown on the download screen)</pre>
   var TITLES = {
     price:    ['Price History', 'Every past rate, newest first'],
     challans: ['Challans', 'Material sent out and brought in'],
-    reports:  ['Reports', 'Sales and purchases, month by month'],
+    ledger:   ['Ledger', 'One party, opening to closing'],
+    reports:  ['Reports', 'Sales, customers, items and what steel costs'],
     deleted:  ['Deleted in Busy', 'Rows that were here and have gone'],
     upload:   ['Load history', 'Send the Busy files up and watch them land'],
     download: ['Download the uploader', 'The program for the office PC'],
     setup:    ['Setup instructions', 'How to put it on a PC, step by step']
   };
-  var FIRM_VIEWS = { price:1, challans:1, reports:1, deleted:1 };
+  var FIRM_VIEWS = { price:1, challans:1, ledger:1, reports:1, deleted:1 };
 
   function setView(v) {
     view = v;
     $('view-search').style.display   = (v === 'price' || v === 'challans') ? '' : 'none';
+    $('view-ledger').style.display   = (v === 'ledger') ? '' : 'none';
     $('view-reports').style.display  = (v === 'reports') ? '' : 'none';
     $('view-deleted').style.display  = (v === 'deleted') ? '' : 'none';
     $('view-upload').style.display   = (v === 'upload') ? '' : 'none';
@@ -1065,6 +1293,7 @@ upload_token = (shown on the download screen)</pre>
     if (v === 'challans') { chosenTypes = ['Delivery Challan']; drawChips(); }
     else if (v === 'price') { loadTypes(); drawChips(); }
     if (v === 'reports') loadReports();
+    else if (v === 'ledger') openLedger();
     else if (v === 'deleted') loadDeleted();
     else if (v === 'upload') loadUploadScreen();
     else if (v === 'download') loadDownloadScreen();
@@ -1073,6 +1302,30 @@ upload_token = (shown on the download screen)</pre>
   }
 
   /* ---------------- what went, and which years are still checked ------- */
+  /* These four tables are WATCHED, not called. Each is written in three
+     or four places inside its loader -- the looking message, the empty
+     message, the rows when they arrive -- and several of those land later,
+     out of a promise. A mirror call after each one is four call sites per
+     table that the next person has to remember.
+
+     An observer has none. The cards are rebuilt whenever the table
+     changes, whenever that is, and a new table joins the list by adding
+     one pair of ids. */
+  var MIRRORS = [['fyRows','fyCards'], ['deletedRows','deletedCards'],
+                 ['yoyRows','yoyCards'], ['gstRows','gstCards'],
+                 ['uploadRows','uploadCards']];
+  function watchTables() {
+    MIRRORS.forEach(function (m) {
+      var body = $(m[0]);
+      if (!body) return;
+      // Once now, because a table whose rows are written into the markup
+      // never mutates and would otherwise never be mirrored at all.
+      mirrorToCards(m[0], m[1]);
+      new MutationObserver(function () { mirrorToCards(m[0], m[1]); })
+        .observe(body, { childList: true, subtree: true, characterData: true });
+    });
+  }
+
   function loadDeleted() {
     $('fyRows').innerHTML = '<tr><td colspan="6" class="loading">Looking…</td></tr>';
     $('deletedRows').innerHTML = '<tr><td colspan="10" class="loading">Looking…</td></tr>';
@@ -1144,6 +1397,7 @@ upload_token = (shown on the download screen)</pre>
         // recorded as cancelled, not completed -- but the words have to say
         // which question it is answering.
         var d = new Date(row.last_success_at);
+        lastSyncAt = row.last_success_at;   // the printed sheet says it too
         $('syncStamp').textContent = 'last checked against Busy at ' +
           d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) + ', ' +
           d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -1650,7 +1904,946 @@ upload_token = (shown on the download screen)</pre>
   }
 
   /* ---------------- reports ---------------- */
+
+  /* ================= THE PARTY LEDGER =================================
+
+     THE SIGN RULE, ONCE, HERE. Everything is debit minus credit.
+     Positive is Dr and RECEIVABLE -- they owe me. Negative is Cr and
+     PAYABLE -- I owe them. An overpaid supplier crosses into Receivable
+     by itself, which is the right answer and needs no special case.
+
+     EVERY RUNNING BALANCE CARRIES Cr OR Dr. Hindon's own year proves
+     why: it runs -4,98,178 Cr, then a receipt of 3,00,000 takes it to
+     -1,98,178 Cr, then another to +22,588 Dr. Without the suffix the
+     number simply gets smaller and then starts growing again, and
+     nothing on the screen says the debt changed sides.
+     ================================================================= */
+  var LG_PAGE = 50;
+  var lgData = null, lgPage = 1, lgParties = [], lgLoading = false;
+
+  function drcr(n) {
+    var v = Number(n || 0);
+    if (Math.abs(v) < 0.005) return { amt: 0, sfx: '', way: '', cls: '' };
+    return v > 0 ? { amt: v,  sfx: 'Dr', way: 'RECEIVABLE', cls: 'way-rec' }
+                 : { amt: -v, sfx: 'Cr', way: 'PAYABLE',    cls: 'way-pay' };
+  }
+  function bal(n) {
+    var d = drcr(n);
+    if (!d.sfx) return '0';
+    return inr2.format(d.amt) + '<span class="drcr-sfx">' + d.sfx + '</span>';
+  }
+  function fyStartOf(d) {
+    var y = d.getFullYear();
+    return new Date(d.getMonth() >= 3 ? y : y - 1, 3, 1);
+  }
+  function iso(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+           '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function setRange(which) {
+    var now = new Date(), a, b;
+    if (which === 'thisfy')      { a = fyStartOf(now); b = now; }
+    else if (which === 'lastfy') { a = new Date(fyStartOf(now).getFullYear() - 1, 3, 1);
+                                   b = new Date(fyStartOf(now).getFullYear(), 2, 31); }
+    else if (which === 'month')  { a = new Date(now.getFullYear(), now.getMonth(), 1); b = now; }
+    else                         { a = new Date(2000, 3, 1); b = now; }
+    $('lgFrom').value = iso(a);
+    $('lgTo').value   = iso(b);
+    Array.prototype.forEach.call($('lgRanges').children, function (c) {
+      c.classList.toggle('on', c.dataset.range === which);
+    });
+  }
+
+  function openLedger() {
+    if (!$('lgFrom').value) setRange('thisfy');
+    loadPartyList('');
+    if ($('lgParty').value) loadLedger();
+  }
+
+  function loadPartyList(q) {
+    return Promise.resolve(REF.supabase().rpc('busy_party_list',
+      { p_company: firm, p_query: q || null, p_limit: 300 }))
+      .then(function (res) {
+        if (!res || res.error) return;
+        lgParties = res.data || [];
+        $('lgPartyList').innerHTML = lgParties.map(function (r) {
+          return '<option value="' + esc(r.ledger) + '"></option>';
+        }).join('');
+      });
+  }
+
+  function loadLedger() {
+    var party = btrim($('lgParty').value);
+    if (!party) { $('lgHint').style.display = ''; $('lgBody').style.display = 'none'; return; }
+    if (lgLoading) return;
+    lgLoading = true;
+    $('lgHint').style.display = 'none';
+    $('lgBody').style.display = '';
+    $('lgRows').innerHTML = '<tr><td colspan="8" class="loading">Looking…</td></tr>';
+    $('lgCards').innerHTML = '<div class="loading">Looking…</div>';
+
+    guard(REF.supabase().rpc('busy_ledger', {
+            p_company: firm, p_party: party,
+            p_from: $('lgFrom').value, p_to: $('lgTo').value }),
+          intoTable('lgRows', 8), 'the ledger')
+      .then(function (res) {
+        lgLoading = false;
+        if (!res) { $('lgCards').innerHTML = ''; return; }
+        lgData = res.data;
+        lgPage = 1;
+        drawLedger();
+      });
+  }
+
+  function drawLedger() {
+    if (!lgData) return;
+    var d = lgData, rows = d.rows || [];
+
+    /* ---- the four cards ---- */
+    /* Whole rupees on the four cards, which is how he writes them himself:
+       "CLOSING — PAYABLE Rs 1,76,810 Cr". The paise are on every line of the
+       table below and in the download; on a card they push the Cr onto a
+       second line, where it reads as a separate fact rather than part of the
+       number. The word goes UNDER the figure, not into the heading, so the
+       heading stays one short line at 390px. */
+    var open = drcr(d.opening), close = drcr(d.closing);
+    $('lgKpis').innerHTML =
+      kpi('Opening', inr.format(Math.round(open.amt)), open.sfx, '', 'at ' + dmy(d.from)) +
+      kpi('Debits',  inr.format(Math.round(d.debits || 0)),  '', '', 'in this range') +
+      kpi('Credits', inr.format(Math.round(d.credits || 0)), '', '', 'in this range') +
+      kpi('Closing', inr.format(Math.round(close.amt)), close.sfx,
+          close.way ? '<div class="way ' + close.cls + '">' + close.way + '</div>' : '',
+          'at ' + dmy(d.to), 'kpi-lead');
+
+    /* ---- the notes that stop a number being a lie ---- */
+    var notes = [];
+    if (d.undated_openings) {
+      notes.push('<div class="note">Busy holds <strong>' + d.undated_openings +
+        '</strong> undated opening ' + (d.undated_openings === 1 ? 'entry' : 'entries') +
+        ' for this party. They are not listed below — they are already inside the opening ' +
+        'balance, and listing them would count the same money twice.</div>');
+    }
+    if (d.anchor_fy && d.anchor_fy !== fyLabel(d.from)) {
+      notes.push('<div class="note warn-note">Busy has no opening balance for this party in ' +
+        esc(fyLabel(d.from)) + '. The opening above is carried forward from <strong>' +
+        esc(d.anchor_fy) + '</strong> plus everything that has moved since.</div>');
+    }
+    if (!d.anchor_fy) {
+      notes.push('<div class="note warn-note">Busy has no opening balance for this party at all. ' +
+        'The opening above is counted from the first entry, which is right only if this party ' +
+        'genuinely started at nil.</div>');
+    }
+    if (d.capped) {
+      notes.push('<div class="note warn-note">More than 5,000 entries. Only the first 5,000 are ' +
+        'shown, so the closing figure below is not the whole range. Narrow the dates.</div>');
+    }
+    $('lgNotes').innerHTML = notes.join('');
+
+    /* ---- the table: opening row, entries, closing row ---- */
+    var total = rows.length;
+    var pages = Math.max(1, Math.ceil(total / LG_PAGE));
+    if (lgPage > pages) lgPage = pages;
+    var from = (lgPage - 1) * LG_PAGE, slice = rows.slice(from, from + LG_PAGE);
+
+    var html = '';
+    if (lgPage === 1) {
+      html += '<tr class="lg-edge"><td></td><td>' + dmy(d.from) + '</td><td>Opening</td>' +
+              '<td></td><td class="l">Opening balance</td><td></td><td></td>' +
+              '<td class="r">' + bal(d.opening) + '</td></tr>';
+    }
+    html += slice.map(function (r, i) {
+      return '<tr>' +
+        '<td>' + (from + i + 1) + '</td>' +
+        '<td>' + dmy(r.vch_date) + '</td>' +
+        '<td>' + esc(r.doc_type || '') + '</td>' +
+        '<td>' + (r.vch_no ? esc(r.vch_no) : '<span class="missing">no number</span>') + '</td>' +
+        '<td class="l">' + esc(r.particulars || '') + '</td>' +
+        '<td class="r">' + (Number(r.debit)  ? inr2.format(r.debit)  : '') + '</td>' +
+        '<td class="r">' + (Number(r.credit) ? inr2.format(r.credit) : '') + '</td>' +
+        '<td class="r">' + bal(r.balance) + '</td></tr>';
+    }).join('');
+    if (lgPage === pages) {
+      html += '<tr class="lg-edge"><td></td><td>' + dmy(d.to) + '</td><td>Closing</td>' +
+              '<td></td><td class="l">Closing balance' +
+              (close.way ? ' — ' + close.way : '') + '</td>' +
+              '<td class="r">' + inr2.format(d.debits || 0) + '</td>' +
+              '<td class="r">' + inr2.format(d.credits || 0) + '</td>' +
+              '<td class="r">' + bal(d.closing) + '</td></tr>';
+    }
+    if (!total) {
+      html = '<tr class="lg-edge"><td></td><td>' + dmy(d.from) + '</td><td>Opening</td><td></td>' +
+             '<td class="l">Opening balance</td><td></td><td></td><td class="r">' +
+             bal(d.opening) + '</td></tr>' +
+             '<tr><td colspan="8" class="loading">Nothing moved between these two dates.</td></tr>';
+    }
+    $('lgRows').innerHTML = html;
+
+    /* ---- the same thing as cards, for a phone ---- */
+    var cards = '';
+    if (lgPage === 1) {
+      cards += '<div class="rc flat"><div class="rc-top"><div class="rc-party">Opening balance</div>' +
+               '<div class="rc-date">' + dmy(d.from) + '</div></div>' +
+               '<div class="rc-money"><div class="rc-calc">brought forward</div>' +
+               '<div class="rc-amt">' + bal(d.opening) + '</div></div></div>';
+    }
+    cards += slice.map(function (r) {
+      var isDr = Number(r.debit) > 0;
+      return '<div class="rc flat">' +
+        '<div class="rc-top"><div class="rc-party">' + esc(r.doc_type || '') + '</div>' +
+        '<div class="rc-date">' + dmy(r.vch_date) + '</div></div>' +
+        (r.vch_no ? '<div class="rc-item">' + esc(r.vch_no) + '</div>' : '') +
+        '<div class="rc-desc">' + esc(r.particulars || '') + '</div>' +
+        '<div class="rc-money">' +
+          '<div class="rc-calc">' + (isDr ? 'Debit ' + inr2.format(r.debit)
+                                          : 'Credit ' + inr2.format(r.credit)) + '</div>' +
+          '<div class="rc-amt">' + bal(r.balance) + '</div>' +
+        '</div></div>';
+    }).join('');
+    if (lgPage === pages) {
+      cards += '<div class="rc flat"><div class="rc-top">' +
+               '<div class="rc-party">Closing' + (close.way ? ' — ' + close.way : '') + '</div>' +
+               '<div class="rc-date">' + dmy(d.to) + '</div></div>' +
+               '<div class="rc-money"><div class="rc-calc">' +
+                 'Dr ' + inr2.format(d.debits || 0) + ' · Cr ' + inr2.format(d.credits || 0) +
+               '</div><div class="rc-amt">' + bal(d.closing) + '</div></div></div>';
+    }
+    if (!total) cards += '<div class="loading">Nothing moved between these two dates.</div>';
+    $('lgCards').innerHTML = cards;
+
+    $('lgCount').textContent = total
+      ? inr.format(total) + (total === 1 ? ' entry' : ' entries') + ' — oldest first, as a ledger reads'
+      : 'No entries in this range';
+    drawLgPager(pages);
+  }
+
+
+  /* ---- A TABLE THAT IS STILL THERE ON A PHONE ----------------------
+     .tbl-wrap is display:none below 880px, by design -- a table is not a
+     table on a phone. Every screen that remembered to build cards beside
+     it works. Three panels on this build did not, and each one shipped a
+     HEADING WITH NOTHING UNDER IT: "What he buys most", "Every invoice,
+     newest first", and the whole four-material comparison under a line
+     saying steel was up 12%.
+
+     So a table is never written out by hand here again. This writes both
+     shapes from one set of rows, and phone.test.js now fails any .tbl-wrap
+     that has no cards beside it. */
+
+  /* ---- THE SAME ROWS, AS CARDS, WITHOUT WRITING THEM TWICE ----------
+     Five tables that predate this build had no cards at all: month by
+     month, the GST ledger, the years list, what has gone from Busy, and
+     the upload totals. On a phone .tbl-wrap is display:none, so each of
+     them was a heading with nothing under it -- and every one passed the
+     overlap sweep, twice, because nothing overlapped. There was simply
+     nothing there.
+
+     This reads the table that was just rendered and builds the cards from
+     it. Not a second copy of the markup: the SAME rows, so the two can
+     never drift apart, and adding a column to a table adds it to the
+     cards by itself. First cell is the card's title, last is the note
+     beside it, the rest become labelled lines using the table's own
+     column headings. */
+  function mirrorToCards(tableId, cardsId) {
+    var body = $(tableId), box = $(cardsId);
+    if (!body || !box) return;
+    var table = body.closest('table');
+    var heads = table ? Array.prototype.map.call(table.querySelectorAll('thead th'),
+                          function (t) { return t.textContent.trim(); }) : [];
+    var rows = Array.prototype.slice.call(body.rows);
+
+    // A single wide cell is a message -- "Looking…", "Nothing has gone
+    // missing from Busy" -- and a message is not a card.
+    if (rows.length === 1 && rows[0].cells.length === 1) {
+      box.innerHTML = '<div class="loading">' + rows[0].cells[0].innerHTML + '</div>';
+      return;
+    }
+    box.innerHTML = rows.map(function (tr) {
+      var cells = Array.prototype.slice.call(tr.cells);
+      if (cells.length < 2) return '';
+      var title = cells[0].innerHTML.trim();
+      // A leading serial number is not a title. Use the next cell instead
+      // and drop the number, which is what the card's own order already says.
+      var start = 1;
+      if (/^\d+$/.test(cells[0].textContent.trim()) && cells.length > 2) {
+        title = cells[1].innerHTML.trim(); start = 2;
+      }
+      var last = cells[cells.length - 1];
+      var pairs = cells.slice(start, cells.length - 1).map(function (td, i) {
+        if (!td.textContent.trim() && !td.querySelector('*')) return '';
+        return '<div class="rc-pair"><div class="rc-k">' +
+               esc(heads[start + i] || '') + '</div>' +
+               '<div class="rc-v r">' + td.innerHTML + '</div></div>';
+      }).join('');
+      return '<div class="rc flat"><div class="rc-top">' +
+        '<div class="rc-party">' + (title || '—') + '</div>' +
+        '<div class="rc-date">' + last.innerHTML + '</div></div>' + pairs + '</div>';
+    }).join('');
+  }
+
+  function twoWay(cols, rows, empty) {
+    var head = '<div class="tbl-wrap fit" style="max-height:320px"><table class="tbl"><thead><tr>' +
+      cols.map(function (c) {
+        return '<th' + (c.w ? ' style="width:' + c.w + '"' : '') + '>' + esc(c.label) + '</th>';
+      }).join('') + '</tr></thead><tbody>';
+    if (!rows.length) {
+      return head + '<tr><td colspan="' + cols.length + '" class="loading">' + esc(empty) +
+             '</td></tr></tbody></table></div>' +
+             '<div class="rc-list"><div class="loading">' + esc(empty) + '</div></div>';
+    }
+    var table = head + rows.map(function (r) {
+      return '<tr>' + cols.map(function (c, i) {
+        return '<td class="' + (c.cls || '') + '">' + r.cells[i] + '</td>';
+      }).join('') + '</tr>';
+    }).join('') + '</tbody></table></div>';
+
+    var cards = '<div class="rc-list">' + rows.map(function (r) {
+      return '<div class="rc flat">' +
+        '<div class="rc-top"><div class="rc-party">' + r.cells[0] + '</div>' +
+        '<div class="rc-date">' + (r.cells[r.cells.length - 1] || '') + '</div></div>' +
+        cols.slice(1, cols.length - 1).map(function (c, i) {
+          return '<div class="rc-pair"><div class="rc-k">' + esc(c.label) + '</div>' +
+                 '<div class="rc-v r">' + r.cells[i + 1] + '</div></div>';
+        }).join('') + '</div>';
+    }).join('') + '</div>';
+    return table + cards;
+  }
+
+  function kpi(k, v, sfx, way, sub, cls) {
+    return '<div class="kpi ' + (cls || '') + '"><div class="k">' + k + '</div>' +
+           '<div class="v">₹' + v +
+             (sfx ? '<span class="drcr">' + sfx + '</span>' : '') + '</div>' +
+           (way || '') +
+           (sub ? '<div class="method">' + esc(sub) + '</div>' : '') + '</div>';
+  }
+  function fyLabel(isoDate) {
+    var d = new Date(isoDate), y = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+    return y + '-' + String((y + 1) % 100).padStart(2, '0');
+  }
+  function drawLgPager(pages) {
+    if (pages <= 1) { $('lgPager').innerHTML = ''; return; }
+    $('lgPager').innerHTML =
+      '<span class="pager-where">Page ' + lgPage + ' of ' + pages + '</span>' +
+      '<button type="button" class="btn btn-outline" id="lgPrev"' +
+        (lgPage <= 1 ? ' disabled' : '') + '>Previous</button>' +
+      '<button type="button" class="btn btn-outline" id="lgNext"' +
+        (lgPage >= pages ? ' disabled' : '') + '>Next</button>';
+    if ($('lgPrev')) $('lgPrev').onclick = function () { lgPage--; drawLedger(); scrollTop(); };
+    if ($('lgNext')) $('lgNext').onclick = function () { lgPage++; drawLedger(); scrollTop(); };
+  }
+  function scrollTop() {
+    var w = document.querySelector('#view-ledger .tbl-wrap');
+    if (w) w.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------------- SENDING IT TO SOMEBODY ----------------
+     PDF is the browser's own print-to-PDF. It needs no library, it
+     works the same on a phone, and what he sees before saving is
+     exactly what comes out.
+
+     THE LETTERHEAD IS REF'S. It is printed only under REF. RS
+     Industries is a separate firm with its own GST number, and that
+     number is not in the ERP yet -- so under RS the sheet carries the
+     firm's name and says the registration details are not held here,
+     rather than printing REF's GSTIN on RS's document. Putting one
+     firm's GST number on the other firm's ledger is not a formatting
+     slip, it is a wrong document sent to a customer.               */
+  var LETTERHEAD = {
+    REF: {
+      name: 'RAGHBIR ERECTORS &amp; FABRICATORS',
+      addr: 'xxix, 310-B, St. No. 21, GRD Nagar, Makkar Colony, Sua Road,<br>' +
+            'Inds. Area-C, Dhandari Kalan, Ludhiana, Punjab - 141010',
+      reg:  'GSTIN 03ADVPS6303E1ZI &nbsp;·&nbsp; PAN ADVPS6303E &nbsp;·&nbsp; 6283363824'
+    },
+    RS: {
+      name: 'R. S. INDUSTRIES',
+      addr: 'Ludhiana, Punjab',
+      reg:  'The GST and PAN for this firm are not held in the ERP yet, ' +
+            'so they are not printed here.'
+    }
+  };
+
+  function stamp() {
+    var t = lastSyncAt ? new Date(lastSyncAt) : null;
+    if (!t) return 'From Busy Accounting. The last sync time is not known.';
+    return 'From Busy Accounting, as at ' +
+      t.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) + ', ' +
+      t.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function ledgerPrint() {
+    if (!lgData) return;
+    var d = lgData, head = LETTERHEAD[firm] || LETTERHEAD.REF, close = drcr(d.closing);
+    var body = '<tr><td></td><td>' + dmy(d.from) + '</td><td>Opening</td><td></td>' +
+               '<td>Opening balance</td><td></td><td></td><td class="r">' +
+               bal(d.opening) + '</td></tr>' +
+      (d.rows || []).map(function (r, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + dmy(r.vch_date) + '</td><td>' +
+          esc(r.doc_type || '') + '</td><td>' + esc(r.vch_no || '') + '</td><td>' +
+          esc(r.particulars || '') + '</td><td class="r">' +
+          (Number(r.debit) ? inr2.format(r.debit) : '') + '</td><td class="r">' +
+          (Number(r.credit) ? inr2.format(r.credit) : '') + '</td><td class="r">' +
+          bal(r.balance) + '</td></tr>';
+      }).join('') +
+      '<tr class="edge"><td></td><td>' + dmy(d.to) + '</td><td>Closing</td><td></td>' +
+      '<td>Closing balance' + (close.way ? ' — ' + close.way : '') + '</td>' +
+      '<td class="r">' + inr2.format(d.debits || 0) + '</td>' +
+      '<td class="r">' + inr2.format(d.credits || 0) + '</td>' +
+      '<td class="r">' + bal(d.closing) + '</td></tr>';
+
+    var w = window.open('', '_blank');
+    if (!w) { alert('The browser blocked the print window. Allow pop-ups for this site.'); return; }
+    w.document.write('<!doctype html><html><head><meta charset="utf-8">' +
+      '<title>Ledger — ' + esc(d.party) + '</title><style>' +
+      'body{font-family:Arial,Helvetica,sans-serif;color:#16222c;margin:22px;font-size:12px}' +
+      '.lh{text-align:center;border-bottom:2px solid #16222c;padding-bottom:10px;margin-bottom:14px}' +
+      '.lh h1{font-size:17px;margin:0 0 4px}.lh div{font-size:11px;color:#55606b;line-height:1.5}' +
+      'h2{font-size:14px;margin:0 0 2px}.sub{font-size:11px;color:#55606b;margin-bottom:10px}' +
+      'table{width:100%;border-collapse:collapse}' +
+      'th,td{border:1px solid #c8d2da;padding:4px 6px;text-align:center}' +
+      'th{background:#eef4f9}td:nth-child(5){text-align:left}.r{text-align:right}' +
+      'tr.edge td{background:#eef4f9;font-weight:bold}' +
+      '.foot{margin-top:14px;font-size:10.5px;color:#55606b;line-height:1.6}' +
+      '@media print{.noprint{display:none}}</style></head><body>' +
+      '<div class="lh"><h1>' + head.name + '</h1><div>' + head.addr + '</div>' +
+      '<div>' + head.reg + '</div></div>' +
+      '<h2>Ledger — ' + esc(d.party) + '</h2>' +
+      '<div class="sub">' + dmy(d.from) + ' to ' + dmy(d.to) + ' &nbsp;·&nbsp; ' + esc(stamp()) +
+      '</div><table><thead><tr><th>Sr.</th><th>Date</th><th>Type</th><th>Voucher no</th>' +
+      '<th>Particulars</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>' +
+      '<tbody>' + body + '</tbody></table>' +
+      '<div class="foot">' +
+      (d.undated_openings ? 'Busy holds ' + d.undated_openings + ' undated opening ' +
+        (d.undated_openings === 1 ? 'entry' : 'entries') +
+        ' for this party, already inside the opening balance above.<br>' : '') +
+      '<strong>The accountant’s ledger remains the authority.</strong> This sheet is for looking ' +
+      'up and sharing, not for reconciling.</div>' +
+      '<p class="noprint"><button onclick="window.print()">Print</button></p>' +
+      '</body></html>');
+    w.document.close();
+    setTimeout(function () { try { w.print(); } catch (e) {} }, 350);
+  }
+
+  /* A CSV, which is what Excel opens by double-click. The BOM is there
+     so Excel reads the rupee sign and a party name with an accent
+     correctly instead of as mojibake. */
+  function csvCell(v) {
+    var t = String(v === null || v === undefined ? '' : v);
+    return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  }
+  function saveCsv(name, rows) {
+    var text = '﻿' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
+    var url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8;' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  function ledgerExcel() {
+    if (!lgData) return;
+    var d = lgData, close = drcr(d.closing);
+    var out = [
+      [(LETTERHEAD[firm] || LETTERHEAD.REF).name.replace('&amp;', '&')],
+      ['Ledger', d.party],
+      ['From', d.from, 'To', d.to],
+      [stamp()],
+      [],
+      ['Sr.', 'Date', 'Type', 'Voucher no', 'Particulars', 'Debit', 'Credit', 'Balance', 'Dr/Cr']
+    ];
+    var o = drcr(d.opening);
+    out.push(['', d.from, 'Opening', '', 'Opening balance', '', '', o.amt || 0, o.sfx]);
+    (d.rows || []).forEach(function (r, i) {
+      var b = drcr(r.balance);
+      out.push([i + 1, r.vch_date, r.doc_type || '', r.vch_no || '', r.particulars || '',
+                Number(r.debit) || '', Number(r.credit) || '', b.amt || 0, b.sfx]);
+    });
+    out.push(['', d.to, 'Closing', '', 'Closing balance' + (close.way ? ' — ' + close.way : ''),
+              Number(d.debits) || 0, Number(d.credits) || 0, close.amt || 0, close.sfx]);
+    out.push([]);
+    if (d.undated_openings) {
+      out.push(['Busy holds ' + d.undated_openings +
+        ' undated opening entries for this party, already inside the opening balance.']);
+    }
+    out.push(["The accountant's ledger remains the authority. This sheet is for looking up and sharing, not for reconciling."]);
+    saveCsv('ledger-' + firm + '-' + String(d.party).replace(/[^A-Za-z0-9]+/g, '-') +
+            '-' + d.from + '-to-' + d.to + '.csv', out);
+  }
+
+  /* ================= THE THREE CUSTOMER REPORTS ====================== */
+  var repTab = 'months', custRows = [], custPage = 1, itemRows = [], itemPage = 1;
+  var quietPick = 0;
+  var REP_PAGE = 50;
+
+  function setRepTab(t) {
+    repTab = t;
+    Array.prototype.forEach.call($('repTabs').children, function (b) {
+      var on = b.dataset.rep === t;
+      b.classList.toggle('on', on);
+      // The strip scrolls sideways on a phone, so the tab that is ON can sit
+      // off the right edge -- the screen then looks like it is showing the
+      // first tab while showing the fourth.
+      if (on && b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+    ['months', 'customers', 'items', 'materials'].forEach(function (k) {
+      $('rep-' + k).style.display = (k === t) ? '' : 'none';
+    });
+    /* Landing on a tab always DRAWS it. "Fetch only if the list is empty"
+       looked equivalent and is not: the material-prices tab fetches the item
+       list for its own name box, so arriving at Items Sold afterwards found a
+       full list, skipped the fetch -- and skipped the draw with it, leaving
+       "Nothing sold yet" printed over 829 items. */
+    if (t === 'customers') { if (custRows.length) drawCustomers(); else loadCustomers(); }
+    if (t === 'items')     { if (itemRows.length) drawItemsSold(); else loadItems(); }
+    if (t === 'materials') loadMaterials();
+  }
+
+  /* ---- REPORT 1: the customer list ---- */
+  function quietWords(days) {
+    if (days === null || days === undefined) return '—';
+    if (days < 365) return days + (days === 1 ? ' day' : ' days');
+    var y = days / 365;
+    return (y < 1.95 ? '1 year' : (Math.round(y * 10) / 10) + ' years');
+  }
+  function loadCustomers() {
+    $('custRows').innerHTML = '<tr><td colspan="8" class="loading">Looking…</td></tr>';
+    guard(REF.supabase().rpc('busy_customer_list', { p_company: firm }),
+          intoTable('custRows', 8), 'the customer list')
+      .then(function (res) {
+        if (!res) return;
+        custRows = res.data || [];
+        custPage = 1;
+        drawCustomers();
+      });
+  }
+  function drawCustomers() {
+    var all = custRows, list = all;
+    if (quietPick) list = all.filter(function (r) { return (r.quiet_days || 0) > quietPick; });
+
+    $('quietChips').innerHTML = [[0, 'Everyone'], [180, '6 months'], [365, '1 year'], [730, '2 years']]
+      .map(function (q) {
+        var n = q[0] ? all.filter(function (r) { return (r.quiet_days || 0) > q[0]; }).length
+                     : all.length;
+        return '<button type="button" class="chip' + (quietPick === q[0] ? ' on' : '') +
+               '" data-quiet="' + q[0] + '">' +
+               (q[0] ? 'Quiet ' + q[1] : q[1]) + ' <strong>' + n + '</strong></button>';
+      }).join('');
+
+    var pages = Math.max(1, Math.ceil(list.length / REP_PAGE));
+    if (custPage > pages) custPage = pages;
+    var from = (custPage - 1) * REP_PAGE, slice = list.slice(from, from + REP_PAGE);
+
+    $('custCount').textContent = list.length + ' of ' + all.length +
+      ' customers — ' + (firm === 'REF' ? 'Raghbir Erectors & Fabricators' : 'R. S. Industries') +
+      ' only. Value excludes GST.';
+
+    $('custRows').innerHTML = slice.map(function (r, i) {
+      return '<tr class="cust-row" data-cust="' + esc(r.customer) + '">' +
+        '<td>' + (from + i + 1) + '</td>' +
+        '<td class="l"><a href="#" class="cust-open">' + esc(r.customer) + '</a></td>' +
+        '<td class="r">' + moneyShort(r.this_fy) + '</td>' +
+        '<td class="r">' + moneyShort(r.last_fy) + '</td>' +
+        '<td class="r">' + changeCell(r.change_pct) + '</td>' +
+        '<td class="r">' + moneyShort(r.lifetime) + '</td>' +
+        '<td class="r">' + r.invoices + '</td>' +
+        '<td>' + quietWords(r.quiet_days) + '</td></tr>';
+    }).join('') || '<tr><td colspan="8" class="loading">No customers in this list.</td></tr>';
+
+    $('custCards').innerHTML = slice.map(function (r) {
+      return '<div class="rc cust-row" data-cust="' + esc(r.customer) + '">' +
+        '<div class="rc-top"><div class="rc-party">' + esc(r.customer) + '</div>' +
+        '<div class="rc-date">' + quietWords(r.quiet_days) + '</div></div>' +
+        '<div class="rc-desc">This FY ' + moneyShort(r.this_fy) +
+          ' · Last FY ' + moneyShort(r.last_fy) + ' · ' + changeCell(r.change_pct) + '</div>' +
+        '<div class="rc-money"><div class="rc-calc">' + r.invoices + ' invoices</div>' +
+        '<div class="rc-amt">' + moneyShort(r.lifetime) + '</div></div></div>';
+    }).join('');
+
+    repPager('custPager', custPage, pages, function (n) { custPage = n; drawCustomers(); });
+  }
+  function changeCell(p) {
+    if (p === null || p === undefined) return '<span class="missing">no last year</span>';
+    var n = Number(p);
+    return '<span class="' + (n > 0 ? 'up' : n < 0 ? 'down' : '') + '">' +
+           (n > 0 ? '+' : '') + n + '%</span>';
+  }
+
+  function openCustomer(name) {
+    var box = $('custDetail');
+    box.style.display = '';
+    box.innerHTML = '<div class="card"><div class="loading">Looking…</div></div>';
+    guard(REF.supabase().rpc('busy_customer_detail', { p_company: firm, p_customer: name }),
+          intoBox('custDetail'), 'this customer')
+      .then(function (res) {
+        if (!res) return;
+        var d = res.data, years = d.years || [], invs = d.invoices || [], items = d.items || [];
+        var top = years.reduce(function (m, y) { return Math.max(m, Number(y.value) || 0); }, 0) || 1;
+        box.innerHTML =
+          '<div class="card"><div style="display:flex; align-items:baseline; gap:10px;">' +
+          '<div style="font-weight:600; font-size:15px; flex:1;">' + esc(name) + '</div>' +
+          '<button type="button" class="btn btn-outline btn-sm" id="custClose">Close</button></div>' +
+          '<div class="method">Year by year, excluding GST.</div>' +
+          '<div style="margin-top:12px">' + years.map(function (y) {
+            return '<div style="display:flex; align-items:center; gap:10px; margin:5px 0;">' +
+              '<div style="flex:0 0 62px; font-size:12px; color:var(--muted)">' + esc(y.fy) + '</div>' +
+              '<div style="flex:1; background:var(--surface-sunken); border-radius:3px; height:16px;">' +
+                '<div style="height:16px; border-radius:3px; background:var(--steel); width:' +
+                  Math.max(1, Math.round(Number(y.value) / top * 100)) + '%"></div></div>' +
+              '<div style="flex:0 0 116px; text-align:right; font-variant-numeric:tabular-nums;">' +
+                moneyShort(y.value) + '</div></div>';
+          }).join('') + '</div>' +
+          '<div style="font-weight:600; margin:14px 0 6px">What he buys most</div>' +
+          twoWay([{ label: 'Item', cls: 'l' }, { label: 'Times', w: '70px' },
+                  { label: 'Value', w: '130px', cls: 'r' }],
+                 items.map(function (t) {
+                   return { cells: [esc(t.item), String(t.times), moneyShort(t.value)] };
+                 }), 'No item lines for this customer.') +
+          '<div style="font-weight:600; margin:14px 0 6px">Every invoice, newest first</div>' +
+          twoWay([{ label: 'Voucher no', cls: 'l' },
+                  { label: 'Excl GST', w: '130px', cls: 'r' },
+                  { label: 'Incl GST', w: '130px', cls: 'r' },
+                  { label: 'Date', w: '96px' }],
+                 invs.map(function (v) {
+                   return { cells: [esc(v.vch_no || ''), moneyShort(v.net),
+                                    moneyShort(v.gross), dmy(v.date)] };
+                 }), 'No invoices.') + '</div>';
+        if ($('custClose')) $('custClose').onclick = function () { box.style.display = 'none'; };
+        box.scrollIntoView({ block: 'start' });
+      });
+  }
+
+  /* ---- REPORT 2: items sold ---- */
+  function loadItems() {
+    $('itemRows').innerHTML = '<tr><td colspan="7" class="loading">Looking…</td></tr>';
+    guard(REF.supabase().rpc('busy_items_sold', { p_company: firm }),
+          intoTable('itemRows', 7), 'the items sold')
+      .then(function (res) {
+        if (!res) return;
+        itemRows = res.data || [];
+        itemPage = 1;
+        drawItemsSold();
+      });
+  }
+  /* drawItemsSold, not drawItems. The upload screen already had a
+     drawItems() further down this file, function declarations hoist, and the
+     later one wins -- so this report's draw silently called the uploader's
+     and the screen sat on "Looking…" over 829 items, with no error anywhere.
+     A collision between two screens in one file fails quietly, which is why
+     tests/check-page-set.js now refuses a duplicate name. */
+  function drawItemsSold() {
+    var pages = Math.max(1, Math.ceil(itemRows.length / REP_PAGE));
+    if (itemPage > pages) itemPage = pages;
+    var from = (itemPage - 1) * REP_PAGE, slice = itemRows.slice(from, from + REP_PAGE);
+    $('itemCount').textContent = itemRows.length + ' items ever sold';
+    $('itemRows').innerHTML = slice.map(function (r, i) {
+      return '<tr class="item-row" data-item="' + esc(r.item) + '">' +
+        '<td>' + (from + i + 1) + '</td>' +
+        '<td class="l"><a href="#" class="item-open">' + esc(r.item) + '</a></td>' +
+        '<td>' + r.times_sold + '</td>' +
+        '<td class="r">' + moneyShort(r.total_value) + '</td>' +
+        '<td class="l">' + esc(r.last_sold_to || '') + '</td>' +
+        '<td>' + dmy(r.last_sold_on) + '</td>' +
+        '<td class="r">' + (Number(r.last_rate) ? moneyShort(r.last_rate)
+                            : '<span class="missing">no rate · one job</span>') + '</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="loading">Nothing sold yet.</td></tr>';
+
+    $('itemCards').innerHTML = slice.map(function (r) {
+      return '<div class="rc item-row" data-item="' + esc(r.item) + '">' +
+        '<div class="rc-top"><div class="rc-party">' + esc(r.item) + '</div>' +
+        '<div class="rc-date">' + dmy(r.last_sold_on) + '</div></div>' +
+        '<div class="rc-desc">Last to ' + esc(r.last_sold_to || '—') + '</div>' +
+        '<div class="rc-money"><div class="rc-calc">sold ' + r.times_sold + ' times</div>' +
+        '<div class="rc-amt">' + moneyShort(r.total_value) + '</div></div></div>';
+    }).join('');
+    repPager('itemPager', itemPage, pages, function (n) { itemPage = n; drawItemsSold(); });
+  }
+
+  function openItem(name) {
+    var box = $('itemDetail');
+    box.style.display = '';
+    box.innerHTML = '<div class="card"><div class="loading">Looking…</div></div>';
+    guard(REF.supabase().rpc('busy_item_sales', { p_company: firm, p_item: name }),
+          intoBox('itemDetail'), 'this item')
+      .then(function (res) {
+        if (!res) return;
+        var rows = res.data || [];
+        box.innerHTML = '<div class="card">' +
+          '<div style="display:flex; align-items:baseline; gap:10px;">' +
+          '<div style="font-weight:600; font-size:15px; flex:1;">' + esc(name) + '</div>' +
+          '<button type="button" class="btn btn-outline btn-sm" id="itemClose">Close</button></div>' +
+          '<div class="method">Every sale, with the description — that is where the size is.</div>' +
+          twoWay([{ label: 'Customer', cls: 'l' },
+                  { label: 'Description', cls: 'l desc' },
+                  { label: 'Qty', w: '78px', cls: 'r' },
+                  { label: 'Rate', w: '110px', cls: 'r' },
+                  { label: 'Amount', w: '130px', cls: 'r' },
+                  { label: 'Date', w: '96px' }],
+                 rows.map(function (r) {
+                   return { cells: [
+                     esc(r.party || ''),
+                     '<span class="clip"' + (r.description ? ' title="' + esc(r.description) + '"' : '') +
+                       '>' + esc(r.description || '') + '</span>',
+                     (r.qty === null ? '' : inr2.format(r.qty)),
+                     (r.is_lump_sum || !Number(r.rate)
+                        ? '<span class="missing">no rate · one job</span>' : moneyShort(r.rate)),
+                     moneyShort(r.amount), dmy(r.vch_date)] };
+                 }), 'No sales.') + '</div>';
+        if ($('itemClose')) $('itemClose').onclick = function () { box.style.display = 'none'; };
+        box.scrollIntoView({ block: 'start' });
+      });
+  }
+
+  function repPager(id, page, pages, go) {
+    var host = $(id);
+    if (!host) {
+      host = document.createElement('div');
+      host.className = 'pager'; host.id = id;
+      var parent = id === 'custPager' ? $('rep-customers') : $('rep-items');
+      parent.appendChild(host);
+    }
+    if (pages <= 1) { host.innerHTML = ''; return; }
+    host.innerHTML = '<span class="pager-where">Page ' + page + ' of ' + pages + '</span>' +
+      '<button type="button" class="btn btn-outline" ' + (page <= 1 ? 'disabled' : '') +
+      ' data-go="' + (page - 1) + '">Previous</button>' +
+      '<button type="button" class="btn btn-outline" ' + (page >= pages ? 'disabled' : '') +
+      ' data-go="' + (page + 1) + '">Next</button>';
+    host.onclick = function (e) {
+      var b = e.target.closest('button[data-go]');
+      if (b && !b.disabled) { go(Number(b.dataset.go)); window.scrollTo(0, 0); }
+    };
+  }
+
+  /* ---- REPORT 3: what the steel cost then, and what it costs now ----
+
+     WHICH AVERAGE, AND WHY IT IS NOT THE SIMPLE ONE.
+
+     The brief asked for a simple average, stated as such. Measured on
+     the real rows it cannot carry the headline. PIPE, September 2026,
+     ten purchases: the simple average of the rate is 213.54 because one
+     line is 798; spent divided by quantity is 65.11. Over the same two
+     months the simple average says pipe is up 142% and sheet is DOWN
+     42%, while the weighted figures say both are up about 18%.
+
+     The cause is the same one that shapes every screen here: the item
+     is "PIPE" and the size is in the description, so one row can be a
+     rate per kilo and the next a rate per length. Averaging those
+     treats them as the same number.
+
+     So the headline is spent-divided-by-quantity -- literally what the
+     steel cost -- and the simple average is printed beside it, named,
+     every time. Both are on the screen; neither is hidden. The simple
+     average is still the one used across the four materials for the
+     one-line "steel up about X%", which is the level at which a simple
+     average is the honest thing.                                      */
+  var matData = null, matShare = 60;
+
+  function loadMaterials() {
+    $('matBody').innerHTML = '<div class="card"><div class="loading">Looking…</div></div>';
+    if (!$('matOn').value) $('matOn').value = iso(new Date());
+    guard(REF.supabase().rpc('busy_material_prices', {
+            p_company: firm,
+            p_on: $('matOn').value,
+            p_months_before: Math.max(0, Math.min(240, Number($('matBefore').value) || 0)) }),
+          intoBox('matBody'), 'what steel cost')
+      .then(function (res) {
+        if (!res) return;
+        matData = res.data;
+        drawMaterials();
+      });
+  }
+
+  function monthName(isoDate) {
+    if (!isoDate) return '—';
+    var d = new Date(isoDate);
+    return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  }
+
+  function drawMaterials() {
+    var d = matData;
+    if (!d) return;
+    var mats = d.materials || [];
+    if (!mats.length) {
+      $('matBody').innerHTML = '<div class="card"><div class="loading">No steel purchases ' +
+        'with a quantity and a rate, so there is nothing to compare.</div></div>';
+      return;
+    }
+
+    /* Said in words whenever the month asked for had no steel in it. It
+       is NEVER substituted in silence. */
+    var missing = mats.filter(function (m) { return m.then_is_nearest; });
+    var note = missing.length
+      ? '<div class="note warn-note">' + missing.map(function (m) {
+          return '<div>No ' + esc(m.material) + ' purchases in <strong>' +
+            monthName(d.asked_month) + '</strong> — nearest is <strong>' +
+            monthName(m.then_month) + '</strong>.</div>';
+        }).join('') + '</div>'
+      : '';
+
+    var withChange = mats.filter(function (m) { return m.change_weighted !== null; });
+    var avg = withChange.length
+      ? Math.round(withChange.reduce(function (t, m) { return t + Number(m.change_weighted); }, 0)
+                   / withChange.length * 10) / 10
+      : null;
+
+    /* THE SAME FOUR MATERIALS AS CARDS. This table lived in a .tbl-wrap,
+       which a phone hides by design -- so on a phone the entire comparison
+       simply was not there, under a heading that said steel was up 12%.
+       Every table on this screen needs its cards, not just the ones that
+       were obviously tables. */
+    /* The newest month ANY material has. A material whose own latest month
+       is older than that is not steady -- it simply has not been bought
+       lately, and "Channel 0%" would otherwise read as a price that has not
+       moved rather than as an absence of data. */
+    var newest = mats.reduce(function (a, b) { return b.now_month > a ? b.now_month : a; }, '');
+    function staleMark(m) {
+      return m.now_month < newest
+        ? ' <span class="pill pill-amber">no buys since ' + monthName(m.now_month) + '</span>' : '';
+    }
+
+    var matCards = mats.map(function (m) {
+      return '<div class="rc flat">' +
+        '<div class="rc-top"><div class="rc-party">' + esc(m.material) + '</div>' +
+        '<div class="rc-date">' + changeCell(m.change_weighted) + '</div></div>' +
+        (staleMark(m) ? '<div style="margin-top:5px">' + staleMark(m) + '</div>' : '') +
+        '<div class="rc-money"><div class="rc-calc">' +
+          monthName(m.then_month) + ' · ' + m.then_buys + ' buys</div>' +
+          '<div class="rc-amt">' + moneyShort(m.then_weighted) + '</div></div>' +
+        '<div class="rc-money"><div class="rc-calc">' +
+          monthName(m.now_month) + ' · ' + m.now_buys + ' buys</div>' +
+          '<div class="rc-amt">' + moneyShort(m.now_weighted) + '</div></div>' +
+        '<div class="method">Plain average of the rate: ' + moneyShort(m.then_simple) +
+          ' → ' + moneyShort(m.now_simple) + '</div>' +
+        '</div>';
+    }).join('');
+
+    var rows = mats.map(function (m, i) {
+      return '<tr><td>' + (i + 1) + '</td>' +
+        '<td class="l">' + esc(m.material) + '</td>' +
+        '<td class="r">' + moneyShort(m.then_weighted) + '</td>' +
+        '<td>' + monthName(m.then_month) + ' <span class="missing">' + m.then_buys + ' buys</span></td>' +
+        '<td class="r">' + moneyShort(m.now_weighted) + '</td>' +
+        '<td>' + monthName(m.now_month) + ' <span class="missing">' + m.now_buys + ' buys</span>' +
+          staleMark(m) + '</td>' +
+        '<td class="r">' + changeCell(m.change_weighted) + '</td>' +
+        '<td class="r"><span class="missing">' + moneyShort(m.then_simple) + ' → ' +
+          moneyShort(m.now_simple) + ' · ' + (m.change_simple === null ? '—' :
+          (Number(m.change_simple) > 0 ? '+' : '') + m.change_simple + '%') + '</span></td></tr>';
+    }).join('');
+
+    $('matBody').innerHTML = note +
+      '<div class="card">' +
+      '<div style="font-weight:600; margin-bottom:2px">Steel ' +
+        (avg === null ? 'cannot be compared' :
+         (avg >= 0 ? 'up' : 'down') + ' about ' + Math.abs(avg) + '%') + '</div>' +
+      '<div class="method">Simple average of the ' + withChange.length +
+        ' materials below, each measured as <strong>what was spent divided by what was ' +
+        'bought</strong>. A month counts only with ' + d.min_buys + ' or more purchases in it.</div>' +
+      '<div class="tbl-wrap fit" style="max-height:none; margin-top:12px"><table class="tbl"><thead><tr>' +
+      '<th style="width:44px">Sr.</th><th>Material</th>' +
+      '<th style="width:110px">Then</th><th style="width:150px">which month</th>' +
+      '<th style="width:110px">Now</th><th style="width:190px">which month</th>' +
+      '<th style="width:96px">Change</th>' +
+      '<th style="width:220px">Simple average of the rate</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="rc-list">' + matCards + '</div>' +
+      '<div class="method" style="margin-top:8px">The last column is the plain average of every ' +
+      'rate in the month. It is shown because it was asked for and because the gap matters: the ' +
+      'item is “PIPE” and the size is in the description, so one line can be a rate per kilo and ' +
+      'the next a rate per length. Averaging those treats them as the same number.</div>' +
+      '</div>' +
+
+      /* ---- the same margin, at today's steel ---- */
+      '<div class="card">' +
+      '<div style="font-weight:600; margin-bottom:8px">At the same margin</div>' +
+      '<div class="lg-controls" style="gap:10px">' +
+        '<div><label class="fl" for="matOld">What you charged then</label>' +
+        '<input type="number" id="matOld" class="f" value="680000" step="1000" style="width:160px"></div>' +
+        '<div><label class="fl" for="matShare">Material share of the price</label>' +
+        '<input type="number" id="matShare" class="f" value="' + matShare +
+          '" min="0" max="100" step="1" style="width:110px"> %</div>' +
+      '</div>' +
+      '<div id="matSum" style="margin-top:12px"></div>' +
+      '</div>' +
+
+      /* ---- what this machine went for before ---- */
+      '<div class="card">' +
+      '<div style="font-weight:600; margin-bottom:6px">What you charged for a machine before</div>' +
+      '<div class="lg-controls">' +
+        '<div class="lg-cell lg-grow"><label class="fl" for="matItem">Item</label>' +
+        '<input id="matItem" class="f" list="matItemList" autocomplete="off" ' +
+        'placeholder="Type a machine — Inclined Slat Conveyor, Goods Lift…" style="width:100%">' +
+        '<datalist id="matItemList"></datalist></div>' +
+      '</div>' +
+      '<div id="matHist" style="margin-top:10px"><div class="method">Pick a machine to see every ' +
+      'price it ever went out at, with the size from the description.</div></div>' +
+      '</div>';
+
+    if (!itemRows.length) {
+      Promise.resolve(REF.supabase().rpc('busy_items_sold', { p_company: firm }))
+        .then(function (r) { if (r && !r.error) { itemRows = r.data || []; fillItemList(); } });
+    } else fillItemList();
+
+    $('matOld').oninput = matSum;
+    $('matShare').oninput = function () { matShare = Number(this.value) || 0; matSum(); };
+    $('matItem').onchange = function () { matHistory(btrim(this.value)); };
+    matSum();
+
+    function fillItemList() {
+      var dl = $('matItemList');
+      if (!dl) return;
+      dl.innerHTML = itemRows.slice(0, 400).map(function (r) {
+        return '<option value="' + esc(r.item) + '"></option>';
+      }).join('');
+    }
+
+    function matSum() {
+      var old = Number($('matOld').value) || 0;
+      var share = Math.max(0, Math.min(100, Number($('matShare').value) || 0)) / 100;
+      if (avg === null || !old) { $('matSum').innerHTML = ''; return; }
+      var now = Math.round(old * (1 + share * avg / 100));
+      $('matSum').innerHTML =
+        '<div style="font-size:26px; font-weight:600;">' + moneyShort(now) + '</div>' +
+        '<div class="method">' + moneyShort(old) + ' × (1 + ' + Math.round(share * 100) +
+        '% of the price being material × steel ' + (avg >= 0 ? 'up' : 'down') + ' ' +
+        Math.abs(avg) + '%) = ' + moneyShort(now) + '. ' +
+        'Only the material part of the price is moved; labour, transport and margin are left ' +
+        'where they were.</div>';
+    }
+
+    function matHistory(item) {
+      if (!item) { $('matHist').innerHTML = ''; return; }
+      $('matHist').innerHTML = '<div class="loading">Looking…</div>';
+      Promise.resolve(REF.supabase().rpc('busy_item_price_history',
+        { p_company: firm, p_item: item }))
+        .then(function (r) {
+          if (!r || r.error) { $('matHist').innerHTML = '<div class="loading">Could not load it.</div>'; return; }
+          var rows = r.data || [];
+          if (!rows.length) { $('matHist').innerHTML = '<div class="loading">No sales of that item.</div>'; return; }
+          $('matHist').innerHTML = twoWay(
+            [{ label: 'Customer', cls: 'l' },
+             { label: 'Description', cls: 'l desc' },
+             { label: 'Amount', w: '130px', cls: 'r' },
+             { label: 'Date', w: '96px' }],
+            rows.map(function (x) {
+              return { cells: [
+                esc(x.party || ''),
+                '<span class="clip"' + (x.description ? ' title="' + esc(x.description) + '"' : '') +
+                  '>' + esc(x.description || '') + '</span>',
+                moneyShort(x.amount), dmy(x.vch_date)] };
+            }), 'No sales of that item.') +
+            '<div class="method">Never averaged. The size is in the description, so two sales of ' +
+            'the same item name are not the same machine.</div>';
+        });
+    }
+  }
+
   function loadReports() {
+    // A different firm is a different set of customers and a different set
+    // of items. Throw the cached lists away rather than showing REF's
+    // customers under RS's heading.
+    custRows = []; itemRows = []; matData = null; quietPick = 0;
+    $('custDetail').style.display = 'none';
+    $('itemDetail').style.display = 'none';
+    setRepTab(repTab);
     $('kpis').innerHTML = '<div class="loading">Adding up…</div>';
     $('yoyRows').innerHTML = '';
     loadGst();
@@ -2729,6 +3922,56 @@ upload_token = (shown on the download screen)</pre>
     });
   });
 
+  /* ---- the ledger ---- */
+  $('lgParty').addEventListener('change', loadLedger);
+  $('lgParty').addEventListener('input', function () {
+    // The datalist only ever holds 300 names. Typing past them fetches the
+    // ones that actually match rather than quietly offering a short list.
+    var v = btrim(this.value);
+    if (v.length >= 2) loadPartyList(v);
+  });
+  $('lgFrom').addEventListener('change', function () { markRange(); loadLedger(); });
+  $('lgTo').addEventListener('change', function () { markRange(); loadLedger(); });
+  $('lgRanges').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-range]');
+    if (!b) return;
+    setRange(b.dataset.range);
+    loadLedger();
+  });
+  function markRange() {
+    Array.prototype.forEach.call($('lgRanges').children, function (c) { c.classList.remove('on'); });
+  }
+  $('lgPrint').addEventListener('click', ledgerPrint);
+  $('lgExcel').addEventListener('click', ledgerExcel);
+
+  /* ---- the report tabs, and opening a row ---- */
+  $('repTabs').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-rep]');
+    if (b) setRepTab(b.dataset.rep);
+  });
+  $('quietChips').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-quiet]');
+    if (!b) return;
+    quietPick = Number(b.dataset.quiet);
+    custPage = 1;
+    drawCustomers();
+  });
+  ['custRows', 'custCards'].forEach(function (id) {
+    $(id).addEventListener('click', function (e) {
+      var row = e.target.closest('[data-cust]');
+      if (row) { e.preventDefault(); openCustomer(row.dataset.cust); }
+    });
+  });
+  ['itemRows', 'itemCards'].forEach(function (id) {
+    $(id).addEventListener('click', function (e) {
+      var row = e.target.closest('[data-item]');
+      if (row) { e.preventDefault(); openItem(row.dataset.item); }
+    });
+  });
+  ['matOn', 'matBefore'].forEach(function (id) {
+    $(id).addEventListener('change', loadMaterials);
+  });
+
   $('prevBtn').addEventListener('click', function () { gotoPage(pageNo - 1); });
   $('nextBtn').addEventListener('click', function () { gotoPage(pageNo + 1); });
 
@@ -2920,6 +4163,7 @@ upload_token = (shown on the download screen)</pre>
       }
       loadCols(); loadColWidths(); loadTypes();
       drawHead(); drawColMenu(); drawChips();
+      watchTables();           // tables keep their phone cards in step by themselves
       grid = wireGrid('rows');
       setFirm('REF');
       setView('price');

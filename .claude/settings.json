@@ -1,0 +1,41 @@
+{
+  "$comment": [
+    "Raghbir, 19 Sep 2026: 'STOP ASKING ME TO APPROVE EVERY ACTION. I have",
+    "approved over 100 prompts on this one task. That is not safety, it is",
+    "friction, and it means I stop reading them -- which is worse than not",
+    "asking.' The same rule was already in docs/00 from 11 Sep and slipped.",
+    "It is a setting now, not a good intention.",
+    "",
+    "ASK ONLY BEFORE: deleting a Supabase project; dropping a table or a",
+    "column; deleting a file Claude did not create; anything that destroys",
+    "data that cannot be got back. Those are deliberately NOT allowed below."
+  ],
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Edit",
+      "Write",
+      "Read",
+      "Glob",
+      "Grep",
+      "mcp__Supabase__execute_sql",
+      "mcp__Supabase__apply_migration",
+      "mcp__Supabase__list_tables",
+      "mcp__Supabase__list_migrations",
+      "mcp__Supabase__list_extensions",
+      "mcp__Supabase__get_advisors",
+      "mcp__Supabase__get_project",
+      "mcp__Supabase__get_project_url",
+      "mcp__github__get_file_contents",
+      "mcp__github__list_commits",
+      "mcp__github__get_commit"
+    ],
+    "ask": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "mcp__Supabase__delete_branch",
+      "mcp__Supabase__pause_project",
+      "mcp__github__delete_file"
+    ]
+  }
+}

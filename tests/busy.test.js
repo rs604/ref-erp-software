@@ -87,7 +87,7 @@ async function openBusy(server, browser, user) {
     // Built from what is on the screen, so adding a voucher type does not
     // break a list written in here.
     const chipOrder = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('.chip input')).map(i => 'chip:' + i.dataset.type));
+      Array.from(document.querySelectorAll('#docChips .chip input')).map(i => 'chip:' + i.dataset.type));
     const expected = ['qClear'].concat(chipOrder, ['from', 'to', 'pageSize', 'colBtn']);
     record('Tab follows the controls across the screen, left to right',
       JSON.stringify(seen) === JSON.stringify(expected),
@@ -201,9 +201,11 @@ async function openBusy(server, browser, user) {
     }
     record(`clicked ${mine.length} of this page's menu items · ${kept} kept scroll and kept the search typed · ${moved} did not`,
       moved === 0, complaints.slice(0, 4).join(' | '));
-    // 4 for REF, 4 for RS, 3 owner-only loading screens.
+    // 5 for REF, 5 for RS, 3 owner-only loading screens. Price History,
+    // Challans, Ledger, Reports and Deleted in Busy per firm; the Ledger
+    // joined on 19 Sep, between Challans and Reports, per doc 11.
     record('every Busy Data screen is reachable from the menu, owner-only ones included',
-      mine.length === 11, `${mine.length} entries for this page`);
+      mine.length === 13, `${mine.length} entries for this page`);
   }
 
   /* ============ 5. THE LIST SCREEN ============ */
@@ -578,7 +580,11 @@ async function openBusy(server, browser, user) {
       (await p.locator('#firmChip').innerText()).trim() === 'REF');
 
     // 7 — voucher types are tickboxes, Sales Invoice only to begin with
-    const chips = await p.evaluate(() => Array.from(document.querySelectorAll('.chip')).map(c => ({
+    // #docChips, not every .chip on the page. The ledger's one-tap ranges and
+    // the reports' quiet filters wear the same chip look deliberately and are
+    // plain buttons, so an unscoped .chip walked into one with no tickbox in
+    // it and the whole file died on the first of them.
+    const chips = await p.evaluate(() => Array.from(document.querySelectorAll('#docChips .chip')).map(c => ({
       label: c.innerText.trim(), on: c.querySelector('input').checked })));
     // Counted against the DATA, not against a number written here. The types
     // come from busy_doc_types now, so a type the parser starts reading
@@ -595,7 +601,7 @@ async function openBusy(server, browser, user) {
       chips.filter(c => c.on).length === 1 && chips.find(c => c.on).label === 'Sales Invoice',
       chips.filter(c => c.on).map(c => c.label).join(', ') || 'none');
     record('what is chosen is readable without opening anything',
-      await p.locator('.chip.on').first().isVisible());
+      await p.locator('#docChips .chip.on').first().isVisible());
 
     // 3 — results as you type, not on Enter
     const before = await p.evaluate(() => window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').length);
@@ -1430,11 +1436,19 @@ async function openBusy(server, browser, user) {
         await p.locator('#' + id).inputValue() === '');
     }
 
+    /* EVERY date field, not "both". There were two when this was written and
+       there are five now -- the ledger's From and To and the material-price
+       date joined them. Pinning the count to 2 turned a rule about all date
+       fields into a rule about the two that existed on the day, which is the
+       kind of test that fails for being right. */
     const tips = await p.evaluate(() =>
-      Array.from(document.querySelectorAll('input[type=date]')).map(e => e.title));
-    record('both date fields say what the keys are, on hover',
-      tips.length === 2 && tips.every(t => /T = today/.test(t) && /Delete = clear/.test(t)),
-      tips[0] || '(no tooltip)');
+      Array.from(document.querySelectorAll('input[type=date]'))
+        .map(e => ({ id: e.id, tip: e.title })));
+    const mute = tips.filter(t => !/T = today/.test(t.tip) || !/Delete = clear/.test(t.tip));
+    record('every date field on the page says what the keys are, on hover',
+      tips.length >= 2 && mute.length === 0,
+      `${tips.length} date fields` +
+      (mute.length ? ' — silent: ' + mute.map(m => '#' + m.id).join(', ') : ''));
 
     // Setting a date must actually search, not just sit there.
     const before = await p.evaluate(() => window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').length);
@@ -1482,7 +1496,7 @@ async function openBusy(server, browser, user) {
     await click('the search box', '#q', 'type');
     await click('the clear cross', '#qClear');
     for (const t of ['Sales Invoice','Purchase Bill','Delivery Challan','Purchase Order','Sales Order']) {
-      await click('the ' + t + ' tickbox', `.chip input[data-type="${t}"]`);
+      await click('the ' + t + ' tickbox', `#docChips .chip input[data-type="${t}"]`);
     }
     await click('the From date', '#from');
     await click('the To date', '#to');

@@ -4543,5 +4543,372 @@
    "staged_rows": 0,
    "batches_kept": 24
   }
- ]
+ ],
+ "rpc:busy_ledger": {
+  "company": "REF",
+  "party": "HINDON METAFORMS PVT.LTD",
+  "from": "2025-04-01",
+  "to": "2026-03-31",
+  "opening": -483537,
+  "debits": 572804,
+  "credits": 33376,
+  "closing": 41250,
+  "entry_count": 9,
+  "undated_openings": 7,
+  "anchor_fy": "2025-26",
+  "capped": false,
+  "rows": [
+   {
+    "vch_date": "2025-04-10",
+    "doc_type": "Payment",
+    "vch_no": "",
+    "particulars": "Cash",
+    "debit": 0,
+    "credit": 10000,
+    "balance": -493537
+   },
+   {
+    "vch_date": "2025-04-10",
+    "doc_type": "Payment",
+    "vch_no": "",
+    "particulars": "Cash",
+    "debit": 0,
+    "credit": 4641,
+    "balance": -498178
+   },
+   {
+    "vch_date": "2025-04-15",
+    "doc_type": "Receipt",
+    "vch_no": "",
+    "particulars": "HDFC BANK LTD- A/C-50200024648151",
+    "debit": 300000,
+    "credit": 0,
+    "balance": -198178
+   },
+   {
+    "vch_date": "2025-05-17",
+    "doc_type": "Sales Invoice",
+    "vch_no": "REF/2025-26/24",
+    "particulars": "Sales",
+    "debit": 0,
+    "credit": 24544,
+    "balance": -222722
+   },
+   {
+    "vch_date": "2025-05-22",
+    "doc_type": "Receipt",
+    "vch_no": "",
+    "particulars": "HDFC BANK LTD- A/C-50200024648151",
+    "debit": 245310,
+    "credit": 0,
+    "balance": 22588
+   },
+   {
+    "vch_date": "2025-07-19",
+    "doc_type": "Sales Invoice",
+    "vch_no": "REF/2025-26/67",
+    "particulars": "Sales",
+    "debit": 0,
+    "credit": 2950,
+    "balance": 19638
+   },
+   {
+    "vch_date": "2026-03-10",
+    "doc_type": "Sales Invoice",
+    "vch_no": "REF/2025-26/277",
+    "particulars": "Sales",
+    "debit": 0,
+    "credit": 3540,
+    "balance": 16098
+   },
+   {
+    "vch_date": "2026-03-16",
+    "doc_type": "Receipt",
+    "vch_no": "",
+    "particulars": "HDFC BANK LTD- A/C-50200024648151",
+    "debit": 27494,
+    "credit": 0,
+    "balance": 43592
+   },
+   {
+    "vch_date": "2026-03-25",
+    "doc_type": "Sales Invoice",
+    "vch_no": "REF/2025-26/292",
+    "particulars": "Sales",
+    "debit": 0,
+    "credit": 2342,
+    "balance": 41250
+   }
+  ]
+ },
+ "rpc:busy_party_list": [
+  {
+   "ledger": "HINDON METAFORMS PVT.LTD",
+   "ledger_group": "Sundry Debtors",
+   "entries": 16,
+   "last_entry": "2026-03-25"
+  },
+  {
+   "ledger": "JUNEJA STEEL SALES",
+   "ledger_group": "Sundry Creditors",
+   "entries": 169,
+   "last_entry": "2026-09-12"
+  },
+  {
+   "ledger": "T I CYCLES OF INDIA",
+   "ledger_group": "Sundry Debtors",
+   "entries": 35,
+   "last_entry": "2026-02-11"
+  },
+  {
+   "ledger": "SPUR TECHNOLOGIES PVT. LTD.",
+   "ledger_group": "Sundry Debtors",
+   "entries": 84,
+   "last_entry": "2026-03-18"
+  }
+ ],
+ "rpc:busy_customer_list": [
+  {
+   "customer": "SPUR TECHNOLOGIES PVT. LTD.",
+   "this_fy": 0,
+   "last_fy": 490936,
+   "change_pct": -100,
+   "lifetime": 5987562,
+   "invoices": 84,
+   "last_sale": "2026-03-18",
+   "quiet_days": 185
+  },
+  {
+   "customer": "ATLAS CYCLE HARYANA LTD.",
+   "this_fy": 0,
+   "last_fy": 0,
+   "change_pct": null,
+   "lifetime": 15808968,
+   "invoices": 76,
+   "last_sale": "2020-09-07",
+   "quiet_days": 2203
+  },
+  {
+   "customer": "HERO MOTORS LIMITED",
+   "this_fy": 1842000,
+   "last_fy": 1203500,
+   "change_pct": 53.1,
+   "lifetime": 9120400,
+   "invoices": 51,
+   "last_sale": "2026-09-08",
+   "quiet_days": 11
+  },
+  {
+   "customer": "HINDON METAFORMS PVT.LTD",
+   "this_fy": 0,
+   "last_fy": 28285,
+   "change_pct": -100,
+   "lifetime": 1944820,
+   "invoices": 37,
+   "last_sale": "2026-03-25",
+   "quiet_days": 178
+  }
+ ],
+ "rpc:busy_customer_detail": {
+  "company": "REF",
+  "customer": "SPUR TECHNOLOGIES PVT. LTD.",
+  "years": [
+   {
+    "fy": "2022-23",
+    "value": 1204000,
+    "invoices": 18
+   },
+   {
+    "fy": "2023-24",
+    "value": 1876300,
+    "invoices": 24
+   },
+   {
+    "fy": "2024-25",
+    "value": 2416326,
+    "invoices": 31
+   },
+   {
+    "fy": "2025-26",
+    "value": 490936,
+    "invoices": 11
+   }
+  ],
+  "invoices": [
+   {
+    "date": "2026-03-18",
+    "vch_no": "REF/2025-26/281",
+    "net": 84000,
+    "gross": 99120
+   },
+   {
+    "date": "2026-01-22",
+    "vch_no": "REF/2025-26/196",
+    "net": 146500,
+    "gross": 172870
+   }
+  ],
+  "items": [
+   {
+    "item": "BELT CONVEYOR",
+    "times": 14,
+    "value": 2180000
+   },
+   {
+    "item": "GOODS LIFT",
+    "times": 6,
+    "value": 1450000
+   }
+  ]
+ },
+ "rpc:busy_items_sold": [
+  {
+   "item": "INCLINED SLAT CONVEYOR",
+   "times_sold": 34,
+   "total_value": 18840700,
+   "last_sold_to": "GURSEWAK SINGH NIJJAR",
+   "last_sold_on": "2026-05-14",
+   "last_rate": 1200000
+  },
+  {
+   "item": "SKD (CYCLE ASSEMBLY CONVEYOR)",
+   "times_sold": 15,
+   "total_value": 11408907,
+   "last_sold_to": "AVON NEWAGE CYCLES PVT.LTD",
+   "last_sold_on": "2024-12-02",
+   "last_rate": 1129907
+  },
+  {
+   "item": "GOODS LIFT",
+   "times_sold": 23,
+   "total_value": 11172500,
+   "last_sold_to": "R.S.INDUSTRIES",
+   "last_sold_on": "2026-09-07",
+   "last_rate": 250000
+  },
+  {
+   "item": "FABRICATED MATERIALS",
+   "times_sold": 88,
+   "total_value": 3487484,
+   "last_sold_to": "HERO MOTORS LIMITED",
+   "last_sold_on": "2025-03-12",
+   "last_rate": null
+  }
+ ],
+ "rpc:busy_item_sales": [
+  {
+   "vch_date": "2026-05-14",
+   "party": "GURSEWAK SINGH NIJJAR",
+   "vch_no": "REF/2025-26/301",
+   "description": "L 24 FT X 3 FT W X 20\" TO 13.5 FT H | SPROCKET 2\" PITCH",
+   "qty": 1,
+   "rate": 1200000,
+   "amount": 1200000,
+   "is_lump_sum": false
+  },
+  {
+   "vch_date": "2024-08-02",
+   "party": "ATLAS CYCLE HARYANA LTD.",
+   "vch_no": "REF/2024-25/118",
+   "description": "16 FEET L X 3 FEET W | TRACK 4 NOS.(ANGLE 50X50X5)",
+   "qty": 1,
+   "rate": 680000,
+   "amount": 680000,
+   "is_lump_sum": false
+  }
+ ],
+ "rpc:busy_item_price_history": [
+  {
+   "vch_date": "2019-06-11",
+   "party": "ATLAS CYCLE HARYANA LTD.",
+   "description": "L 20 FT X 3 FT W",
+   "qty": 1,
+   "rate": 520000,
+   "amount": 520000,
+   "is_lump_sum": false
+  },
+  {
+   "vch_date": "2022-11-04",
+   "party": "AVON NEWAGE CYCLES PVT.LTD",
+   "description": "L 22 FT X 3 FT W | SPROCKET 2\" PITCH",
+   "qty": 1,
+   "rate": 610000,
+   "amount": 610000,
+   "is_lump_sum": false
+  },
+  {
+   "vch_date": "2024-08-02",
+   "party": "HERO MOTORS LIMITED",
+   "description": "16 FEET L X 3 FEET W",
+   "qty": 1,
+   "rate": 680000,
+   "amount": 680000,
+   "is_lump_sum": false
+  }
+ ],
+ "rpc:busy_material_prices": {
+  "company": "REF",
+  "on": "2026-09-19",
+  "months_before": 2,
+  "asked_month": "2026-07-01",
+  "min_buys": 3,
+  "materials": [
+   {
+    "material": "Angle",
+    "then_month": "2026-07-01",
+    "then_buys": 12,
+    "then_weighted": 49.25,
+    "then_simple": 50.49,
+    "then_is_nearest": false,
+    "now_month": "2026-09-01",
+    "now_buys": 6,
+    "now_weighted": 55.19,
+    "now_simple": 56.02,
+    "change_weighted": 12.1,
+    "change_simple": 11.0
+   },
+   {
+    "material": "Channel",
+    "then_month": "2026-03-01",
+    "then_buys": 6,
+    "then_weighted": 91.9,
+    "then_simple": 80.83,
+    "then_is_nearest": true,
+    "now_month": "2026-03-01",
+    "now_buys": 6,
+    "now_weighted": 91.9,
+    "now_simple": 80.83,
+    "change_weighted": 0.0,
+    "change_simple": 0.0
+   },
+   {
+    "material": "Pipe",
+    "then_month": "2026-07-01",
+    "then_buys": 21,
+    "then_weighted": 54.74,
+    "then_simple": 88.33,
+    "then_is_nearest": false,
+    "now_month": "2026-09-01",
+    "now_buys": 10,
+    "now_weighted": 65.11,
+    "now_simple": 213.54,
+    "change_weighted": 18.9,
+    "change_simple": 141.8
+   },
+   {
+    "material": "Sheet",
+    "then_month": "2026-07-01",
+    "then_buys": 13,
+    "then_weighted": 72.09,
+    "then_simple": 146.38,
+    "then_is_nearest": false,
+    "now_month": "2026-09-01",
+    "now_buys": 4,
+    "now_weighted": 85.0,
+    "now_simple": 85.0,
+    "change_weighted": 17.9,
+    "change_simple": -41.9
+   }
+  ]
+ }
 }

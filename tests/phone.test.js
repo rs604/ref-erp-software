@@ -585,7 +585,79 @@ function reportScreen(label, r) {
     record('and Rate and Amount are still on the screen',
       descCol.amountOnScreen && descCol.columns === 11, `${descCol.columns} columns`);
 
-    /* ---- A COLUMN WIDTH IS REMEMBERED, LIKE THE SHOW-AND-HIDE CHOICE ---- */
+    /* ---- THE LEDGER, AT A DESK ----
+       The figures are Busy's own, checked to the rupee: Hindon Metaforms
+       opens at 4,83,537 Cr, moves 5,72,804 Dr against 33,376 Cr, and closes
+       at 41,250 Dr. What is asserted here is not the arithmetic -- the
+       database does that and is tested there -- but that the screen SAYS
+       WHICH WAY IT GOES on every line. A balance that crosses from Cr to Dr
+       mid-year and does not say so is a number that has quietly changed
+       meaning. */
+    await H.go(deskPage, 'ledger', 'REF');
+    await deskPage.waitForTimeout(700);
+    await deskPage.evaluate(() => {
+      const el = document.getElementById('lgParty');
+      el.value = 'HINDON METAFORMS PVT.LTD';
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await deskPage.waitForTimeout(900);
+    const led = await deskPage.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('#lgRows tr'));
+      const balances = rows.map(r => r.cells[r.cells.length - 1].textContent.trim());
+      const kpis = Array.from(document.querySelectorAll('#lgKpis .kpi'))
+        .map(k => k.textContent.replace(/\s+/g, ' ').trim());
+      return {
+        rowCount: rows.length,
+        everyBalanceSaysWhichWay: balances.every(b => !b || b === '0' || /Cr$|Dr$/.test(b)),
+        crossesSides: balances.some(b => /Cr$/.test(b)) && balances.some(b => /Dr$/.test(b)),
+        firstIsOpening: (rows[0] || {}).textContent ? /Opening/.test(rows[0].textContent) : false,
+        lastIsClosing: /Closing/.test((rows[rows.length - 1] || {}).textContent || ''),
+        closingSaysWord: kpis.some(k => /RECEIVABLE|PAYABLE/.test(k)),
+        fourCards: kpis.length === 4,
+        undatedSaidInWords: /undated opening/.test(document.getElementById('lgNotes').textContent),
+      };
+    });
+    record('the ledger opens with an opening row and closes with a closing row',
+      led.firstIsOpening && led.lastIsClosing, JSON.stringify(led));
+    record('every running balance says Cr or Dr',
+      led.everyBalanceSaysWhichWay && led.rowCount > 3, `${led.rowCount} rows`);
+    record('and this party really does cross from Cr to Dr, so the suffix earns its place',
+      led.crossesSides);
+    record('four cards, and the closing one says PAYABLE or RECEIVABLE',
+      led.fourCards && led.closingSaysWord);
+    record('the undated opening entries are said in words, not dropped',
+      led.undatedSaidInWords);
+
+    /* ---- and no table anywhere is left without cards for a phone ---- */
+    const phoneLedger = await browser.newPage(PHONE);
+    await H.open(server, phoneLedger, { file: 'busy.html', user: OWNER, handlers: HANDLERS, data: JSON.stringify(BUSY) });
+    await phoneLedger.waitForSelector('#shell', { state: 'visible' });
+    await phoneLedger.waitForTimeout(1300);
+    await H.go(phoneLedger, 'ledger', 'REF');
+    await phoneLedger.waitForTimeout(700);
+    await phoneLedger.evaluate(() => {
+      const el = document.getElementById('lgParty');
+      el.value = 'HINDON METAFORMS PVT.LTD';
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await phoneLedger.waitForTimeout(900);
+    const lp = await phoneLedger.evaluate(() => ({
+      tableGone: getComputedStyle(document.querySelector('#view-ledger .tbl-wrap')).display === 'none',
+      cards: document.getElementById('lgCards').children.length,
+      cardsSayWhichWay: Array.from(document.querySelectorAll('#lgCards .rc-amt'))
+        .every(a => /Cr$|Dr$/.test(a.textContent.trim()) || a.textContent.trim() === '0'),
+      sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    }));
+    record('on a phone the ledger is cards, not a squeezed table',
+      lp.tableGone && lp.cards > 3 && !lp.sideways, JSON.stringify(lp));
+    record('and every card carries Cr or Dr too', lp.cardsSayWhichWay);
+    await phoneLedger.close();
+
+    /* ---- A COLUMN WIDTH IS REMEMBERED, LIKE THE SHOW-AND-HIDE CHOICE ----
+       Back to Price History first: the block above left this page on the
+       ledger, and the grip being dragged belongs to the price table. */
+    await H.go(deskPage, 'price', 'REF');
+    await deskPage.waitForTimeout(900);
     const grip = await deskPage.locator('#headRow th[data-col="desc"] .colgrip').boundingBox();
     const was = await deskPage.evaluate(() =>
       Math.round(document.querySelector('#headRow th[data-col="desc"]').getBoundingClientRect().width));

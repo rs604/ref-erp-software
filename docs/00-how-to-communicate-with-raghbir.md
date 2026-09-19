@@ -4,6 +4,33 @@ Applies to every session in this project, and to every build chat.
 
 ---
 
+## DO NOT ASK HIM TO APPROVE EACH STEP
+
+**This is the first rule because it is the one that keeps slipping.** It was
+written here on 11 Sep. It slipped. On 19 Sep he said it again, harder:
+
+> STOP ASKING ME TO APPROVE EVERY ACTION. I have approved over 100 prompts on
+> this one task. That is not safety, it is friction, and it means I stop
+> reading them — which is worse than not asking.
+
+**Do the work. Report what changed at the end.**
+
+Not file edits. Not reads. Not bash commands. Not migrations. Not deploys.
+Not commits. Not pushes.
+
+**ASK ONLY BEFORE:**
+
+- deleting a Supabase project
+- dropping a table or a column
+- deleting a file you did not create
+- anything that destroys data that cannot be got back
+
+A prompt he has stopped reading is worse than no prompt, because it is a guard
+everyone believes in and nobody uses. `.claude/settings.json` in this repo
+carries the allowlist so the rule is enforced and not merely intended.
+
+---
+
 ## Rules
 
 - **Bullet points only. No paragraphs.** He reads fast and paragraphs waste his

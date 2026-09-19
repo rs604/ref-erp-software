@@ -100,17 +100,63 @@ const OVERLAP = () => {
   };
 };
 
+/* A TABLE THAT IS HIDDEN AND HAS NO CARDS IS DATA THAT IS SIMPLY GONE.
+
+   .tbl-wrap is display:none below 880px, on purpose -- a table is not a
+   table on a phone. Every screen that remembered to build cards beside it
+   works. Three panels in the ledger-and-reports build did not, and each
+   shipped a heading with NOTHING under it: "What he buys most", "Every
+   invoice, newest first", and the entire four-material comparison sitting
+   under a line that said steel was up 12%.
+
+   None of them overflowed, overlapped, or errored. The overlap detector
+   called all three clean, twice. So this asks the question the detector
+   cannot: is there a table on this screen whose rows a phone cannot reach? */
+const HIDDEN_TABLES = () => {
+  const bad = [];
+  document.querySelectorAll('.tbl-wrap').forEach(w => {
+    if (getComputedStyle(w).display !== 'none') return;      // shown: fine
+    const rows = w.querySelectorAll('tbody tr').length;
+    if (!rows) return;                                       // nothing in it anyway
+    // Only the screen that is actually open. Every other view is still in the
+    // page with display:none on it, and a table nobody has navigated to is
+    // not a table nobody can read.
+    let up = w.parentElement, offScreen = false;
+    while (up && up !== document.body) {
+      if (getComputedStyle(up).display === 'none') { offScreen = true; break; }
+      up = up.parentElement;
+    }
+    if (offScreen) return;
+    // Its cards are the .rc-list beside it, in the same panel.
+    const near = w.parentElement;
+    const cards = near ? near.querySelector(':scope > .rc-list') : null;
+    const shown = cards && getComputedStyle(cards).display !== 'none'
+                  && cards.children.length > 0;
+    if (!shown) {
+      const head = Array.from(w.querySelectorAll('thead th')).map(t => t.textContent.trim());
+      bad.push(head.slice(0, 4).join('/') || '(unnamed table)');
+    }
+  });
+  return bad;
+};
+
 const results = [];
 const shots = [];
 
 async function look(page, name, file) {
   const r = await page.evaluate(OVERLAP);
+  const hidden = await page.evaluate(HIDDEN_TABLES);
   const shot = path.join(OUT, file + '.png');
-  await page.screenshot({ path: shot });
+  // The WHOLE page, not the top of it. A fault below the fold is still a
+  // fault, and the viewport-only shot is how a screen gets called clean
+  // because its first 844 pixels were.
+  await page.screenshot({ path: shot, fullPage: true });
   shots.push(shot);
   results.push({
-    name, ok: !r.sideways && !r.overlaps.length,
+    name, ok: !r.sideways && !r.overlaps.length && !hidden.length,
     detail: (r.sideways ? 'RUNS OFF THE SIDE. ' : '') +
+            (hidden.length ? 'A TABLE WITH NO CARDS BESIDE IT, SO ITS ROWS ARE NOT ON A PHONE AT ALL: '
+                             + hidden.join(' | ') + '. ' : '') +
             (r.overlaps.length ? 'PRINTED ON TOP: ' + r.overlaps.join(' | ') : ''),
   });
 }
@@ -174,6 +220,43 @@ async function look(page, name, file) {
     await page.waitForTimeout(1000);
     await look(page, 'busy: ' + v, 'busy-' + v);
   }
+  /* The ledger with a party picked, and each report tab. A screen reached
+     only by typing a name into a box is exactly the kind nobody looks at,
+     which is how the last six broken ones got through. */
+  await H.go(page, 'ledger', 'REF');
+  await page.waitForTimeout(900);
+  await look(page, 'busy: ledger, before a party is picked', 'busy-ledger-empty');
+  await page.evaluate(() => {
+    const el = document.getElementById('lgParty');
+    el.value = 'HINDON METAFORMS PVT.LTD';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForTimeout(900);
+  await look(page, 'busy: ledger, a party picked', 'busy-ledger');
+
+  await H.go(page, 'reports', 'REF');
+  await page.waitForTimeout(1100);
+  for (const tab of ['customers', 'items', 'materials']) {
+    await page.evaluate(t => {
+      const b = document.querySelector('.rep-tab[data-rep="' + t + '"]');
+      if (b) b.click();
+    }, tab);
+    await page.waitForTimeout(900);
+    await look(page, 'busy: reports > ' + tab, 'busy-reports-' + tab);
+  }
+  /* And a row opened, because the drill-down is half of two of the reports. */
+  await page.evaluate(() => {
+    const b = document.querySelector('.rep-tab[data-rep="customers"]');
+    if (b) b.click();
+  });
+  await page.waitForTimeout(700);
+  await page.evaluate(() => {
+    const r = document.querySelector('#custCards [data-cust], #custRows [data-cust]');
+    if (r) r.click();
+  });
+  await page.waitForTimeout(900);
+  await look(page, 'busy: reports > a customer opened', 'busy-reports-customer');
+
   /* A card opened, because that is where the description bug lived: the
      panel was there, and the text inside it was clipped to nothing.
 
@@ -208,10 +291,42 @@ async function look(page, name, file) {
     await page.close();
   }
 
+  /* ---- AND THE SAME SCREENS AT A DESK ----
+     He asked for both, "each laid out properly for its own size". A phone
+     pass alone cannot see a desk regression, and the desk is where these
+     two screens will actually be read most. The overlap and sideways
+     questions are the same ones; the hidden-table question answers itself
+     at this width, because the tables are shown. */
+  const desk = await browser.newPage({ viewport: { width: 1360, height: 900 } });
+  await H.open(server, desk, { file: 'busy.html', user: OWNER, handlers: HANDLERS,
+                               data: JSON.stringify(BUSY) });
+  await desk.waitForSelector('#shell', { state: 'visible' });
+  await desk.waitForTimeout(1500);
+  await H.go(desk, 'ledger', 'REF');
+  await desk.waitForTimeout(800);
+  await desk.evaluate(() => {
+    const el = document.getElementById('lgParty');
+    el.value = 'HINDON METAFORMS PVT.LTD';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await desk.waitForTimeout(900);
+  await look(desk, 'DESK — ledger', 'desk-ledger');
+  await H.go(desk, 'reports', 'REF');
+  await desk.waitForTimeout(1200);
+  for (const tab of ['customers', 'items', 'materials']) {
+    await desk.evaluate(t => {
+      const b = document.querySelector('.rep-tab[data-rep="' + t + '"]');
+      if (b) b.click();
+    }, tab);
+    await desk.waitForTimeout(900);
+    await look(desk, 'DESK — reports > ' + tab, 'desk-reports-' + tab);
+  }
+  await desk.close();
+
   await browser.close();
   server.close();
 
-  console.log('\nTHE SWEEP — 390x844, touch, every screen\n');
+  console.log('\nTHE SWEEP — every screen at 390x844, and the new ones at 1360 too\n');
   let bad = 0;
   for (const r of results) {
     if (!r.ok) bad++;

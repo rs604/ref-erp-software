@@ -107,6 +107,37 @@ for (const [what, values] of Object.entries(seen)) {
   }
 }
 
+/* TWO FUNCTIONS WITH ONE NAME IN ONE PAGE.
+
+   busy.html is one file holding eight screens. The reports build added a
+   drawItems(); the upload screen already had one further down. Function
+   declarations hoist, so the LATER one wins, and the reports screen
+   silently called the uploader's draw. No error, no warning, nothing in
+   the console -- just "Looking…" printed over 829 items, for ever.
+
+   Nothing else here could have caught that: the page parses, the tests
+   stub the data, and the overlap sweep saw a tidy screen with a loading
+   message on it. So the name itself is the thing to check. */
+for (const page of PAGES) {
+  const src = fs.readFileSync(path.join(ROOT, page), 'utf8');
+  const seen = new Map();
+  const re = /^[ \t]*function\s+([A-Za-z_$][\w$]*)\s*\(/gm;
+  let m;
+  while ((m = re.exec(src))) {
+    // Only names declared at the top level of the page's own script. A
+    // function nested inside another has its own scope and shadows
+    // deliberately, which is not this fault.
+    const indent = m[0].match(/^[ \t]*/)[0].length;
+    if (indent > 2) continue;
+    const line = src.slice(0, m.index).split('\n').length;
+    if (seen.has(m[1])) {
+      findings.push(`${page} declares function ${m[1]}() twice — line ${seen.get(m[1])} ` +
+                    `and line ${line}. The later one wins everywhere, including inside ` +
+                    `the earlier one's own screen, and it fails in silence`);
+    } else seen.set(m[1], line);
+  }
+}
+
 console.log('\nEvery page checked against the set\n');
 console.log('  in the set: ' + PAGES.join(', ') + '\n');
 if (findings.length === 0) {

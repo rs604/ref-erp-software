@@ -1,6 +1,6 @@
 {
  "_refresh": "see tests/check-rpc-calls.js",
- "_taken_from": "public schema of refcon-erp, 18 Sep 2026, after migration 63",
+ "_taken_from": "public schema of refcon-erp, 19 Sep 2026, after migration 67",
  "functions": {
   "busy_clear_history": {
    "args": [
@@ -21,9 +21,38 @@
    "total": 1,
    "with_defaults": 0
   },
+  "busy_customer_detail": {
+   "args": [
+    "p_company",
+    "p_customer"
+   ],
+   "total": 2,
+   "with_defaults": 0
+  },
+  "busy_customer_list": {
+   "args": [
+    "p_company"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
   "busy_doc_types": {
    "args": [
     "p_company"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_fy_of": {
+   "args": [
+    "p_d"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_fy_start": {
+   "args": [
+    "p_fy"
    ],
    "total": 1,
    "with_defaults": 0
@@ -79,6 +108,48 @@
    "total": 4,
    "with_defaults": 0
   },
+  "busy_item_price_history": {
+   "args": [
+    "p_company",
+    "p_item"
+   ],
+   "total": 2,
+   "with_defaults": 0
+  },
+  "busy_item_sales": {
+   "args": [
+    "p_company",
+    "p_item"
+   ],
+   "total": 2,
+   "with_defaults": 0
+  },
+  "busy_items_sold": {
+   "args": [
+    "p_company"
+   ],
+   "total": 1,
+   "with_defaults": 0
+  },
+  "busy_ledger": {
+   "args": [
+    "p_company",
+    "p_party",
+    "p_from",
+    "p_to"
+   ],
+   "total": 4,
+   "with_defaults": 0
+  },
+  "busy_material_prices": {
+   "args": [
+    "p_company",
+    "p_on",
+    "p_months_before"
+   ],
+   "total": 3,
+   "with_defaults": 2
+  },
   "busy_monthly_totals": {
    "args": [
     "p_company"
@@ -107,6 +178,15 @@
    ],
    "total": 1,
    "with_defaults": 0
+  },
+  "busy_party_list": {
+   "args": [
+    "p_company",
+    "p_query",
+    "p_limit"
+   ],
+   "total": 3,
+   "with_defaults": 2
   },
   "busy_row_counts": {
    "args": [],
