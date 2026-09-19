@@ -20,6 +20,10 @@
    mid-deploy or serving from cache, main can be ahead of the site for a
    few minutes -- it is never behind.
 
+   It reads those bytes AT THE COMMIT main points at, never by branch name.
+   See mainSha() below for why: the branch-name form made this check cry wolf
+   on the first merge after it was written.
+
    Run:  node tests/check-live.js
    ============================================================ */
 'use strict';
