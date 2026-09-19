@@ -54,6 +54,27 @@ Applies to every session in this project, and to every build chat.
 
 ---
 
+## How a report comes back
+
+**One code block. The whole report inside it. Nothing outside it except one
+line saying which phase is done.**
+
+He copies the report into the design chat. Plain text loses its formatting on
+the way, and on a phone it takes several taps to select. A single fenced block
+is one tap.
+
+This was agreed and then slipped twice — two reports came back as plain text
+— which is why it is written down here rather than remembered.
+
+The rules about what goes *in* the report stand as before:
+
+- **A report says what is live.** Anything not live is not done, and belongs in
+  a BLOCKING section at the bottom, not in a footnote
+- Do not head a report "done" and then mention further down that it was never
+  merged
+
+---
+
 ## How the work is split
 
 - **This project's discussion chat makes no database changes.** Discuss → agree →
