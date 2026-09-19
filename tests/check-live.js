@@ -37,7 +37,7 @@ const BRANCH = process.env.LIVE_BRANCH || 'main';
 
 /* Everything the browser actually downloads. */
 const SHIPPED = ['index.html', 'admin.html', 'busy.html', 'submit.html', 'reset.html',
-                 'nav.js', 'app-config.js', 'documentation.js', 'version.txt'];
+                 'nav.js', 'app-config.js', 'documentation.js', 'theme.css', 'version.txt'];
 
 /* Things that must be IN what main serves, named so a failure says what is
    missing rather than "the files differ". */
