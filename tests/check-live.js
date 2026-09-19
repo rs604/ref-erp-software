@@ -50,8 +50,7 @@ const MUST_HOLD = [
   { file: 'index.html', what: 'the shared menu', find: 'src="nav.js"' },
 ];
 
-function fetchRaw(file) {
-  const url = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file}`;
+function get(url) {
   try {
     const out = execFileSync('curl', ['-sS', '-m', '30', '-w', '\n%{http_code}', url],
       { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
@@ -62,10 +61,36 @@ function fetchRaw(file) {
   }
 }
 
+/* WHICH COMMIT IS main, RIGHT NOW.
+
+   Asking for files by BRANCH NAME made this check cry wolf twice.
+   raw.githubusercontent caches a branch for about five minutes and does it
+   PER PATH, so index.html comes back fresh while version.txt comes back with
+   the previous build number, and the check announces that nothing is live
+   when all of it is.
+
+   A commit sha is immutable and is never served stale. So: ask the API what
+   main points at, then read every file at that sha. */
+let HEAD_SHA = null;
+function mainSha() {
+  if (HEAD_SHA) return HEAD_SHA;
+  const r = get(`https://api.github.com/repos/${REPO}/commits/${BRANCH}`);
+  if (r.code !== 200) return null;
+  try { HEAD_SHA = JSON.parse(r.body).sha; } catch (e) { return null; }
+  return HEAD_SHA;
+}
+
+function fetchRaw(file) {
+  const sha = mainSha();
+  if (!sha) return { code: 0, body: '', error: 'could not ask GitHub which commit ' + BRANCH + ' is' };
+  return get(`https://raw.githubusercontent.com/${REPO}/${sha}/${file}`);
+}
+
 const findings = [];
 let checked = 0;
 
-console.log(`\nWhat ${BRANCH} is serving, fetched from GitHub\n`);
+const atSha = mainSha();
+console.log(`\nWhat ${BRANCH} holds, read at commit ${atSha ? atSha.slice(0, 7) : '(unknown)'}\n`);
 
 for (const file of SHIPPED) {
   const here = fs.existsSync(path.join(ROOT, file));
