@@ -53,12 +53,38 @@ window.__TEST_HANDLERS__ = ${handlerSrc};
    function name. Nothing leaves the browser. */
 window.__TEST_DATA__ = ${dataSrc || '{}'};
 window.__TEST_DB_CALLS__ = [];
+/* A SERVER THAT IS ASKED FOR "hero" DOES NOT SEND BACK EVERYTHING.
+
+   The stub used to answer with the whole fixture whatever the arguments
+   were, which made a screenshot of the party dropdown show four names with
+   no "hero" in them -- flattering the picture and hiding whether the list
+   was showing what it was given. So when a call carries p_query, the stub
+   filters the rows it returns the way the database would: every typed word
+   somewhere in the row's name. It is still not the database's fuzzy match
+   -- "mottor" finds nothing here and finds HERO MOTORS there -- and that
+   difference is deliberate: a test may not claim the fuzzy matching works. */
+function __stubFilter(rows, q) {
+  var words = String(q || '').trim().toUpperCase().split(/\s+/).filter(Boolean);
+  if (!words.length || !Array.isArray(rows)) return rows;
+  return rows.filter(function (r) {
+    if (!r || typeof r !== 'object') return true;
+    var name = String(r.ledger || r.item || r.customer || r.party || '').toUpperCase();
+    if (!name) return true;
+    return words.every(function (w) { return name.indexOf(w) !== -1; });
+  });
+}
 function __stubResult(name, args) {
   window.__TEST_DB_CALLS__.push({ name: name, args: args });
   var v = window.__TEST_DATA__[name];
   if (typeof v === 'function') v = v(args);
   if (v === undefined) return { data: [], error: null };
   if (v && v.error) return { data: null, error: v.error };
+  // Only the lookup lists a picker asks per keystroke. busy_search also
+  // takes a p_query, and it is the DATABASE's search -- filtering its rows
+  // here by a substring would quietly rewrite what that screen is testing.
+  if (name === 'rpc:busy_party_list' && args && args.p_query) {
+    v = __stubFilter(v, args.p_query);
+  }
   return { data: v, error: null };
 }
 function __stubBuilder(name, args) {

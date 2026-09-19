@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1789821056';</script>
+<script>window.__BUILD_VERSION__ = '1789831002';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -33,7 +33,8 @@
   document.addEventListener('visibilitychange', function() { if (!document.hidden) checkVersion(); });
 })();
 </script>
-<link rel="stylesheet" href="theme.css?v=1789821056">
+<link rel="stylesheet" href="theme.css?v=1789831002">
+<link rel="stylesheet" href="ui.css?v=1789831002">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 
@@ -45,7 +46,7 @@
     color: var(--ink);
     font-size: 14px;
   }
-  h1, h2, h3, .label-face { font-family: 'Inter', sans-serif; }
+  h1, h2, h3 { font-family: 'Inter', sans-serif; }
   .mono { font-family: 'IBM Plex Mono', monospace; }
 
   .auth-card {
@@ -56,7 +57,6 @@
     border-radius: 10px;
     padding: 32px 26px;
   }
-  .auth-brand { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 2px; color: var(--steel); margin-bottom: 4px; }
   .auth-title { font-size: 20px; font-weight: 650; margin: 0 0 22px; }
   .field { margin-bottom: 14px; }
   .field label { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
@@ -105,7 +105,6 @@
     animation: btn-spin 0.6s linear infinite;
   }
   @keyframes btn-spin { to { transform: rotate(360deg); } }
-  .btn-block { width: 100%; }
   .btn-outline { background: transparent; border-color: var(--border); color: var(--ink); }
   .btn-outline:hover { background: var(--surface-sunken); }
   .btn-danger { background: var(--danger); }
@@ -146,10 +145,10 @@
   .nav-arrow { width: 12px !important; height: 12px !important; opacity: 0.45; transition: transform 0.15s ease; }
   .nav-item.nav-parent.expanded .nav-arrow { transform: rotate(90deg); }
   .nav-children { padding-left: 0; }
-  .nav-item.level-2 { font-size: 12.5px; padding-left: 34px; }
-  .nav-item.level-3 { font-size: 12px; padding-left: 46px; color: rgba(255,255,255,0.62); }
-  .nav-item.level-3.active { color: #fff; }
-  .nav-item.nav-parent.level-2 .nav-arrow { margin-left: auto; }
+  /* No .level-2 or .level-3 here any more. They were white-on-dark rules for
+     a menu nav.js has drawn since, and the Decisions tree that still uses
+     .nav-item never had a level on it. A dormant style is the one somebody
+     revives next year assuming it was there for a reason. */
 
   .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .topbar {
@@ -246,7 +245,6 @@
   .pg-resizer { position: absolute; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; z-index: 11; }
   .pg-resizer:hover { background: #1a73e8; opacity: 0.4; }
   body.pg-resizing { cursor: col-resize !important; user-select: none !important; }
-  .pay-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
   .pay-hint { font-size: 11px; color: var(--muted); margin: 4px 0 0; }
 
   /* Modal — used for create/edit forms so the list view stays clean and separate */
@@ -391,7 +389,6 @@
   .doc-dropzone-label { flex:1; font-size:13px; color:var(--steel); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .doc-dropzone-btn { flex-shrink:0; background:var(--green); border-color:var(--green); color:#fff; padding:5px 12px; font-size:12px; }
   .doc-dropzone-btn:hover { background:#256b45; }
-  .category-content, .cptab-content, .etab-content, .hrtab-content { }
   .panel-body { padding: 18px; }
   .count-chip { font-size: 11px; font-weight: 700; background: var(--amber); color: #fff; padding: 2px 8px; border-radius: 4px; margin-left: 6px; }
 
@@ -592,7 +589,7 @@
        "works" on a phone and still cannot be read. Nothing under 12px, and
        the things a person actually reads at 13px or more. */
     .topbar-sub, #pageSub { font-size: 12.5px; }
-    .pill-section-label, .nav-future-note, .empty-state { font-size: 12px; }
+    .pill-section-label, .empty-state { font-size: 12px; }
     .msg { font-size: 13px; }
 
     /* ---- NOTHING GOES SIDEWAYS ----
@@ -601,7 +598,7 @@
        page does. */
     .panel-body, .content { overflow-wrap: anywhere; }
     /* A wide table scrolls inside its own box. The page never does. */
-    .table-scroll, .pg-wrap, .grid-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
     /* ---- THE KEYBOARD MUST NOT SIT ON THE FIELD ----
        A field near the bottom of a form disappears behind the keyboard when
@@ -931,6 +928,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
 <script src="nav.js"></script>
+<script src="ui.js"></script>
 <script>
   let currentUser = null;
   let dashboardData = null;

@@ -1785,18 +1785,38 @@ async function openBusy(server, browser, user) {
       step1.searchShown && !step1.monthsAsked && !step1.anyDateAsked
         && !step1.salesShown && !step1.panelShown, JSON.stringify(step1));
 
+    /* Typing opens the shared picker; picking from it is step two. The chip
+       wall it replaced showed twelve names and "9 more -- type another word",
+       which was a list of names pretending not to be one. */
     await p3.evaluate(() => {
       const el = document.getElementById('matSearch');
       el.value = 'slat conveyor';
       el.dispatchEvent(new Event('input', { bubbles: true }));
     });
+    await p3.waitForTimeout(600);
+    const dropped = await p3.evaluate(() => {
+      const list = document.querySelector('#rep-materials .refpick-list');
+      const opts = document.querySelectorAll('#rep-materials .refpick-opt');
+      return {
+        open: !!list && list.classList.contains('open'),
+        opts: opts.length,
+        solid: list ? getComputedStyle(list).backgroundColor : null,
+        lit: !!document.querySelector('#rep-materials .refpick-opt mark'),
+      };
+    });
+    record('typing a machine drops a list, and the list is SOLID, never see-through',
+      dropped.open && dropped.opts > 0 && dropped.solid === 'rgb(255, 255, 255)',
+      JSON.stringify(dropped));
+    record('and the typed letters are lit up in it', dropped.lit);
+
+    await p3.evaluate(() => document.querySelector('#rep-materials .refpick-opt').click());
     await p3.waitForTimeout(900);
     const step2 = await p3.evaluate(() => ({
       sales: document.querySelectorAll('#matSales [data-sale]').length,
       monthsAsked: !!document.getElementById('matBefore'),
       panelShown: document.getElementById('matPanel').offsetParent !== null,
     }));
-    record('searching an item shows its sales, and still asks for no settings',
+    record('picking one shows its sales, and still asks for no settings',
       step2.sales > 1 && !step2.monthsAsked && !step2.panelShown, JSON.stringify(step2));
 
     await p3.evaluate(() => document.querySelector('#matSales [data-sale]').click());

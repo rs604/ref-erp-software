@@ -4241,6 +4241,24 @@
       "ledger_group": "Sundry Debtors",
       "entries": 84,
       "last_entry": "2026-03-18"
+    },
+    {
+      "ledger": "HERO MOTORS (A DIV.OF HERO CYCLES LTD.)",
+      "ledger_group": "Sundry Debtors",
+      "entries": 61,
+      "last_entry": "2026-08-04"
+    },
+    {
+      "ledger": "HERO MOTORS LIMITED",
+      "ledger_group": "Sundry Debtors",
+      "entries": 44,
+      "last_entry": "2026-07-22"
+    },
+    {
+      "ledger": "HERO MOTORS LIMITED (DADRI)",
+      "ledger_group": "Sundry Debtors",
+      "entries": 19,
+      "last_entry": "2026-05-30"
     }
   ],
   "rpc:busy_customer_list": [

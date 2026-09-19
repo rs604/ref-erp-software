@@ -238,6 +238,25 @@ async function look(page, name, file, viewportOnly) {
   await page.waitForTimeout(900);
   await look(page, 'busy: ledger, a party picked', 'busy-ledger');
 
+  /* THE DROPDOWN, PHOTOGRAPHED. It was a native <datalist>, which drew half
+     see-through over the form on his phone -- and no assertion could have
+     seen that, because the list was the browser's and not in the page at
+     all. This is ours, so it can be both tested and looked at. */
+  await page.evaluate(() => {
+    const el = document.getElementById('lgParty');
+    el.value = 'hero';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.waitForTimeout(700);
+  await look(page, 'busy: the party list, dropped', 'busy-party-list', true);
+  await page.evaluate(() => {
+    const el = document.getElementById('lgParty');
+    if (el.__refpick) el.__refpick.close();
+    el.value = 'HINDON METAFORMS PVT.LTD';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForTimeout(600);
+
   await H.go(page, 'reports', 'REF');
   await page.waitForTimeout(1100);
   for (const tab of ['customers', 'items', 'materials']) {

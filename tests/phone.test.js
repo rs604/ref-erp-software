@@ -689,6 +689,222 @@ function reportScreen(label, r) {
     await page.close();
   }
 
+  /* ================================================================
+     THE CONTROL AREA, AND THE LIST THAT DROPS OUT OF IT
+
+     "Party, two dates, four range buttons and two download buttons fill
+     the entire phone before a single ledger entry appears."  Six rows of
+     controls, and the thing he opened the screen for below the fold.
+
+     And the list under the party search was a native <datalist>: the
+     browser's, not the page's, so it could not be styled, it rendered
+     half see-through over the form, and it did it only sometimes. There
+     was nothing to fix -- only something to replace.
+     ================================================================ */
+  {
+    const page = await browser.newPage(PHONE);
+    await H.open(server, page, { file: 'busy.html', user: OWNER,
+                                 handlers: HANDLERS, data: JSON.stringify(BUSY) });
+    await page.waitForSelector('#shell', { state: 'visible' });
+    await page.waitForTimeout(1300);
+    await H.go(page, 'ledger', 'REF');
+    await page.waitForTimeout(800);
+
+    record('no screen in the ERP leaves a list to the browser any more',
+      (await page.evaluate(() => document.querySelectorAll('datalist, [list]').length)) === 0);
+
+    const bar = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('#view-ledger .ctl-row')];
+      /* BOTTOM edges, not tops: the cells in a row are bottom-aligned, so a
+         cell with a label above its field starts higher than a bare button
+         beside it and counting tops would report a row that has not wrapped
+         as two. What says a row wrapped is its cells sitting on different
+         BASELINES. */
+      const lines = new Set();
+      document.querySelectorAll('#view-ledger .ctl-row > *').forEach(c => {
+        const r = c.getBoundingClientRect();
+        if (r.height) lines.add(Math.round(r.bottom));
+      });
+      const card = document.querySelector('#view-ledger .ctl');
+      return { rows: rows.length, visualRows: lines.size,
+               height: Math.round(card.getBoundingClientRect().height) };
+    });
+    record('the control area is TWO rows, not six',
+      bar.rows === 2 && bar.visualRows === 2,
+      `${bar.rows} declared, ${bar.visualRows} on screen, ${bar.height}px tall`);
+
+    /* THE SPACE, USED. "the four cards and the first ledger entries should
+       be visible without scrolling. That is what I open this screen for." */
+    await page.evaluate(() => {
+      const el = document.getElementById('lgParty');
+      el.value = 'HINDON METAFORMS PVT.LTD';
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await page.waitForTimeout(900);
+    const fold = await page.evaluate(() => {
+      const h = window.innerHeight;
+      const cards = [...document.querySelectorAll('#lgKpis .kpi')];
+      const first = document.querySelector('#lgCards .rc');
+      return {
+        viewport: h,
+        cards: cards.length,
+        lastCardBottom: cards.length ? Math.round(cards[cards.length - 1].getBoundingClientRect().bottom) : null,
+        firstEntryTop: first ? Math.round(first.getBoundingClientRect().top) : null,
+      };
+    });
+    record('all four cards are on the first screen, without scrolling',
+      fold.cards === 4 && fold.lastCardBottom !== null && fold.lastCardBottom < fold.viewport,
+      `four cards end at ${fold.lastCardBottom} of ${fold.viewport}`);
+    record('and the first ledger entry is on it too',
+      fold.firstEntryTop !== null && fold.firstEntryTop < fold.viewport,
+      `first entry at ${fold.firstEntryTop} of ${fold.viewport}`);
+
+    /* ---- the list itself ---- */
+    await page.evaluate(() => {
+      const el = document.getElementById('lgParty');
+      el.value = 'hero';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.waitForTimeout(700);
+    const list = await page.evaluate(() => {
+      const box = document.querySelector('#view-ledger .refpick-list');
+      const opts = [...document.querySelectorAll('#view-ledger .refpick-opt')];
+      const cs = box ? getComputedStyle(box) : null;
+      const under = box ? document.getElementById('lgFrom').getBoundingClientRect() : null;
+      const b = box ? box.getBoundingClientRect() : null;
+      return {
+        open: !!box && box.classList.contains('open'),
+        bg: cs && cs.backgroundColor,
+        alpha: cs && (cs.backgroundColor.match(/rgba\([^)]*,\s*([\d.]+)\)/) || [null, '1'])[1],
+        shadow: cs && cs.boxShadow !== 'none',
+        z: cs && Number(cs.zIndex),
+        count: opts.length,
+        shortest: Math.min(...opts.map(o => Math.round(o.getBoundingClientRect().height))),
+        lit: document.querySelectorAll('#view-ledger .refpick-opt mark').length,
+        texts: opts.map(o => o.querySelector('.t').textContent.trim()),
+        widths: opts.map(o => Math.round(o.getBoundingClientRect().width)),
+        vw: document.documentElement.clientWidth,
+        // does it really lie OVER the form rather than pushing it down?
+        covers: !!(b && under && b.bottom > under.top),
+      };
+    });
+    record('typing a party drops a list of OUR OWN, not the browser\'s',
+      list.open && list.count > 0, JSON.stringify({ open: list.open, count: list.count }));
+    record('and it is SOLID — never see-through, which is the fault that started this',
+      list.bg === 'rgb(255, 255, 255)' && list.alpha === '1', String(list.bg));
+    record('it has a real shadow and sits above the form rather than pushing it down',
+      list.shadow && list.z >= 10 && list.covers,
+      `shadow ${list.shadow} · z ${list.z} · over the form ${list.covers}`);
+    record('every row is tall enough to tap', list.shortest >= TAP, `${list.shortest}px`);
+    record('the typed letters are lit up, as everywhere else in the ERP',
+      list.lit >= list.count, `${list.lit} marks over ${list.count} rows`);
+    record('no row runs under the edge of the list',
+      list.widths.every(w => w <= list.vw), JSON.stringify(list.widths));
+    /* Two parties whose names differ only at the end must not arrive as the
+       same row of text. On one line both came out "HERO MOTORS LI...". */
+    record('two names that differ only at the end are still told apart',
+      new Set(list.texts).size === list.texts.length, JSON.stringify(list.texts));
+
+    /* ---- arrow keys, Enter, Esc ---- */
+    await page.focus('#lgParty');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    const onSecond = await page.evaluate(() =>
+      [...document.querySelectorAll('#view-ledger .refpick-opt')].findIndex(o => o.classList.contains('on')));
+    record('arrow keys move through the list', onSecond === 1, `on row ${onSecond}`);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    const picked = await page.evaluate(() => ({
+      value: document.getElementById('lgParty').value,
+      open: document.querySelector('#view-ledger .refpick-list').classList.contains('open'),
+    }));
+    record('Enter picks the row the arrows are on, and shuts the list',
+      /HERO MOTORS LIMITED/.test(picked.value) && !picked.open, JSON.stringify(picked));
+
+    await page.evaluate(() => {
+      const el = document.getElementById('lgParty');
+      el.value = 'hero';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    record('Esc closes it',
+      !(await page.evaluate(() =>
+        document.querySelector('#view-ledger .refpick-list').classList.contains('open'))));
+
+    /* THE DOWNLOADS ARE ICONS NOW, and an icon with no name is a fault of
+       its own unless it says what it is to anything that asks. */
+    const acts = await page.evaluate(() =>
+      [...document.querySelectorAll('#view-ledger .icon-btn')].map(b => ({
+        label: b.getAttribute('aria-label') || '',
+        tip: b.getAttribute('title') || '',
+        w: Math.round(b.getBoundingClientRect().width),
+        h: Math.round(b.getBoundingClientRect().height),
+        drew: !!b.querySelector('svg'),
+      })));
+    record('the two downloads are icons, beside the search, big enough to tap',
+      acts.length === 2 && acts.every(a => a.w >= TAP && a.h >= TAP && a.drew),
+      JSON.stringify(acts.map(a => `${a.w}x${a.h}`)));
+    record('and each still says what it is, to a tooltip and to a screen reader',
+      acts.every(a => /PDF/i.test(a.tip) && /PDF/i.test(a.label) ||
+                      /Excel/i.test(a.tip) && /Excel/i.test(a.label)),
+      JSON.stringify(acts.map(a => a.label)));
+
+    /* THE FOUR RANGE BUTTONS ARE ONE DROPDOWN, and it says which is chosen. */
+    const range = await page.evaluate(() => {
+      const sel = document.getElementById('lgRange');
+      return { options: [...sel.options].map(o => o.textContent), value: sel.value,
+               chips: document.querySelectorAll('#view-ledger .chip').length };
+    });
+    record('the four range buttons are one dropdown that says which is chosen',
+      range.options.length >= 4 && range.value === 'thisfy' && range.chips === 0,
+      `${range.options.join(' · ')} → ${range.value}`);
+    await page.close();
+  }
+
+  /* The same two components, on the reports beside it. The point of a
+     shared component is that it is not fixed screen by screen. */
+  {
+    const page = await browser.newPage(PHONE);
+    await H.open(server, page, { file: 'busy.html', user: OWNER,
+                                 handlers: HANDLERS, data: JSON.stringify(BUSY) });
+    await page.waitForSelector('#shell', { state: 'visible' });
+    await page.waitForTimeout(1300);
+    await H.go(page, 'reports', 'REF');
+    await page.waitForTimeout(1200);
+    for (const [tab, box, typed] of [['customers', 'custPick', 'hero'],
+                                     ['items', 'itemPick', 'slat'],
+                                     ['materials', 'matSearch', 'slat']]) {
+      await page.evaluate(t => {
+        const b = document.querySelector('.rep-tab[data-rep="' + t + '"]');
+        if (b) b.click();
+      }, tab);
+      await page.waitForTimeout(800);
+      const got = await page.evaluate(id => {
+        const el = document.getElementById(id);
+        return { there: !!el, wrapped: !!(el && el.closest('.refpick')) };
+      }, box);
+      record(`the ${tab} report has the same picker`, got.there && got.wrapped,
+        JSON.stringify(got));
+      await page.evaluate(([id, q]) => {
+        const el = document.getElementById(id);
+        el.value = q;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }, [box, typed]);
+      await page.waitForTimeout(600);
+      const drop = await page.evaluate(id => {
+        const l = document.getElementById(id).closest('.refpick').querySelector('.refpick-list');
+        return { open: l.classList.contains('open'),
+                 bg: getComputedStyle(l).backgroundColor,
+                 rows: l.querySelectorAll('.refpick-opt').length };
+      }, box);
+      record(`and it drops the same solid list on ${tab}`,
+        drop.open && drop.rows > 0 && drop.bg === 'rgb(255, 255, 255)', JSON.stringify(drop));
+    }
+    await page.close();
+  }
+
   await browser.close();
   server.close();
 

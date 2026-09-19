@@ -1,0 +1,84 @@
+/* ============================================================
+   THE ERP'S SHARED CONTROLS — the look. ui.js is the behaviour.
+
+   WHY THIS IS A FILE AND NOT A STRING IN ui.js. It started as a <style>
+   tag that ui.js appended to <head> on load — and a stylesheet appended
+   at the end of <head> comes AFTER every page's own <style>, so at equal
+   specificity it wins. busy.html's phone rules for the control bar were
+   simply ignored, and the ledger's Range dropdown fell to a third row on
+   a phone with nothing in the tests to say so.
+
+   A shared component must be EASIER to override than the page it lands
+   in, not harder. So it is linked with theme.css, before the page, where
+   a page can say what it needs and be heard.
+   ============================================================ */
+
+/* ---- the control bar ----
+   Row 1   what you are looking at, full width      [PDF] [Excel]
+   Row 2   From      To      Range                                    */
+.ctl { display:flex; flex-direction:column; gap:10px; }
+.ctl-row { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+.ctl-grow { flex:1 1 200px; min-width:0; }
+.ctl-narrow { flex:1 1 120px; min-width:0; max-width:220px; }
+.ctl-acts { display:flex; gap:6px; flex:0 0 auto; }
+
+/* An icon instead of "Print / save as PDF". The word is not what tells
+   you which is which; it is what makes you SURE, and that is the job of
+   the tooltip and the aria-label. 44px because it is tapped. */
+.icon-btn { width:44px; height:44px; flex:0 0 44px; border:1px solid var(--border);
+            border-radius:4px; background:var(--surface); color:var(--steel);
+            cursor:pointer; display:inline-flex; align-items:center;
+            justify-content:center; padding:0; }
+.icon-btn:hover { background:var(--surface-sunken); border-color:var(--steel); }
+.icon-btn:focus-visible { outline:2px solid var(--steel); outline-offset:1px; }
+.icon-btn:disabled { opacity:.45; cursor:default; }
+.icon-btn svg { width:20px; height:20px; fill:none; stroke:currentColor;
+                stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ---- the picker ---- */
+.refpick { position:relative; }
+/* The material search sits inside .searchbox, a flex row with a magnifier
+   and a clear button pinned over it. The wrapper fills that row rather
+   than shrinking to the input's intrinsic width. */
+.searchbox .refpick { flex:1 1 auto; min-width:0; width:100%; }
+
+/* SOLID. ALWAYS. The whole reason this component exists: the list under
+   the party search was a native <datalist>, which is the browser's and
+   cannot be styled at all — so on his phone it drew half see-through over
+   the form, and only sometimes. */
+.refpick-list { position:absolute; left:0; right:0; top:100%; margin-top:2px;
+                background:var(--surface); border:1px solid var(--border);
+                border-radius:4px;
+                box-shadow:0 6px 24px rgba(15,23,32,.18), 0 1px 3px rgba(15,23,32,.12);
+                max-height:300px; overflow-y:auto; z-index:80; display:none;
+                padding:4px 0; }
+.refpick-list.open { display:block; }
+.refpick-opt { display:flex; align-items:center; gap:8px; width:100%;
+               min-height:44px; padding:6px 12px; border:0; background:none;
+               cursor:pointer; text-align:left; font:inherit; font-size:13px;
+               color:var(--ink); }
+/* TRUNCATED, BUT NOT INTO EACH OTHER. On one line "HERO MOTORS LIMITED"
+   and "HERO MOTORS LIMITED (DADRI)" both came out as "HERO MOTORS LI..." --
+   two different parties, one row of text, and no way to tell which was
+   which. Two lines, then the ellipsis: still never runs under the edge,
+   and the part that distinguishes one name from another survives. */
+.refpick-opt .t { flex:1 1 auto; min-width:0; overflow:hidden;
+                  display:-webkit-box; -webkit-box-orient:vertical;
+                  -webkit-line-clamp:2; line-clamp:2;
+                  text-overflow:ellipsis; white-space:normal;
+                  line-height:1.35; }
+.refpick-opt .n { flex:0 0 auto; font-size:12px; color:var(--muted); }
+.refpick-opt:hover { background:var(--surface-sunken); }
+.refpick-opt.on { background:var(--steel-tint); color:var(--steel-dark); }
+.refpick-opt mark { background:var(--hit); color:#000; padding:0 1px; border-radius:2px; }
+.refpick-empty { padding:12px; font-size:12.5px; color:var(--muted); }
+
+@media (max-width: 880px) {
+  /* THREE NARROW CONTROLS ON ONE ROW leave the calendar button nowhere to
+     sit but ON TOP of the date, and it covered the last digit of the year:
+     "09/19/2026" read as "09/19/202". The field itself opens the picker on
+     a phone with or without the button, so below the breakpoint the button
+     goes and the date is readable. At a desk it stays — there it is the
+     only thing that says the field is a date. */
+  .ctl-narrow input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
+}

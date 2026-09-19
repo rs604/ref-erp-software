@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789821056';</script>
+<script>window.__BUILD_VERSION__ = '1789831002';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -27,7 +27,8 @@
   window.addEventListener('online', checkVersion);
 })();
 </script>
-<link rel="stylesheet" href="theme.css?v=1789821056">
+<link rel="stylesheet" href="theme.css?v=1789831002">
+<link rel="stylesheet" href="ui.css?v=1789831002">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   * { box-sizing:border-box; }
@@ -171,18 +172,10 @@
   .kpi .drcr { font-size:13px; font-weight:600; color:var(--muted); margin-left:3px; }
   .kpis-4 .v { white-space:nowrap; }
 
-  .lg-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
-  .lg-pick { flex:1 1 320px; min-width:0; }
-  .lg-dates { display:flex; gap:8px; align-items:flex-end; }
-  .lg-ranges { display:flex; gap:6px; flex-wrap:wrap; }
-  .lg-acts { margin-left:auto; display:flex; gap:8px; }
-  .lg-party input { width:100%; }
-  /* A cell in a control row. It grows sideways at a desk and is sized by its
-     content on a phone -- written here rather than inline, because an inline
-     flex-basis beats the media query that has to undo it, and a basis meant
-     as a width becomes a HEIGHT the moment the row turns into a column. */
-  .lg-cell { flex:0 0 auto; }
-  .lg-grow { flex:1 1 220px; }
+  /* .ctl, .ctl-row, .ctl-grow, .ctl-narrow, .ctl-acts and .icon-btn are
+     ui.js's, shared by every report. Seven classes that described this one
+     screen's control bar used to live here, and the next report would have
+     grown its own seven. */
 
   /* The opening and closing lines are the ledger's own rows, not entries.
      Shaded so the eye finds where the range starts and stops. */
@@ -367,7 +360,6 @@
   .rc-k { flex:0 0 108px; color:var(--muted); }
   .rc-v { flex:1; min-width:0; color:var(--ink); overflow-wrap:anywhere; }
   .rc-v.r { text-align:right; font-variant-numeric:tabular-nums; }
-  .rc-tap { margin-top:7px; font-size:12px; color:var(--steel); }
 
   /* Filters live behind a button, because they take the whole width and
      there is no room for them beside anything. */
@@ -490,20 +482,18 @@
     .kpi.kpi-lead .v { font-size:21px; }
     .kpi .v { overflow-wrap:anywhere; }
 
-    /* Party, then the two dates side by side, then the one-tap ranges. */
-    .lg-controls { flex-direction:column; align-items:stretch; }
-    /* flex-basis runs along the MAIN axis, and the main axis is now down the
-       page. So `flex:1 1 320px` on the party box stopped meaning "320px wide
-       at least" and started meaning "320px TALL" -- half a phone screen of
-       empty card between the name and the dates. Every child here is sized by
-       its content now. */
-    .lg-controls > *, .lg-cell, .lg-grow { flex:0 0 auto; }
-    .lg-pick, .lg-dates, .lg-ranges, .lg-acts { width:100%; }
-    .lg-dates > div { flex:1 1 0; min-width:0; }
-    .lg-dates input { width:100%; }
-    .lg-ranges .chip { flex:1 1 calc(50% - 3px); justify-content:center; }
-    .lg-acts { margin-left:0; }
-    .lg-acts .btn { flex:1 1 0; }
+    /* TWO ROWS ON A PHONE TOO, not two rows that become six. The search
+       keeps the width it is given and the two icons sit beside it; the
+       three narrow fields share the second row equally.
+
+       flex-basis runs along the MAIN axis. The old bar turned into a
+       column here, so `flex:1 1 320px` on the party box stopped meaning
+       "320px wide at least" and started meaning "320px TALL" -- half a
+       phone screen of empty card. The bar stays a row now, and the basis
+       stays a width. */
+    .ctl-grow { flex:1 1 0; }
+    .ctl-narrow { flex:1 1 0; max-width:none; }
+    .ctl-narrow .f.dt { width:100%; }
     .pager { flex-wrap:wrap; }
 
     /* A field tapped near the bottom must not end up under the keyboard. */
@@ -641,28 +631,40 @@
       <!-- ---------------- reports ---------------- -->
       <!-- ---------------- THE PARTY LEDGER ---------------- -->
       <div id="view-ledger" style="display:none">
-        <div class="card lg-controls">
-          <div class="lg-pick">
-            <label class="fl" for="lgParty">Party</label>
-            <input id="lgParty" class="f" list="lgPartyList" autocomplete="off"
-                   placeholder="Type a name — supplier or customer">
-            <datalist id="lgPartyList"></datalist>
+        <!-- TWO ROWS, NOT SIX. Party, two dates, four range buttons and two
+             download buttons used to fill a whole phone screen before one
+             ledger entry appeared. The range is one dropdown now -- the same
+             choice in a quarter of the room -- and the downloads are icons
+             beside the search, where the words were never what told you
+             which was which. -->
+        <div class="card ctl">
+          <div class="ctl-row">
+            <div class="ctl-grow">
+              <label class="fl" for="lgParty">Party</label>
+              <input id="lgParty" class="f" autocomplete="off"
+                     placeholder="Type a name — supplier or customer">
+            </div>
+            <div class="ctl-acts">
+              <button type="button" class="icon-btn" id="lgPrint"
+                      title="Print or save as PDF" aria-label="Print or save as PDF"></button>
+              <button type="button" class="icon-btn" id="lgExcel"
+                      title="Download for Excel" aria-label="Download for Excel"></button>
+            </div>
           </div>
-          <div class="lg-dates">
-            <div><label class="fl" for="lgFrom">From</label>
+          <div class="ctl-row">
+            <div class="ctl-narrow"><label class="fl" for="lgFrom">From</label>
                  <input type="date" id="lgFrom" class="f dt" data-datekeys></div>
-            <div><label class="fl" for="lgTo">To</label>
+            <div class="ctl-narrow"><label class="fl" for="lgTo">To</label>
                  <input type="date" id="lgTo" class="f dt" data-datekeys></div>
-          </div>
-          <div class="chips lg-ranges" id="lgRanges">
-            <button type="button" class="chip" data-range="thisfy">This FY</button>
-            <button type="button" class="chip" data-range="lastfy">Last FY</button>
-            <button type="button" class="chip" data-range="month">This month</button>
-            <button type="button" class="chip" data-range="all">All</button>
-          </div>
-          <div class="lg-acts">
-            <button type="button" class="btn btn-outline" id="lgPrint">Print / save as PDF</button>
-            <button type="button" class="btn btn-outline" id="lgExcel">Download for Excel</button>
+            <div class="ctl-narrow"><label class="fl" for="lgRange">Range</label>
+              <select id="lgRange" class="f">
+                <option value="thisfy">This FY</option>
+                <option value="lastfy">Last FY</option>
+                <option value="month">This month</option>
+                <option value="all">All</option>
+                <option value="custom">Custom dates</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -710,6 +712,17 @@
 
         <!-- ---- customers ---- -->
         <div id="rep-customers" style="display:none">
+          <!-- The same bar as the ledger, and the same picker. A list of
+               several hundred names needs a way in that is not scrolling. -->
+          <div class="card ctl">
+            <div class="ctl-row">
+              <div class="ctl-grow">
+                <label class="fl" for="custPick">Customer</label>
+                <input id="custPick" class="f" autocomplete="off"
+                       placeholder="Type a name to open it">
+              </div>
+            </div>
+          </div>
           <div class="quiet-chips" id="quietChips"></div>
           <div class="rowcount" id="custCount"></div>
           <div class="tbl-wrap fit">
@@ -737,6 +750,15 @@
             Conveyor runs ₹1,55,000 to ₹12,00,000 because the machine type is the item and the
             size lives in the description. A range column would read as a pricing problem
             where there is none. Open an item to see each sale with its size.
+          </div>
+          <div class="card ctl">
+            <div class="ctl-row">
+              <div class="ctl-grow">
+                <label class="fl" for="itemPick">Item</label>
+                <input id="itemPick" class="f" autocomplete="off"
+                       placeholder="Type a machine to open it">
+              </div>
+            </div>
           </div>
           <div class="rowcount" id="itemCount"></div>
           <div class="tbl-wrap fit">
@@ -1113,6 +1135,7 @@ upload_token = (shown on the download screen)</pre>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
 <script src="nav.js"></script>
+<script src="ui.js"></script>
 <script>
 (function () {
   'use strict';
@@ -1923,26 +1946,31 @@ upload_token = (shown on the download screen)</pre>
     else                         { a = new Date(2000, 3, 1); b = now; }
     $('lgFrom').value = iso(a);
     $('lgTo').value   = iso(b);
-    Array.prototype.forEach.call($('lgRanges').children, function (c) {
-      c.classList.toggle('on', c.dataset.range === which);
-    });
+    $('lgRange').value = which;
   }
 
   function openLedger() {
     if (!$('lgFrom').value) setRange('thisfy');
-    loadPartyList('');
     if ($('lgParty').value) loadLedger();
   }
 
-  function loadPartyList(q) {
+  /* The names the server has for this firm. The picker asks it on every
+     keystroke rather than holding a list of 300 and quietly matching
+     against those -- the fuzzy matching is the database's, and it is the
+     database that knows all the names. */
+  function partySource(q) {
     return Promise.resolve(REF.supabase().rpc('busy_party_list',
-      { p_company: firm, p_query: q || null, p_limit: 300 }))
+      { p_company: firm, p_query: q || null, p_limit: 50 }))
       .then(function (res) {
-        if (!res || res.error) return;
+        if (!res || res.error) return [];
         lgParties = res.data || [];
-        $('lgPartyList').innerHTML = lgParties.map(function (r) {
-          return '<option value="' + esc(r.ledger) + '"></option>';
-        }).join('');
+        /* Which side of the book it is. The placeholder says "supplier or
+           customer" and the list is where that is answered. */
+        return lgParties.map(function (r) {
+          return { value: r.ledger,
+                   note: /Creditor/i.test(r.ledger_group || '') ? 'supplier'
+                       : /Debtor/i.test(r.ledger_group || '')   ? 'customer' : '' };
+        });
       });
   }
 
@@ -2687,44 +2715,27 @@ upload_token = (shown on the download screen)</pre>
   /* STEP 1 ---- every typed word must appear somewhere in the name, in
      any order, so "slat conveyor" finds INCLINED SLAT CONVEYOR. */
   function matMatches(q) {
-    var words = btrim(q).toUpperCase().split(/\s+/).filter(Boolean);
-    if (!words.length) return [];
-    return itemRows.filter(function (r) {
-      var n = String(r.item || '').toUpperCase();
-      return words.every(function (w) { return n.indexOf(w) !== -1; });
+    return REFUI.contains(itemRows, q, 'item');
+  }
+
+  /* The dropdown, not a wall of chips. Twelve chips and "9 more -- type
+     another word" was a list of names pretending not to be one. */
+  function matSource(q) {
+    if (!btrim(q)) return [];
+    return matMatches(q).map(function (r) {
+      return { value: r.item, note: r.times_sold + ' sold' };
     });
   }
 
   function drawMatHits() {
-    var q = btrim($('matSearch').value);
-    if (!q) {
+    if (!matItem) {
       $('matHits').innerHTML = '<div class="method">Type a machine. Nothing else is ' +
         'asked until you have — the date comes from the sale you pick.</div>';
       $('matSales').style.display = 'none';
       $('matPanel').style.display = 'none';
       return;
     }
-    var hits = matMatches(q);
-    if (!hits.length) {
-      $('matHits').innerHTML = '<div class="loading">Nothing sold with “' + esc(q) + '” in its name.</div>';
-      $('matSales').style.display = 'none';
-      $('matPanel').style.display = 'none';
-      return;
-    }
-    // One clear match is not a list to choose from. Open it.
-    if (hits.length === 1) {
-      $('matHits').innerHTML = '<div class="method">' + esc(hits[0].item) + '</div>';
-      if (matItem !== hits[0].item) pickMatItem(hits[0].item);
-      return;
-    }
-    $('matHits').innerHTML = '<div class="chips" style="margin-top:8px">' +
-      hits.slice(0, 12).map(function (r) {
-        return '<button type="button" class="chip' + (matItem === r.item ? ' on' : '') +
-          '" data-pick="' + esc(r.item) + '">' + esc(r.item) +
-          ' <strong>' + r.times_sold + '</strong></button>';
-      }).join('') + '</div>' +
-      (hits.length > 12 ? '<div class="method">' + (hits.length - 12) +
-        ' more — type another word to narrow it.</div>' : '');
+    $('matHits').innerHTML = '<div class="method">' + esc(matItem) + '</div>';
   }
 
   /* STEP 2 ---- every sale of that item, newest first. */
@@ -2837,11 +2848,11 @@ upload_token = (shown on the download screen)</pre>
       '<div class="method">' + esc(matItem) + '</div>' +
 
       /* The setting lives HERE, beside the thing it changes. */
-      '<div class="lg-controls" style="margin-top:12px; gap:10px">' +
-        '<div class="lg-cell"><label class="fl" for="matBefore">Months before the sale</label>' +
+      '<div class="ctl-row" style="margin-top:12px">' +
+        '<div class="ctl-narrow"><label class="fl" for="matBefore">Months before the sale</label>' +
         '<input type="number" id="matBefore" class="f" value="' + matMonths +
           '" min="0" max="240" step="1" style="width:110px"></div>' +
-        '<div class="lg-cell lg-grow" style="align-self:flex-end"><div class="method">' +
+        '<div class="ctl-grow" style="align-self:flex-end"><div class="method">' +
           'Typed, not a fixed button — you buy before you deliver, and how long before is ' +
           'different every time. Steel priced for <strong>' + monthName(d.asked_month) +
           '</strong>.</div></div>' +
@@ -2865,8 +2876,8 @@ upload_token = (shown on the download screen)</pre>
         'a rate per kilo and the next a rate per length.</div>' +
 
       '<div style="font-weight:600; margin-top:14px">At the same margin</div>' +
-      '<div class="lg-controls" style="gap:10px">' +
-        '<div class="lg-cell"><label class="fl" for="matShare">Material share of the price</label>' +
+      '<div class="ctl-row">' +
+        '<div class="ctl-narrow"><label class="fl" for="matShare">Material share of the price</label>' +
         '<input type="number" id="matShare" class="f" value="' + matShare +
           '" min="0" max="100" step="1" style="width:110px"> %</div>' +
       '</div><div id="matSum" style="margin-top:8px"></div>' +
@@ -2876,8 +2887,8 @@ upload_token = (shown on the download screen)</pre>
 
       '<div style="font-weight:600; margin-top:14px">Check another item at that time</div>' +
       '<div class="method">A bearing, a gear box — anything you also bought for this job.</div>' +
-      '<div class="lg-controls" style="margin-top:6px">' +
-        '<div class="lg-cell lg-grow"><input id="matOther" class="f" autocomplete="off" ' +
+      '<div class="ctl-row" style="margin-top:6px">' +
+        '<div class="ctl-grow"><input id="matOther" class="f" autocomplete="off" ' +
         'placeholder="Type an item" style="width:100%"></div></div>' +
       '<div id="matOtherOut"></div>' +
       '</div>';
@@ -2893,7 +2904,13 @@ upload_token = (shown on the download screen)</pre>
       matShare = Math.max(0, Math.min(100, Number(this.value) || 0));
       matSum();
     };
-    $('matOther').onchange = function () { matOther(btrim(this.value)); };
+    REFUI.pick({
+      input: $('matOther'),
+      source: matSource,
+      min: 1,
+      empty: 'Nothing sold with those words in its name.',
+      onPick: function (name) { matOther(name); },
+    });
     matSum();
     matHistory();
 
@@ -2961,23 +2978,21 @@ upload_token = (shown on the download screen)</pre>
              'sales with no description.';
     }
 
+    /* The item comes from the picker, so it is a name the data holds --
+       not a guess at what the typing meant. It used to take hits[0] of
+       whatever was typed and report under that name without ever showing
+       what else had matched. */
     function matOther(item) {
       if (!item) { $('matOtherOut').innerHTML = ''; return; }
-      var hits = matMatches(item);
-      if (!hits.length) {
-        $('matOtherOut').innerHTML = '<div class="loading">Nothing sold with “' +
-          esc(item) + '” in its name.</div>';
-        return;
-      }
       $('matOtherOut').innerHTML = '<div class="loading">Looking…</div>';
       Promise.resolve(REF.supabase().rpc('busy_item_price_history',
-        { p_company: firm, p_item: hits[0].item, p_desc: null, p_match_desc: false }))
+        { p_company: firm, p_item: item, p_desc: null, p_match_desc: false }))
         .then(function (r) {
           if (!r || r.error) { $('matOtherOut').innerHTML = '<div class="loading">Could not load it.</div>'; return; }
           var near = (r.data || []).filter(function (x) { return Number(x.amount); });
           if (!near.length) { $('matOtherOut').innerHTML = '<div class="loading">No priced sales.</div>'; return; }
           $('matOtherOut').innerHTML = '<div class="method" style="font-size:13px; color:var(--ink)">' +
-            esc(hits[0].item) + ': ' + near.map(function (x) {
+            esc(item) + ': ' + near.map(function (x) {
               return moneyShort(x.amount) + ' in ' + new Date(x.vch_date).getFullYear();
             }).join(' · ') + '</div>' +
             /* Said plainly, because the panel above it does match on the
@@ -4106,24 +4121,28 @@ upload_token = (shown on the download screen)</pre>
   });
 
   /* ---- the ledger ---- */
-  $('lgParty').addEventListener('change', loadLedger);
-  $('lgParty').addEventListener('input', function () {
-    // The datalist only ever holds 300 names. Typing past them fetches the
-    // ones that actually match rather than quietly offering a short list.
-    var v = btrim(this.value);
-    if (v.length >= 2) loadPartyList(v);
+  REFUI.pick({
+    input: $('lgParty'),
+    source: partySource,
+    min: 0,                     /* focus alone opens it: he often wants the
+                                   party he was just looking at */
+    empty: 'No party of that name in this firm.',
+    onPick: function () { loadLedger(); },
   });
+  $('lgParty').addEventListener('change', loadLedger);
   $('lgFrom').addEventListener('change', function () { markRange(); loadLedger(); });
   $('lgTo').addEventListener('change', function () { markRange(); loadLedger(); });
-  $('lgRanges').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-range]');
-    if (!b) return;
-    setRange(b.dataset.range);
+  $('lgRange').addEventListener('change', function () {
+    if (this.value === 'custom') return;   // the dates themselves are the range
+    setRange(this.value);
     loadLedger();
   });
-  function markRange() {
-    Array.prototype.forEach.call($('lgRanges').children, function (c) { c.classList.remove('on'); });
-  }
+  /* Typing a date of his own is a range too, and it is the one the four
+     named ones cannot say. The dropdown says so rather than going on
+     showing "This FY" over dates that are not this FY. */
+  function markRange() { $('lgRange').value = 'custom'; }
+  $('lgPrint').innerHTML = REFUI.icon('pdf');
+  $('lgExcel').innerHTML = REFUI.icon('excel');
   $('lgPrint').addEventListener('click', ledgerPrint);
   $('lgExcel').addEventListener('click', ledgerExcel);
 
@@ -4132,6 +4151,31 @@ upload_token = (shown on the download screen)</pre>
     var b = e.target.closest('[data-rep]');
     if (b) setRepTab(b.dataset.rep);
   });
+  /* ---- the same picker on the two list reports ----
+     custRows and itemRows are already in the page's hands by the time
+     either is searchable, so the matching is done here rather than asked
+     of the server for a list it has already sent. */
+  REFUI.pick({
+    input: $('custPick'), min: 1,
+    empty: 'No customer of that name in this firm.',
+    source: function (q) {
+      return REFUI.contains(custRows, q, 'customer').map(function (r) {
+        return { value: r.customer, note: moneyShort(r.lifetime) };
+      });
+    },
+    onPick: function (name) { openCustomer(name); },
+  });
+  REFUI.pick({
+    input: $('itemPick'), min: 1,
+    empty: 'Nothing sold with those words in its name.',
+    source: function (q) {
+      return REFUI.contains(itemRows, q, 'item').map(function (r) {
+        return { value: r.item, note: r.times_sold + ' sold' };
+      });
+    },
+    onPick: function (name) { openItem(name); },
+  });
+
   $('quietChips').addEventListener('click', function (e) {
     var b = e.target.closest('[data-quiet]');
     if (!b) return;
@@ -4154,16 +4198,20 @@ upload_token = (shown on the download screen)</pre>
   /* ---- material prices: search, then a sale, then the comparison ----
      The months-before control is built with the panel it changes, so it is
      wired there. Only the search box is permanent markup. */
-  $('matSearch').addEventListener('input', drawMatHits);
-  $('matSearch').addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { e.preventDefault(); this.value = ''; matItem = null; drawMatHits(); }
+  REFUI.pick({
+    input: $('matSearch'),
+    source: matSource,
+    min: 1,
+    empty: 'Nothing sold with those words in its name.',
+    onPick: function (name) { pickMatItem(name); drawMatHits(); },
+  });
+  $('matSearch').addEventListener('input', function () {
+    // Emptying the box puts the screen back to step one rather than
+    // leaving a comparison open under a search that no longer says it.
+    if (!btrim(this.value) && matItem) { matItem = null; drawMatHits(); }
   });
   $('matClear').addEventListener('click', function () {
     $('matSearch').value = ''; matItem = null; drawMatHits(); $('matSearch').focus();
-  });
-  $('matHits').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-pick]');
-    if (b) pickMatItem(b.dataset.pick);
   });
   $('matSales').addEventListener('click', function (e) {
     var row = e.target.closest('[data-sale]');
@@ -4225,8 +4273,13 @@ upload_token = (shown on the download screen)</pre>
   var SHORTCUTS = [
     { keys: ['Ctrl+/'],  label: 'Ctrl + /',  does: 'This list',
       run: function () { toggleShortcutPanel(); } },
-    { keys: ['Escape'],  label: 'Esc',       does: 'Close the menu or this list, or clear the search box',
+    { keys: ['Escape'],  label: 'Esc',       does: 'Close whatever is open on top, or clear the search box',
       run: function () {
+        /* Innermost first. This handler runs in the CAPTURE phase and stops
+           the key, so anything it does not know about never sees Escape at
+           all -- which is how the party list ended up impossible to close
+           with it. */
+        if (window.REFUI && REFUI.closeOpen()) return;
         if (filtersOpen()) { openFilters(false); return; }
         if (navIsOpen()) { setNavOpen(false); $('navOpenBtn').focus(); return; }
         if (shortcutPanelOpen()) { closeShortcutPanel(); return; }

@@ -66,6 +66,14 @@ const RULES = [
      serves yesterday's colours over today's page. */
   { what: 'theme.css, the one palette every page links',
     find: /<link rel="stylesheet" href="(theme\.css\?v=\d+)">/, sameAcrossPages: true },
+  { what: 'ui.css, the look of the shared controls',
+    find: /<link rel="stylesheet" href="(ui\.css\?v=\d+)">/, sameAcrossPages: true },
+  /* THE SHARED CONTROLS. The ledger's control bar and its party picker were
+     written for the ledger, and the next four reports were about to grow
+     their own. ui.js is the one copy; a page that does not load it will
+     build a sixth. */
+  { what: 'ui.js, the shared control bar and picker',
+    find: /<script src="(ui\.js)"><\/script>/, sameAcrossPages: true },
   { what: 'somewhere for that menu to be drawn',
     find: /(id="refnav-host")/, sameAcrossPages: true },
 ];
@@ -115,10 +123,23 @@ for (const [what, values] of Object.entries(seen)) {
     }
     // A page reload adds ?_v= to the PAGE. It does nothing for a stylesheet
     // the browser already has, so theme.css carries the build version too.
-    const t = /theme\.css\?v=(\d+)/.exec(src);
-    if (t && t[1] !== v) {
-      findings.push(`${page} asks for theme.css?v=${t[1]} but version.txt says ${v} — ` +
-                    `it would be served yesterday's colours`);
+    for (const sheet of ['theme.css', 'ui.css']) {
+      const t = new RegExp(sheet.replace('.', '\\.') + '\\?v=(\\d+)').exec(src);
+      if (t && t[1] !== v) {
+        findings.push(`${page} asks for ${sheet}?v=${t[1]} but version.txt says ${v} — ` +
+                      `it would be served yesterday's stylesheet`);
+      }
+    }
+    /* A SHARED STYLESHEET MUST BE EASIER TO OVERRIDE THAN THE PAGE IT LANDS
+       IN. ui.css began as a <style> tag appended to <head> by ui.js, which
+       put it AFTER every page's own <style> -- so at equal specificity it
+       won, and busy.html's phone rules for the control bar were ignored
+       without a word. Both shared sheets come before the page's rules. */
+    const linkAt = src.indexOf('href="ui.css');
+    const styleAt = src.indexOf('<style>');
+    if (linkAt >= 0 && styleAt >= 0 && linkAt > styleAt) {
+      findings.push(`${page} links ui.css AFTER its own <style>, so the shared ` +
+                    `component outranks the page instead of the other way round`);
     }
   }
 }
@@ -137,7 +158,7 @@ for (const [what, values] of Object.entries(seen)) {
   const palette = new Set(
     [...fs.readFileSync(path.join(ROOT, 'theme.css'), 'utf8').matchAll(/--([a-z0-9-]+)\s*:/g)]
       .map(m => m[1]));
-  for (const file of [...PAGES, 'nav.js']) {
+  for (const file of [...PAGES, 'nav.js', 'ui.css']) {
     const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
     const own = new Set([...src.matchAll(/--([a-z0-9-]+)\s*:/g)].map(m => m[1]));
     const used = new Set([...src.matchAll(/var\(\s*--([a-z0-9-]+)\s*\)/g)].map(m => m[1]));
