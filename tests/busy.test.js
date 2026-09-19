@@ -1760,6 +1760,64 @@ async function openBusy(server, browser, user) {
     record('the GST-inclusive total appears nowhere on the reports screen',
       !/2,38,87,252|23887252/.test(anywhere));
 
+    /* ---- THE MATERIAL REPORT ASKS FOR THE ITEM FIRST ----
+       It was built backwards: a date and a months-before figure at the top,
+       the item search at the bottom. He arrives with "Avon wants another
+       slat conveyor, what do I charge?" -- a date asked first assumes he
+       already knows which sale he means, and that is what he came to find.
+
+       So the order itself is the thing under test: no setting may be on
+       screen until an item has been searched and a sale picked. */
+    await p3.evaluate(() => document.querySelector('.rep-tab[data-rep="materials"]').click());
+    await p3.waitForTimeout(900);
+    const step1 = await p3.evaluate(() => {
+      const on = el => el && el.offsetParent !== null;
+      return {
+        searchShown: on(document.getElementById('matSearch')),
+        monthsAsked: on(document.getElementById('matBefore')),
+        anyDateAsked: Array.from(document.querySelectorAll('#rep-materials input[type=date]'))
+                        .some(e => e.offsetParent !== null),
+        salesShown: on(document.getElementById('matSales')),
+        panelShown: on(document.getElementById('matPanel')),
+      };
+    });
+    record('the material report asks for the ITEM first, and nothing else',
+      step1.searchShown && !step1.monthsAsked && !step1.anyDateAsked
+        && !step1.salesShown && !step1.panelShown, JSON.stringify(step1));
+
+    await p3.evaluate(() => {
+      const el = document.getElementById('matSearch');
+      el.value = 'slat conveyor';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await p3.waitForTimeout(900);
+    const step2 = await p3.evaluate(() => ({
+      sales: document.querySelectorAll('#matSales [data-sale]').length,
+      monthsAsked: !!document.getElementById('matBefore'),
+      panelShown: document.getElementById('matPanel').offsetParent !== null,
+    }));
+    record('searching an item shows its sales, and still asks for no settings',
+      step2.sales > 1 && !step2.monthsAsked && !step2.panelShown, JSON.stringify(step2));
+
+    await p3.evaluate(() => document.querySelector('#matSales [data-sale]').click());
+    await p3.waitForTimeout(1100);
+    const step3 = await p3.evaluate(() => {
+      const t = document.getElementById('matPanel').textContent.replace(/\s+/g, ' ');
+      return {
+        monthsOnPanel: !!document.querySelector('#matPanel #matBefore'),
+        shareOnPanel: !!document.querySelector('#matPanel #matShare'),
+        otherItemOnPanel: !!document.querySelector('#matPanel #matOther'),
+        namesTheSale: /Sold to .+, \d/.test(t),
+        saysWhichMonth: /Steel priced for/.test(t),
+        priorPrices: /charged for this machine before/.test(t),
+      };
+    });
+    record('picking a sale shows the comparison for THAT sale',
+      step3.namesTheSale && step3.saysWhichMonth && step3.priorPrices, JSON.stringify(step3));
+    record('and the months-before setting lives on that panel, beside what it changes',
+      step3.monthsOnPanel && step3.shareOnPanel && step3.otherItemOnPanel,
+      JSON.stringify(step3));
+
     // Sum the parts, compare against the whole -- his rule, now standard.
     await p3.evaluate(() => document.querySelector('.rep-tab[data-rep="items"]').click());
     await p3.waitForTimeout(900);

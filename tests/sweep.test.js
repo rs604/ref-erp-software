@@ -244,6 +244,27 @@ async function look(page, name, file) {
     await page.waitForTimeout(900);
     await look(page, 'busy: reports > ' + tab, 'busy-reports-' + tab);
   }
+  /* THE MATERIAL REPORT IS THREE STEPS, so the sweep walks all three.
+     Opening the tab and photographing it proves only that step one drew. */
+  await page.evaluate(() => {
+    const b = document.querySelector('.rep-tab[data-rep="materials"]');
+    if (b) b.click();
+  });
+  await page.waitForTimeout(900);
+  await page.evaluate(() => {
+    const el = document.getElementById('matSearch');
+    el.value = 'slat conveyor';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.waitForTimeout(900);
+  await look(page, 'busy: material prices > an item searched', 'busy-mat-2-sales');
+  await page.evaluate(() => {
+    const r = document.querySelector('#matSales [data-sale]');
+    if (r) r.click();
+  });
+  await page.waitForTimeout(1100);
+  await look(page, 'busy: material prices > a sale picked', 'busy-mat-3-panel');
+
   /* And a row opened, because the drill-down is half of two of the reports. */
   await page.evaluate(() => {
     const b = document.querySelector('.rep-tab[data-rep="customers"]');
@@ -314,6 +335,25 @@ async function look(page, name, file) {
   await H.go(desk, 'reports', 'REF');
   await desk.waitForTimeout(1200);
   await look(desk, 'DESK — reports > month by month', 'desk-reports-months');
+  // The same three steps at a desk.
+  await desk.evaluate(() => {
+    const b = document.querySelector('.rep-tab[data-rep="materials"]');
+    if (b) b.click();
+  });
+  await desk.waitForTimeout(900);
+  await desk.evaluate(() => {
+    const el = document.getElementById('matSearch');
+    el.value = 'slat conveyor';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await desk.waitForTimeout(900);
+  await look(desk, 'DESK — material prices > an item searched', 'desk-mat-2-sales');
+  await desk.evaluate(() => {
+    const r = document.querySelector('#matSales [data-sale]');
+    if (r) r.click();
+  });
+  await desk.waitForTimeout(1100);
+  await look(desk, 'DESK — material prices > a sale picked', 'desk-mat-3-panel');
   for (const tab of ['customers', 'items', 'materials']) {
     await desk.evaluate(t => {
       const b = document.querySelector('.rep-tab[data-rep="' + t + '"]');

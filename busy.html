@@ -235,6 +235,10 @@
   .rep-tab.on { color:var(--steel); border-bottom-color:var(--steel); }
   .up { color:var(--green); } .down { color:var(--danger); }
   .quiet-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  /* A sale you can pick says so before you tap it. */
+  tr.mat-sale { cursor:pointer; }
+  tr.mat-sale:hover td { background:#eef4f9; }
+  .rc.mat-sale { cursor:pointer; }
 
   /* The method under a number, so nobody has to guess which average it is. */
   .method { font-size:11.5px; color:var(--muted); margin-top:4px; }
@@ -801,24 +805,36 @@
           <div id="itemDetail" style="display:none; margin-top:14px"></div>
         </div>
 
-        <!-- ---- material prices ---- -->
+        <!-- ---- material prices: THREE STEPS, IN THIS ORDER ----
+             It used to ask for a date and a months-before figure first and
+             put the item search at the bottom. Backwards. He arrives with a
+             question -- "Avon wants another slat conveyor, what do I charge?"
+             -- and the first thing he needs is the ITEM, then who bought it,
+             then what steel cost at the time. A date asked first assumes he
+             already knows which sale he means; that is what he came to find.
+
+             So: search an item, see its sales, pick one, and only then the
+             comparison -- with the months-before setting on that panel, next
+             to the thing it changes. -->
         <div id="rep-materials" style="display:none">
-          <div class="card lg-controls">
-            <div class="lg-cell">
-              <label class="fl" for="matOn">Machine sold on</label>
-              <input type="date" id="matOn" class="f dt" data-datekeys>
+
+          <!-- STEP 1 -- and nothing else until it is answered -->
+          <div class="card">
+            <label class="fl" for="matSearch">What are you quoting?</label>
+            <div class="searchbox">
+              <svg class="mag" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <input id="matSearch" autocomplete="off"
+                     placeholder="Type a machine — slat conveyor, goods lift…">
+              <button type="button" id="matClear" aria-label="Clear">&times;</button>
             </div>
-            <div class="lg-cell">
-              <label class="fl" for="matBefore">Months before that</label>
-              <input type="number" id="matBefore" class="f sm" min="0" max="240" step="1" value="2"
-                     style="width:110px">
-            </div>
-            <div class="lg-cell lg-grow" style="align-self:flex-end">
-              <div class="method">Typed, not a fixed button — you buy before you deliver, and
-              how long before is different every time.</div>
-            </div>
+            <div id="matHits"></div>
           </div>
-          <div id="matBody"></div>
+
+          <!-- STEP 2 -- every sale of that item -->
+          <div id="matSales" style="display:none"></div>
+
+          <!-- STEP 3 -- the comparison, for the one sale picked -->
+          <div id="matPanel" style="display:none"></div>
         </div>
 
         <div id="rep-months">
@@ -2186,7 +2202,12 @@ upload_token = (shown on the download screen)</pre>
     }).join('');
   }
 
-  function twoWay(cols, rows, empty) {
+  /* noteCol says which column becomes the line beside the card's title.
+     It defaults to the last, which is right when that is a date. On the
+     materials table the last column is the muted simple average, and
+     leaving it there gave the aside the prominent corner while CHANGE --
+     the number he came for -- sat at the bottom of the card. */
+  function twoWay(cols, rows, empty, noteCol) {
     var head = '<div class="tbl-wrap fit" style="max-height:320px"><table class="tbl"><thead><tr>' +
       cols.map(function (c) {
         return '<th' + (c.w ? ' style="width:' + c.w + '"' : '') + '>' + esc(c.label) + '</th>';
@@ -2197,18 +2218,21 @@ upload_token = (shown on the download screen)</pre>
              '<div class="rc-list"><div class="loading">' + esc(empty) + '</div></div>';
     }
     var table = head + rows.map(function (r) {
-      return '<tr>' + cols.map(function (c, i) {
+      // r.attrs lets a row be clickable without a second copy of the markup.
+      return '<tr' + (r.attrs || '') + '>' + cols.map(function (c, i) {
         return '<td class="' + (c.cls || '') + '">' + r.cells[i] + '</td>';
       }).join('') + '</tr>';
     }).join('') + '</tbody></table></div>';
 
+    var note = (noteCol === undefined || noteCol === null) ? cols.length - 1 : noteCol;
     var cards = '<div class="rc-list">' + rows.map(function (r) {
-      return '<div class="rc flat">' +
+      return '<div class="rc flat"' + (r.attrs || '') + '>' +
         '<div class="rc-top"><div class="rc-party">' + r.cells[0] + '</div>' +
-        '<div class="rc-date">' + (r.cells[r.cells.length - 1] || '') + '</div></div>' +
-        cols.slice(1, cols.length - 1).map(function (c, i) {
+        '<div class="rc-date">' + (r.cells[note] || '') + '</div></div>' +
+        cols.map(function (c, i) {
+          if (i === 0 || i === note) return '';
           return '<div class="rc-pair"><div class="rc-k">' + esc(c.label) + '</div>' +
-                 '<div class="rc-v r">' + r.cells[i + 1] + '</div></div>';
+                 '<div class="rc-v r">' + r.cells[i] + '</div></div>';
         }).join('') + '</div>';
     }).join('') + '</div>';
     return table + cards;
@@ -2678,63 +2702,153 @@ upload_token = (shown on the download screen)</pre>
     };
   }
 
-  /* ---- REPORT 3: what the steel cost then, and what it costs now ----
+  /* ---- REPORT 3: WHAT THE STEEL COST, IN THE ORDER HE ASKS IT -------
 
-     WHICH AVERAGE, AND WHY IT IS NOT THE SIMPLE ONE.
+     STEP 1 search an item · STEP 2 see its sales · STEP 3 pick one, and
+     only then the comparison.
 
-     The brief asked for a simple average, stated as such. Measured on
-     the real rows it cannot carry the headline. PIPE, September 2026,
-     ten purchases: the simple average of the rate is 213.54 because one
-     line is 798; spent divided by quantity is 65.11. Over the same two
-     months the simple average says pipe is up 142% and sheet is DOWN
-     42%, while the weighted figures say both are up about 18%.
-
-     The cause is the same one that shapes every screen here: the item
+     WHICH AVERAGE, AND WHY IT IS NOT THE SIMPLE ONE. Measured on the real
+     rows the simple average of the rate cannot carry a headline. PIPE,
+     September 2026, ten purchases: the simple average is 213.54 because
+     one line is 798; spent divided by quantity is 65.11. Over the same
+     two months the simple average says pipe is up 142% and sheet is DOWN
+     42%, while the weighted figures say both are up about 18%. The item
      is "PIPE" and the size is in the description, so one row can be a
-     rate per kilo and the next a rate per length. Averaging those
-     treats them as the same number.
-
-     So the headline is spent-divided-by-quantity -- literally what the
-     steel cost -- and the simple average is printed beside it, named,
-     every time. Both are on the screen; neither is hidden. The simple
-     average is still the one used across the four materials for the
-     one-line "steel up about X%", which is the level at which a simple
-     average is the honest thing.                                      */
-  var matData = null, matShare = 60;
+     rate per kilo and the next a rate per length. So the headline is
+     spent-divided-by-bought and the simple average is printed beside it,
+     named, every time.                                                */
+  var matItem = null, matSaleRows = [], matSale = null, matData = null;
+  var matMonths = 2, matShare = 60;
 
   function loadMaterials() {
-    $('matBody').innerHTML = '<div class="card"><div class="loading">Looking…</div></div>';
-    if (!$('matOn').value) $('matOn').value = iso(new Date());
+    // The item list is the search index. Fetch it once, then never again.
+    if (!itemRows.length) {
+      $('matHits').innerHTML = '<div class="loading">Looking…</div>';
+      Promise.resolve(REF.supabase().rpc('busy_items_sold', { p_company: firm }))
+        .then(function (r) {
+          if (r && !r.error) itemRows = r.data || [];
+          drawMatHits();
+        });
+    } else drawMatHits();
+  }
+
+  /* STEP 1 ---- every typed word must appear somewhere in the name, in
+     any order, so "slat conveyor" finds INCLINED SLAT CONVEYOR. */
+  function matMatches(q) {
+    var words = btrim(q).toUpperCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return [];
+    return itemRows.filter(function (r) {
+      var n = String(r.item || '').toUpperCase();
+      return words.every(function (w) { return n.indexOf(w) !== -1; });
+    });
+  }
+
+  function drawMatHits() {
+    var q = btrim($('matSearch').value);
+    if (!q) {
+      $('matHits').innerHTML = '<div class="method">Type a machine. Nothing else is ' +
+        'asked until you have — the date comes from the sale you pick.</div>';
+      $('matSales').style.display = 'none';
+      $('matPanel').style.display = 'none';
+      return;
+    }
+    var hits = matMatches(q);
+    if (!hits.length) {
+      $('matHits').innerHTML = '<div class="loading">Nothing sold with “' + esc(q) + '” in its name.</div>';
+      $('matSales').style.display = 'none';
+      $('matPanel').style.display = 'none';
+      return;
+    }
+    // One clear match is not a list to choose from. Open it.
+    if (hits.length === 1) {
+      $('matHits').innerHTML = '<div class="method">' + esc(hits[0].item) + '</div>';
+      if (matItem !== hits[0].item) pickMatItem(hits[0].item);
+      return;
+    }
+    $('matHits').innerHTML = '<div class="chips" style="margin-top:8px">' +
+      hits.slice(0, 12).map(function (r) {
+        return '<button type="button" class="chip' + (matItem === r.item ? ' on' : '') +
+          '" data-pick="' + esc(r.item) + '">' + esc(r.item) +
+          ' <strong>' + r.times_sold + '</strong></button>';
+      }).join('') + '</div>' +
+      (hits.length > 12 ? '<div class="method">' + (hits.length - 12) +
+        ' more — type another word to narrow it.</div>' : '');
+  }
+
+  /* STEP 2 ---- every sale of that item, newest first. */
+  function pickMatItem(name) {
+    matItem = name; matSale = null;
+    $('matPanel').style.display = 'none';
+    $('matSales').style.display = '';
+    $('matSales').innerHTML = '<div class="card"><div class="loading">Looking…</div></div>';
+    guard(REF.supabase().rpc('busy_item_sales', { p_company: firm, p_item: name }),
+          intoBox('matSales'), 'the sales of that machine')
+      .then(function (res) {
+        if (!res) return;
+        matSaleRows = (res.data || []).filter(function (r) { return !r.is_return; });
+        drawMatSales();
+      });
+  }
+
+  function drawMatSales() {
+    $('matSales').innerHTML = '<div class="card">' +
+      '<div style="font-weight:600; margin-bottom:2px">Every sale of ' + esc(matItem) + '</div>' +
+      '<div class="method">Newest first. Tap the one you are quoting against.</div>' +
+      twoWay([{ label: 'Customer', cls: 'l' },
+              { label: 'Description', cls: 'l desc' },
+              { label: 'Qty', w: '72px', cls: 'r' },
+              { label: 'Rate', w: '110px', cls: 'r' },
+              { label: 'Amount', w: '130px', cls: 'r' },
+              { label: 'Date', w: '96px' }],
+        matSaleRows.map(function (r, i) {
+          return { attrs: ' class="mat-sale" data-sale="' + i + '"', cells: [
+            esc(r.party || ''),
+            '<span class="clip"' + (r.description ? ' title="' + esc(r.description) + '"' : '') +
+              '>' + esc(r.description || '') + '</span>',
+            (r.qty === null ? '' : inr2.format(r.qty)),
+            (r.is_lump_sum || !Number(r.rate)
+               ? '<span class="missing">no rate · one job</span>' : moneyShort(r.rate)),
+            moneyShort(r.amount), dmy(r.vch_date)] };
+        }), 'No sales of that machine.') + '</div>';
+  }
+
+  /* STEP 3 ---- the comparison, for that one sale. */
+  function pickMatSale(i) {
+    matSale = matSaleRows[i];
+    if (!matSale) return;
+    $('matPanel').style.display = '';
+    $('matPanel').innerHTML = '<div class="card"><div class="loading">Looking…</div></div>';
     guard(REF.supabase().rpc('busy_material_prices', {
-            p_company: firm,
-            p_on: $('matOn').value,
-            p_months_before: Math.max(0, Math.min(240, Number($('matBefore').value) || 0)) }),
-          intoBox('matBody'), 'what steel cost')
+            p_company: firm, p_on: matSale.vch_date, p_months_before: matMonths }),
+          intoBox('matPanel'), 'what steel cost then')
       .then(function (res) {
         if (!res) return;
         matData = res.data;
-        drawMaterials();
+        drawMatPanel();
+        $('matPanel').scrollIntoView({ block: 'start' });
       });
   }
 
   function monthName(isoDate) {
     if (!isoDate) return '—';
-    var d = new Date(isoDate);
-    return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+    return new Date(isoDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
   }
 
-  function drawMaterials() {
-    var d = matData;
-    if (!d) return;
+  function drawMatPanel() {
+    var d = matData, sale = matSale;
+    if (!d || !sale) return;
     var mats = d.materials || [];
-    if (!mats.length) {
-      $('matBody').innerHTML = '<div class="card"><div class="loading">No steel purchases ' +
-        'with a quantity and a rate, so there is nothing to compare.</div></div>';
-      return;
+
+    /* The newest month any material has. One whose own latest month is
+       older has not been bought lately -- "Channel 0%" must not read as a
+       price that has not moved. */
+    var newest = mats.reduce(function (a, b) { return b.now_month > a ? b.now_month : a; }, '');
+    function staleMark(m) {
+      return m.now_month < newest
+        ? ' <span class="pill pill-amber">no buys since ' + monthName(m.now_month) + '</span>' : '';
     }
 
-    /* Said in words whenever the month asked for had no steel in it. It
-       is NEVER substituted in silence. */
+    /* Never a month substituted in silence. */
     var missing = mats.filter(function (m) { return m.then_is_nearest; });
     var note = missing.length
       ? '<div class="note warn-note">' + missing.map(function (m) {
@@ -2750,154 +2864,138 @@ upload_token = (shown on the download screen)</pre>
                    / withChange.length * 10) / 10
       : null;
 
-    /* THE SAME FOUR MATERIALS AS CARDS. This table lived in a .tbl-wrap,
-       which a phone hides by design -- so on a phone the entire comparison
-       simply was not there, under a heading that said steel was up 12%.
-       Every table on this screen needs its cards, not just the ones that
-       were obviously tables. */
-    /* The newest month ANY material has. A material whose own latest month
-       is older than that is not steady -- it simply has not been bought
-       lately, and "Channel 0%" would otherwise read as a price that has not
-       moved rather than as an absence of data. */
-    var newest = mats.reduce(function (a, b) { return b.now_month > a ? b.now_month : a; }, '');
-    function staleMark(m) {
-      return m.now_month < newest
-        ? ' <span class="pill pill-amber">no buys since ' + monthName(m.now_month) + '</span>' : '';
-    }
+    var rows = mats.map(function (m) {
+      return { cells: [
+        esc(m.material) + staleMark(m),
+        moneyShort(m.then_weighted), moneyShort(m.now_weighted),
+        changeCell(m.change_weighted),
+        '<span class="missing">' + moneyShort(m.then_simple) + ' → ' + moneyShort(m.now_simple) +
+          ' · ' + (m.change_simple === null ? '—' :
+          (Number(m.change_simple) > 0 ? '+' : '') + m.change_simple + '%') + '</span>'] };
+    });
 
-    var matCards = mats.map(function (m) {
-      return '<div class="rc flat">' +
-        '<div class="rc-top"><div class="rc-party">' + esc(m.material) + '</div>' +
-        '<div class="rc-date">' + changeCell(m.change_weighted) + '</div></div>' +
-        (staleMark(m) ? '<div style="margin-top:5px">' + staleMark(m) + '</div>' : '') +
-        '<div class="rc-money"><div class="rc-calc">' +
-          monthName(m.then_month) + ' · ' + m.then_buys + ' buys</div>' +
-          '<div class="rc-amt">' + moneyShort(m.then_weighted) + '</div></div>' +
-        '<div class="rc-money"><div class="rc-calc">' +
-          monthName(m.now_month) + ' · ' + m.now_buys + ' buys</div>' +
-          '<div class="rc-amt">' + moneyShort(m.now_weighted) + '</div></div>' +
-        '<div class="method">Plain average of the rate: ' + moneyShort(m.then_simple) +
-          ' → ' + moneyShort(m.now_simple) + '</div>' +
-        '</div>';
-    }).join('');
-
-    var rows = mats.map(function (m, i) {
-      return '<tr><td>' + (i + 1) + '</td>' +
-        '<td class="l">' + esc(m.material) + '</td>' +
-        '<td class="r">' + moneyShort(m.then_weighted) + '</td>' +
-        '<td>' + monthName(m.then_month) + ' <span class="missing">' + m.then_buys + ' buys</span></td>' +
-        '<td class="r">' + moneyShort(m.now_weighted) + '</td>' +
-        '<td>' + monthName(m.now_month) + ' <span class="missing">' + m.now_buys + ' buys</span>' +
-          staleMark(m) + '</td>' +
-        '<td class="r">' + changeCell(m.change_weighted) + '</td>' +
-        '<td class="r"><span class="missing">' + moneyShort(m.then_simple) + ' → ' +
-          moneyShort(m.now_simple) + ' · ' + (m.change_simple === null ? '—' :
-          (Number(m.change_simple) > 0 ? '+' : '') + m.change_simple + '%') + '</span></td></tr>';
-    }).join('');
-
-    $('matBody').innerHTML = note +
+    $('matPanel').innerHTML =
       '<div class="card">' +
-      '<div style="font-weight:600; margin-bottom:2px">Steel ' +
+      '<div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap">' +
+        '<div style="font-weight:600; font-size:15px; flex:1; min-width:0">Sold to ' +
+          esc(sale.party || '—') + ', ' + dmy(sale.vch_date) + ', ' + moneyShort(sale.amount) +
+        '</div>' +
+        '<button type="button" class="btn btn-outline btn-sm" id="matClose">Close</button>' +
+      '</div>' +
+      '<div class="method">' + esc(matItem) + '</div>' +
+
+      /* The setting lives HERE, beside the thing it changes. */
+      '<div class="lg-controls" style="margin-top:12px; gap:10px">' +
+        '<div class="lg-cell"><label class="fl" for="matBefore">Months before the sale</label>' +
+        '<input type="number" id="matBefore" class="f" value="' + matMonths +
+          '" min="0" max="240" step="1" style="width:110px"></div>' +
+        '<div class="lg-cell lg-grow" style="align-self:flex-end"><div class="method">' +
+          'Typed, not a fixed button — you buy before you deliver, and how long before is ' +
+          'different every time. Steel priced for <strong>' + monthName(d.asked_month) +
+          '</strong>.</div></div>' +
+      '</div>' + note +
+
+      twoWay([{ label: 'Material', cls: 'l' },
+              { label: 'Then', w: '110px', cls: 'r' },
+              { label: 'Now', w: '110px', cls: 'r' },
+              { label: 'Change', w: '100px', cls: 'r' },
+              { label: 'Simple average of the rate', w: '230px', cls: 'r' }],
+             rows, 'No steel purchases with a quantity and a rate.', 3) +
+
+      '<div style="font-weight:600; margin-top:12px">Steel ' +
         (avg === null ? 'cannot be compared' :
          (avg >= 0 ? 'up' : 'down') + ' about ' + Math.abs(avg) + '%') + '</div>' +
       '<div class="method">Simple average of the ' + withChange.length +
-        ' materials below, each measured as <strong>what was spent divided by what was ' +
-        'bought</strong>. A month counts only with ' + d.min_buys + ' or more purchases in it.</div>' +
-      '<div class="tbl-wrap fit" style="max-height:none; margin-top:12px"><table class="tbl"><thead><tr>' +
-      '<th style="width:44px">Sr.</th><th>Material</th>' +
-      '<th style="width:110px">Then</th><th style="width:150px">which month</th>' +
-      '<th style="width:110px">Now</th><th style="width:190px">which month</th>' +
-      '<th style="width:96px">Change</th>' +
-      '<th style="width:220px">Simple average of the rate</th>' +
-      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '<div class="rc-list">' + matCards + '</div>' +
-      '<div class="method" style="margin-top:8px">The last column is the plain average of every ' +
-      'rate in the month. It is shown because it was asked for and because the gap matters: the ' +
-      'item is “PIPE” and the size is in the description, so one line can be a rate per kilo and ' +
-      'the next a rate per length. Averaging those treats them as the same number.</div>' +
-      '</div>' +
+        ' materials above, each measured as <strong>what was spent divided by what was ' +
+        'bought</strong>. A month counts only with ' + d.min_buys + ' or more purchases in it. ' +
+        'The last column is the plain average of every rate in that month — shown because the ' +
+        'gap matters: the item is “PIPE” and the size is in the description, so one line can be ' +
+        'a rate per kilo and the next a rate per length.</div>' +
 
-      /* ---- the same margin, at today's steel ---- */
-      '<div class="card">' +
-      '<div style="font-weight:600; margin-bottom:8px">At the same margin</div>' +
+      '<div style="font-weight:600; margin-top:14px">At the same margin</div>' +
       '<div class="lg-controls" style="gap:10px">' +
-        '<div><label class="fl" for="matOld">What you charged then</label>' +
-        '<input type="number" id="matOld" class="f" value="680000" step="1000" style="width:160px"></div>' +
-        '<div><label class="fl" for="matShare">Material share of the price</label>' +
+        '<div class="lg-cell"><label class="fl" for="matShare">Material share of the price</label>' +
         '<input type="number" id="matShare" class="f" value="' + matShare +
           '" min="0" max="100" step="1" style="width:110px"> %</div>' +
-      '</div>' +
-      '<div id="matSum" style="margin-top:12px"></div>' +
-      '</div>' +
+      '</div><div id="matSum" style="margin-top:8px"></div>' +
 
-      /* ---- what this machine went for before ---- */
-      '<div class="card">' +
-      '<div style="font-weight:600; margin-bottom:6px">What you charged for a machine before</div>' +
-      '<div class="lg-controls">' +
-        '<div class="lg-cell lg-grow"><label class="fl" for="matItem">Item</label>' +
-        '<input id="matItem" class="f" list="matItemList" autocomplete="off" ' +
-        'placeholder="Type a machine — Inclined Slat Conveyor, Goods Lift…" style="width:100%">' +
-        '<datalist id="matItemList"></datalist></div>' +
-      '</div>' +
-      '<div id="matHist" style="margin-top:10px"><div class="method">Pick a machine to see every ' +
-      'price it ever went out at, with the size from the description.</div></div>' +
+      '<div style="font-weight:600; margin-top:14px">What you charged for this machine before</div>' +
+      '<div id="matHist"><div class="loading">Looking…</div></div>' +
+
+      '<div style="font-weight:600; margin-top:14px">Check another item at that time</div>' +
+      '<div class="method">A bearing, a gear box — anything you also bought for this job.</div>' +
+      '<div class="lg-controls" style="margin-top:6px">' +
+        '<div class="lg-cell lg-grow"><input id="matOther" class="f" autocomplete="off" ' +
+        'placeholder="Type an item" style="width:100%"></div></div>' +
+      '<div id="matOtherOut"></div>' +
       '</div>';
 
-    if (!itemRows.length) {
-      Promise.resolve(REF.supabase().rpc('busy_items_sold', { p_company: firm }))
-        .then(function (r) { if (r && !r.error) { itemRows = r.data || []; fillItemList(); } });
-    } else fillItemList();
-
-    $('matOld').oninput = matSum;
-    $('matShare').oninput = function () { matShare = Number(this.value) || 0; matSum(); };
-    $('matItem').onchange = function () { matHistory(btrim(this.value)); };
+    if ($('matClose')) $('matClose').onclick = function () {
+      $('matPanel').style.display = 'none'; matSale = null;
+    };
+    $('matBefore').onchange = function () {
+      matMonths = Math.max(0, Math.min(240, Number(this.value) || 0));
+      pickMatSale(matSaleRows.indexOf(matSale));
+    };
+    $('matShare').oninput = function () {
+      matShare = Math.max(0, Math.min(100, Number(this.value) || 0));
+      matSum();
+    };
+    $('matOther').onchange = function () { matOther(btrim(this.value)); };
     matSum();
-
-    function fillItemList() {
-      var dl = $('matItemList');
-      if (!dl) return;
-      dl.innerHTML = itemRows.slice(0, 400).map(function (r) {
-        return '<option value="' + esc(r.item) + '"></option>';
-      }).join('');
-    }
+    matHistory();
 
     function matSum() {
-      var old = Number($('matOld').value) || 0;
-      var share = Math.max(0, Math.min(100, Number($('matShare').value) || 0)) / 100;
+      var old = Number(sale.amount) || 0;
       if (avg === null || !old) { $('matSum').innerHTML = ''; return; }
+      var share = matShare / 100;
       var now = Math.round(old * (1 + share * avg / 100));
       $('matSum').innerHTML =
         '<div style="font-size:26px; font-weight:600;">' + moneyShort(now) + '</div>' +
-        '<div class="method">' + moneyShort(old) + ' × (1 + ' + Math.round(share * 100) +
+        '<div class="method">' + moneyShort(old) + ' × (1 + ' + matShare +
         '% of the price being material × steel ' + (avg >= 0 ? 'up' : 'down') + ' ' +
-        Math.abs(avg) + '%) = ' + moneyShort(now) + '. ' +
-        'Only the material part of the price is moved; labour, transport and margin are left ' +
-        'where they were.</div>';
+        Math.abs(avg) + '%) = ' + moneyShort(now) + '. Only the material part is moved; ' +
+        'labour, transport and margin are left where they were.</div>';
     }
 
-    function matHistory(item) {
-      if (!item) { $('matHist').innerHTML = ''; return; }
-      $('matHist').innerHTML = '<div class="loading">Looking…</div>';
+    function matHistory() {
       Promise.resolve(REF.supabase().rpc('busy_item_price_history',
-        { p_company: firm, p_item: item }))
+        { p_company: firm, p_item: matItem }))
         .then(function (r) {
           if (!r || r.error) { $('matHist').innerHTML = '<div class="loading">Could not load it.</div>'; return; }
-          var rows = r.data || [];
-          if (!rows.length) { $('matHist').innerHTML = '<div class="loading">No sales of that item.</div>'; return; }
-          $('matHist').innerHTML = twoWay(
-            [{ label: 'Customer', cls: 'l' },
-             { label: 'Description', cls: 'l desc' },
-             { label: 'Amount', w: '130px', cls: 'r' },
-             { label: 'Date', w: '96px' }],
+          var rows = (r.data || []).filter(function (x) { return Number(x.amount); });
+          if (!rows.length) { $('matHist').innerHTML = '<div class="loading">No earlier sales.</div>'; return; }
+          $('matHist').innerHTML = '<div class="method" style="font-size:13px; color:var(--ink)">' +
             rows.map(function (x) {
-              return { cells: [
-                esc(x.party || ''),
-                '<span class="clip"' + (x.description ? ' title="' + esc(x.description) + '"' : '') +
-                  '>' + esc(x.description || '') + '</span>',
-                moneyShort(x.amount), dmy(x.vch_date)] };
-            }), 'No sales of that item.') +
-            '<div class="method">Never averaged. The size is in the description, so two sales of ' +
-            'the same item name are not the same machine.</div>';
+              var y = new Date(x.vch_date).getFullYear();
+              var here = (x.vch_date === sale.vch_date);
+              return (here ? '<strong>' : '') + moneyShort(x.amount) + ' in ' + y +
+                     (here ? ' ← this one</strong>' : '');
+            }).join(' · ') + '</div>' +
+            '<div class="method">Never averaged: the size is in the description, so two sales ' +
+            'of the same name are not the same machine.</div>';
+        });
+    }
+
+    function matOther(item) {
+      if (!item) { $('matOtherOut').innerHTML = ''; return; }
+      var hits = matMatches(item);
+      if (!hits.length) {
+        $('matOtherOut').innerHTML = '<div class="loading">Nothing sold with “' +
+          esc(item) + '” in its name.</div>';
+        return;
+      }
+      $('matOtherOut').innerHTML = '<div class="loading">Looking…</div>';
+      Promise.resolve(REF.supabase().rpc('busy_item_price_history',
+        { p_company: firm, p_item: hits[0].item }))
+        .then(function (r) {
+          if (!r || r.error) { $('matOtherOut').innerHTML = '<div class="loading">Could not load it.</div>'; return; }
+          var near = (r.data || []).filter(function (x) { return Number(x.amount); });
+          if (!near.length) { $('matOtherOut').innerHTML = '<div class="loading">No priced sales.</div>'; return; }
+          $('matOtherOut').innerHTML = '<div class="method" style="font-size:13px; color:var(--ink)">' +
+            esc(hits[0].item) + ': ' + near.map(function (x) {
+              return moneyShort(x.amount) + ' in ' + new Date(x.vch_date).getFullYear();
+            }).join(' · ') + '</div>';
         });
     }
   }
@@ -4058,8 +4156,23 @@ upload_token = (shown on the download screen)</pre>
       if (row) { e.preventDefault(); openItem(row.dataset.item); }
     });
   });
-  ['matOn', 'matBefore'].forEach(function (id) {
-    $(id).addEventListener('change', loadMaterials);
+  /* ---- material prices: search, then a sale, then the comparison ----
+     The months-before control is built with the panel it changes, so it is
+     wired there. Only the search box is permanent markup. */
+  $('matSearch').addEventListener('input', drawMatHits);
+  $('matSearch').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); this.value = ''; matItem = null; drawMatHits(); }
+  });
+  $('matClear').addEventListener('click', function () {
+    $('matSearch').value = ''; matItem = null; drawMatHits(); $('matSearch').focus();
+  });
+  $('matHits').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-pick]');
+    if (b) pickMatItem(b.dataset.pick);
+  });
+  $('matSales').addEventListener('click', function (e) {
+    var row = e.target.closest('[data-sale]');
+    if (row) pickMatSale(Number(row.dataset.sale));
   });
 
   $('prevBtn').addEventListener('click', function () { gotoPage(pageNo - 1); });
