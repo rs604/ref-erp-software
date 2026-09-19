@@ -443,8 +443,10 @@ function reportScreen(label, r) {
   /* ================= SCREENS THAT CANNOT WORK ON A PHONE SAY SO ================= */
   {
     const { page } = await phonePage(server, browser, 'admin.html', null);
-    for (const [view, words] of [['salary-calculator', 'salary sheet needs a computer'],
-                                 ['admin-panel', 'needs a computer']]) {
+    // A person told to go and find a computer is owed the reason in the same
+    // line, or it reads as the system being broken.
+    for (const [view, words] of [['salary-calculator', 'wide screen'],
+                                 ['admin-panel', 'read across']]) {
       await H.go(page, view);
       await page.waitForTimeout(800);
       const said = await page.evaluate(v => {
@@ -454,8 +456,9 @@ function reportScreen(label, r) {
                  noteShown: !!note && note.offsetParent !== null,
                  bodyHidden: !!body && body.offsetParent === null };
       }, view);
-      record(`${view}: says it needs a computer, and shows nothing else`,
-        said.noteShown && said.bodyHidden && new RegExp(words, 'i').test(said.note || ''),
+      record(`${view}: says it needs a computer, says WHY, and shows nothing else`,
+        said.noteShown && said.bodyHidden && new RegExp(words, 'i').test(said.note || '')
+          && /computer/i.test(said.note || ''),
         said.note || 'no notice');
     }
     await page.close();
@@ -554,6 +557,60 @@ function reportScreen(label, r) {
     record('at a desk the headings still stay put while the rows scroll under them',
       deskTable.scrolledDown && deskTable.headingsStayed && !deskTable.pageWentSideways,
       JSON.stringify(deskTable));
+
+    /* ---- THE DESCRIPTION ON THE DESK TABLE ----
+       One line with the whole of it on hover. Wrapped, it made every row three
+       lines tall and pushed Rate and Amount off the right -- and those are the
+       ones the eye runs down. */
+    const descCol = await deskPage.evaluate(() => {
+      const heads = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const i = heads.indexOf('Description');
+      const td = document.querySelectorAll('#rows tr')[0].children[i];
+      const clip = td.querySelector('.clip');
+      const cs = clip ? getComputedStyle(clip) : null;
+      const amt = document.querySelectorAll('#rows tr')[0].children[heads.indexOf('Amount')];
+      return {
+        oneLine: !!cs && cs.whiteSpace === 'nowrap' && cs.textOverflow === 'ellipsis',
+        title: td.getAttribute('title'),
+        fullTextStillThere: td.textContent.trim(),
+        rowHeight: Math.round(document.querySelectorAll('#rows tr')[0].getBoundingClientRect().height),
+        amountOnScreen: amt.getBoundingClientRect().right <= innerWidth + 1,
+        columns: heads.length,
+      };
+    });
+    record('at a desk the description is one line, clipped',
+      descCol.oneLine, JSON.stringify({ oneLine: descCol.oneLine, rowHeight: descCol.rowHeight }));
+    record('and the whole of it is on hover',
+      !!descCol.title && descCol.title === descCol.fullTextStillThere, descCol.title);
+    record('and Rate and Amount are still on the screen',
+      descCol.amountOnScreen && descCol.columns === 11, `${descCol.columns} columns`);
+
+    /* ---- A COLUMN WIDTH IS REMEMBERED, LIKE THE SHOW-AND-HIDE CHOICE ---- */
+    const grip = await deskPage.locator('#headRow th[data-col="desc"] .colgrip').boundingBox();
+    const was = await deskPage.evaluate(() =>
+      Math.round(document.querySelector('#headRow th[data-col="desc"]').getBoundingClientRect().width));
+    await deskPage.mouse.move(grip.x + 3, grip.y + 10);
+    await deskPage.mouse.down();
+    await deskPage.mouse.move(grip.x + 123, grip.y + 10, { steps: 8 });
+    await deskPage.mouse.up();
+    await deskPage.waitForTimeout(250);
+    const dragged = await deskPage.evaluate(() => ({
+      now: Math.round(document.querySelector('#headRow th[data-col="desc"]').getBoundingClientRect().width),
+      stored: localStorage.getItem('ref-busy-column-widths'),
+      clip: parseFloat(getComputedStyle(document.querySelector('#rows .desc .clip')).maxWidth),
+    }));
+    record('a column edge can be dragged to make it wider',
+      dragged.now > was, `${was} → ${dragged.now}`);
+    record('and the width is remembered for this person',
+      !!dragged.stored && /desc/.test(dragged.stored), dragged.stored);
+    record('and the clipped text never grows wider than its own column',
+      dragged.clip < dragged.now, `clip ${dragged.clip} in a column of ${dragged.now}`);
+    await deskPage.dblclick('#headRow th[data-col="desc"] .colgrip');
+    await deskPage.waitForTimeout(250);
+    const back = await deskPage.evaluate(() =>
+      Math.round(document.querySelector('#headRow th[data-col="desc"]').getBoundingClientRect().width));
+    record('and a double-click on the edge puts it back',
+      Math.abs(back - was) <= 2, `${dragged.now} → ${back}, was ${was}`);
     await deskPage.close();
     record('at a desk the menu is still a column down the left, not a drawer',
       desk.sidebarLeft === 0 && desk.sidebarWidth > 180, JSON.stringify(desk));

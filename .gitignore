@@ -1,3 +1,7 @@
 
 # Left behind by the Supabase CLI when it checks its own version.
 supabase/.temp/
+
+# Screenshots from tests/sweep.test.js. Re-made on every run; look at
+# them, do not commit them.
+tests/shots/

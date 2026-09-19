@@ -538,8 +538,10 @@
     cursor: pointer;
     background: var(--surface-sunken);
   }
+  /* Words, not a dash, so it fits whichever of the two it is saying.
+     A fixed 40px square clipped "not taken" to "not tak". */
   .photo-missing {
-    width: 40px; height: 40px;
+    min-width: 40px; height: 40px; padding: 0 4px; line-height: 1.15;
     border-radius: 5px;
     border: 1px dashed var(--border);
     display: flex;
@@ -946,7 +948,8 @@
     <div id="view-admin-panel" class="view-content" style="display:none">
       <!-- Sixty-one permissions across five columns per person. It is a grid
            that has to be READ across, and on a phone it cannot be. -->
-      <div class="desk-only-note">Who can do what needs a computer. Open it on a desktop.</div>
+      <div class="desk-only-note">Who can do what is a grid of sixty-one permissions
+        that has to be read across. Open it on a computer.</div>
       <div class="content desk-only-hide">
         <div id="adminPanelContent"></div>
       </div>
@@ -964,7 +967,8 @@
            Nobody runs payroll on a phone, and turning it into cards would ruin
            the desk screen we locked. So it says so, plainly, and shows nothing
            else. -->
-      <div class="desk-only-note">The salary sheet needs a computer. Open it on a desktop.</div>
+      <div class="desk-only-note">The salary sheet needs a wide screen for the grid.
+        Open it on a computer.</div>
       <div class="content desk-only-hide">
         <div id="salaryCalcContent"></div>
       </div>
@@ -1394,8 +1398,11 @@
     if (url) {
       return `<img src="${url}" class="photo-thumb" onclick="openLightbox('${url}', '${label} · ${time || ''} · ${(location||'').replace(/'/g,"")}')" />`;
     }
-    if (missing) return `<div class="photo-missing">no photo</div>`;
-    return `<div class="photo-missing">—</div>`;
+    if (missing) return `<div class="photo-missing">photo gone</div>`;
+    /* Never a bare dash. An empty dashed square beside the reading looks
+       like a picture that failed to load, and the person approving it
+       cannot tell that from one that was never taken. */
+    return `<div class="photo-missing">not taken</div>`;
   }
 
   let pendingRejectId = null;
@@ -1445,7 +1452,7 @@
       const rejectionNote = e.status === 'cancelled' && e.rejection_reason ? `<div class="rejection-note">Reason: ${e.rejection_reason}</div>` : '';
       html += `<tr class="${rowClass}">
         <td data-label="Employee">${e.employees?.name || '—'}</td>
-        <td data-label="Date" class="mono">${e.entry_date}</td>
+        <td data-label="Date">${fmtShortDate(e.entry_date)}</td>
         <td data-label="Vehicle">${e.vehicles?.vehicle_name || '—'}</td>
         <td data-label="Morning">
           <div style="display:flex; align-items:center; gap:8px;">
@@ -1839,7 +1846,7 @@
     const monthNames = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
 
     let rows = entries.map(e => `<tr>
-      <td style="padding:6px 10px; border:1px solid #ccc;">${e.entry_date}</td>
+      <td style="padding:6px 10px; border:1px solid #ccc;">${fmtShortDate(e.entry_date)}</td>
       <td style="padding:6px 10px; border:1px solid #ccc;">${e.vehicles?.vehicle_name || ''}</td>
       <td style="padding:6px 10px; border:1px solid #ccc; text-align:right;">${e.km_traveled}</td>
       <td style="padding:6px 10px; border:1px solid #ccc; text-align:right;">₹${e.rate_applied}</td>

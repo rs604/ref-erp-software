@@ -132,10 +132,47 @@
   table.tbl tbody tr:nth-child(even) { background:var(--row-alt); }
   table.tbl tbody tr:hover td { background:#eef4f9; }
   mark { background:var(--hit); padding:0 1px; }
+  /* One line, clipped, with the whole of it on hover. A wrapped description
+     makes the row three lines tall and pushes Rate and Amount off the right,
+     and those are the ones the eye runs down.
+
+     The clip is on an inner block, not on the cell: a table that lays itself
+     out automatically sizes a cell to its content, so capping the content is
+     what caps the column. table-layout:fixed would do it too, and was tried --
+     eleven columns do not fit, Party collapsed to nothing and printed on top
+     of Item. */
   .desc { color:#3c4a57; font-size:12px; }
+  .desc .clip { display:block; max-width:var(--desc-w, 250px); overflow:hidden;
+                text-overflow:ellipsis; white-space:nowrap; }
+
+  /* Drag a column edge to resize it. The same idea as the salary grid, and
+     the same promise: the width is remembered for this person, in this
+     browser, like the show-and-hide choice beside it. */
+  /* No position:relative here. th is already position:sticky, which is a
+     positioned element and so is the containing block the grip anchors to.
+     Setting relative REPLACES sticky, and the column names then scroll away
+     with the rows -- which is exactly what happened, and what the desk
+     heading test caught. */
+  .colgrip { position:absolute; top:0; right:-3px; width:7px; height:100%;
+             cursor:col-resize; user-select:none; z-index:2; }
+  .colgrip:hover::after, .colgrip.on::after {
+    content:''; position:absolute; left:3px; top:0; width:2px; height:100%;
+    background:var(--steel); }
+  body.col-resizing { cursor:col-resize; user-select:none; }
   /* What Busy did not give us. Said in words, in a quieter colour, so it
      reads as a note about the source rather than as a value. */
   .missing { color:var(--muted); font-style:italic; font-size:11.5px; white-space:nowrap; }
+
+  /* The three lines that go in config.txt, and the file and folder names
+     around them. On a phone the box was narrower than the longest line, so
+     "upload_token = (shown on the download scre" is what the person setting
+     this up actually read -- cut mid-word, with nothing to say there was
+     more. A sideways scrollbar inside a box is not a fix: nobody finds it.
+     These are short lines, so they wrap. */
+  .codeblock { background:var(--surface-sunken); padding:9px; border-radius:3px;
+               margin:6px 0; font-size:12px;
+               white-space:pre-wrap; overflow-wrap:anywhere; }
+  code { overflow-wrap:anywhere; }
   .pill { display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:10px;
           border:1px solid transparent; white-space:nowrap; }
   .pill-amber { background:var(--amber-bg); color:var(--amber); border-color:#e6d2a8; }
@@ -348,6 +385,7 @@
 
     /* Columns choose what a TABLE shows. There is no table here. */
     .colmenu { display:none; }
+    .colgrip { display:none; }
 
     /* The menu reaches the whole ERP from every page now, so a Back to ERP
        button is a second way to do one thing, taking room the title needs. */
@@ -788,7 +826,7 @@
                 put <code>RefBusyUploader.exe</code> in that folder</li>
             <li>In the same folder make a text file called <code>config.txt</code> holding three
                 lines:
-              <pre style="background:var(--surface-sunken); padding:9px; border-radius:3px; margin:6px 0; font-size:12px; overflow-x:auto;">busy_folder =
+              <pre class="codeblock">busy_folder =
 erp_url = (shown on the download screen)
 upload_token = (shown on the download screen)</pre>
               Leave <code>busy_folder</code> empty the first time. The program looks in the usual
@@ -1146,6 +1184,33 @@ upload_token = (shown on the download screen)</pre>
   };
 
   var COL_STORE = 'ref-busy-columns';
+  var COLW_STORE = 'ref-busy-column-widths';
+  var colWidths = {};
+
+  function loadColWidths() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(COLW_STORE) || '{}');
+      if (saved && typeof saved === 'object') colWidths = saved;
+    } catch (e) { /* a browser that refuses storage keeps the defaults */ }
+  }
+  function saveColWidths() {
+    try { localStorage.setItem(COLW_STORE, JSON.stringify(colWidths)); } catch (e) {}
+  }
+  /* The description is clipped to its own column, so the clip has to follow
+     the column when it is dragged.
+
+     Measured from what the column ACTUALLY is, not from what was asked for.
+     A table that lays itself out automatically will refuse a width it has no
+     room for -- ask for 366 and get 277 -- and a clip set from the request
+     would then be wider than the cell holding it, which is how the column
+     creeps wider on its own. */
+  function syncDescWidth() {
+    var table = document.querySelector('table.tbl');
+    var th = document.querySelector('#headRow th[data-col="desc"]');
+    if (!table) return;
+    var w = th ? Math.round(th.getBoundingClientRect().width) : 0;
+    table.style.setProperty('--desc-w', (w > 40 ? w - 18 : 250) + 'px');
+  }
   var shownCols = null;
 
   function loadCols() {
@@ -1169,9 +1234,58 @@ upload_token = (shown on the download screen)</pre>
 
   function drawHead() {
     $('headRow').innerHTML = visibleCols().map(function (c) {
-      return '<th' + (c.width ? ' style="width:' + c.width + '"' : '') + '>' + esc(c.label) + '</th>';
+      var w = colWidths[c.key] ? colWidths[c.key] + 'px' : c.width;
+      return '<th data-col="' + c.key + '"' + (w ? ' style="width:' + w + '"' : '') + '>' +
+             esc(c.label) + '<span class="colgrip" data-grip="' + c.key + '"></span></th>';
     }).join('');
+    syncDescWidth();
   }
+
+  /* ---- DRAGGING A COLUMN EDGE ----
+     Bound once to the header row, so a column added to COLUMNS later needs no
+     wiring. Double-click an edge to put that column back to its default. */
+  (function wireColumnResize() {
+    var head = $('headRow');
+    if (!head) return;
+    var drag = null;
+
+    head.addEventListener('mousedown', function (e) {
+      var grip = e.target.closest('.colgrip');
+      if (!grip) return;
+      e.preventDefault();
+      var th = grip.parentElement;
+      drag = { key: grip.dataset.grip, th: th, x: e.clientX, w: th.getBoundingClientRect().width };
+      grip.classList.add('on');
+      document.body.classList.add('col-resizing');
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (!drag) return;
+      // 60px is about as narrow as a heading can be and still be read.
+      var w = Math.max(60, Math.round(drag.w + (e.clientX - drag.x)));
+      drag.th.style.width = w + 'px';
+      colWidths[drag.key] = w;
+      syncDescWidth();          // moving any column changes what the others get
+    });
+
+    document.addEventListener('mouseup', function () {
+      if (!drag) return;
+      saveColWidths();
+      Array.prototype.forEach.call(head.querySelectorAll('.colgrip'), function (g) {
+        g.classList.remove('on');
+      });
+      document.body.classList.remove('col-resizing');
+      drag = null;
+    });
+
+    head.addEventListener('dblclick', function (e) {
+      var grip = e.target.closest('.colgrip');
+      if (!grip) return;
+      delete colWidths[grip.dataset.grip];
+      saveColWidths();
+      drawHead();
+    });
+  })();
 
   function drawColMenu() {
     $('colList').innerHTML = COLUMNS.map(function (c) {
@@ -1384,7 +1498,11 @@ upload_token = (shown on the download screen)</pre>
                                         : '<span class="missing">no number in Busy</span>') + '</td>',
         party: '<td class="l">' + hi(r.party, q) + '</td>',
         item:  '<td class="l">' + hi(r.item, q) + '</td>',
-        desc:  '<td class="l desc">' + hi(r.description, q) + '</td>',
+        // title, not a tooltip library: it works on every browser, it is
+        // selectable by a screen reader, and it needs no JavaScript.
+        desc:  '<td class="l desc"' +
+               (r.description ? ' title="' + esc(r.description) + '"' : '') + '>' +
+               '<span class="clip">' + hi(r.description, q) + '</span></td>',
         qty:   '<td class="r">' + (r.qty ? inr2.format(r.qty) : '') + '</td>',
         rate:  '<td class="r">' + rateCell + '</td>',
         amt:   '<td class="r">' + money(r.amount) + '</td>'
@@ -2800,7 +2918,7 @@ upload_token = (shown on the download screen)</pre>
           n.style.display = '';
         });
       }
-      loadCols(); loadTypes();
+      loadCols(); loadColWidths(); loadTypes();
       drawHead(); drawColMenu(); drawChips();
       grid = wireGrid('rows');
       setFirm('REF');
