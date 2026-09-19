@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>Refcon ERP — Set Your Password</title>
-<script>window.__BUILD_VERSION__ = '1789727686';</script>
+<script>window.__BUILD_VERSION__ = '1789755258';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -67,9 +67,54 @@
   .msg.success { display:block; background:var(--success-bg); border:1px solid #cfe6da; color:var(--success); }
   .rules { font-size:12px; color:var(--muted); line-height:1.7; margin:0 0 18px; padding-left:18px; }
   .rules li.ok { color:var(--success); }
+
+  /* ---- ON A PHONE ----
+     A password is set from wherever the person happens to be, so this screen
+     has to work on a phone. "Back to sign in" was a 14px-tall line of text:
+     a link that is only as tall as its letters is not a tap target. */
+  .reset-main { flex:1; min-width:0; }
+  .reset-bar { display:flex; align-items:center; gap:10px; padding:10px 14px;
+               border-bottom:1px solid #e4e8ec; font-size:13px; color:#55606b; }
+
+  @media (max-width: 880px) {
+    button, .linkbtn { min-height: 44px; }
+    input { font-size: 16px; min-height: 44px; }
+    input { scroll-margin-top: 80px; scroll-margin-bottom: 120px; }
+  }
+
+  /* ---- WHAT A COLD ARRIVAL SEES ----
+     Opened straight at this address with no session, this page showed
+     NOTHING -- a blank white screen while the redirect to sign-in happened,
+     and a blank white screen for ever if it did not. Found by opening every
+     page cold, which nobody had ever done because we all arrive through
+     other pages. Something is on screen from the first paint now. */
+  .boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+          background:#f4f6f8; z-index:200; padding:20px; text-align:center; }
+  .boot-title { font-size:16px; font-weight:600; color:#1a2229; }
+  .boot-sub { font-size:13.5px; color:#55606b; margin-top:6px; line-height:1.5; }
 </style>
 </head>
 <body>
+<div id="boot" class="boot">
+  <div>
+    <div class="boot-title" id="bootTitle">Opening the ERP…</div>
+    <div class="boot-sub" id="bootSub">Checking who you are.</div>
+  </div>
+</div>
+<!-- The ERP's menu, the same one every other page carries. It appears only for
+     someone who is already signed in AND is not being forced through a first
+     password change: a menu on the forced screen would be a way to walk past
+     the thing that screen exists to make them do. -->
+<div class="refnav-shell">
+  <div id="refnav-host"></div>
+  <div class="reset-main">
+  <div class="reset-bar" id="resetBar" style="display:none">
+    <button class="refnav-open-btn" id="navOpenBtn" type="button"
+            aria-label="Open the menu" aria-controls="refnav-host" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <span>Refcon ERP</span>
+  </div>
 
   <div class="card">
     <div class="simple-brand">REF</div>
@@ -98,8 +143,12 @@
     <div class="msg" id="msgBox"></div>
   </div>
 
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
+<script src="nav.js"></script>
 <script>
 (function () {
   'use strict';
@@ -110,11 +159,49 @@
   var msgBox = document.getElementById('msgBox');
   var isFirstLogin = new URLSearchParams(window.location.search).get('first') === '1';
 
+
+  /* Shown until we know who this is. A person who is not signed in is told
+     so and sent on; they never sit looking at a blank page, and they never
+     see the working screen behind it either. */
+  function bootSay(title, sub) {
+    var b = document.getElementById('boot');
+    if (!b) return;
+    b.style.display = 'flex';
+    document.getElementById('bootTitle').textContent = title;
+    document.getElementById('bootSub').innerHTML = sub;
+  }
+  function bootDone() {
+    var b = document.getElementById('boot');
+    if (b) b.style.display = 'none';
+  }
+
   if (isFirstLogin) {
     document.getElementById('heading').textContent = 'Choose Your Password';
     document.getElementById('subtitle').textContent =
       'This is your first sign-in. Set a password before you go any further.';
   }
+
+  /* A stranger who opens this address directly used to be shown a
+     "Set Your Password" form. The server would have refused it, but inviting
+     an action that cannot work is its own fault. Nobody had opened this page
+     cold, because nobody ever arrives here except through signing in. */
+  REF.requireSession({ allowStarterPassword: true }).then(function (user) {
+    if (!user) {
+      bootSay('Taking you to the sign-in page…', 'One moment.');
+      return;
+    }
+    bootDone();
+    // Changing a password by choice: the person is already in the ERP, so the
+    // menu belongs here like anywhere else. On the FORCED screen it does not,
+    // because it would be a way past the thing this screen exists to make
+    // them do.
+    if (!isFirstLogin) {
+      document.getElementById('resetBar').style.display = '';
+      REFNav.mount({ page: 'reset.html', user: user });
+    }
+  }).catch(function () {
+    bootSay('Taking you to the sign-in page…', 'One moment.');
+  });
 
   function show(kind, text) { msgBox.className = 'msg ' + kind; msgBox.textContent = text; }
 

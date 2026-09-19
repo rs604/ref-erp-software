@@ -183,30 +183,31 @@ async function openBusy(server, browser, user) {
     // scroll the window or throw away what is typed in the search box.
     await page.fill('#q', 'pipe');
     await page.evaluate(() => window.scrollTo(0, 0));
-    const navs = await page.locator('#nav .nav-item:visible').count();
+    // This page's own screens, from the shared menu. A link to another page
+    // is not in this list -- leaving the page is meant to lose the search.
+    const mine = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('#refnav-host button.refnav-item[data-view]'))
+        .map(b => ({ view: b.dataset.view, firm: b.dataset.firm || null })));
     let kept = 0, moved = 0;
     const complaints = [];
-    for (let i = 0; i < navs; i++) {
-      const el = page.locator('#nav .nav-item:visible').nth(i);
-      const label = (await el.textContent()).trim();
+    for (const m of mine) {
       const before = await H.snapshot(page);
-      await el.click();
-      await page.waitForTimeout(200);
+      await H.go(page, m.view, m.firm);
       const after = await H.snapshot(page);
       const bad = [];
       if (before.windowScroll[1] !== after.windowScroll[1]) bad.push('the window scrolled');
       if (after.fields['#q'] !== before.fields['#q']) bad.push('the search box was wiped');
-      if (bad.length === 0) kept++; else { moved++; complaints.push(label + ': ' + bad[0]); }
+      if (bad.length === 0) kept++; else { moved++; complaints.push(m.view + ': ' + bad[0]); }
     }
-    record(`clicked ${navs} menu items · ${kept} kept scroll and kept the search typed · ${moved} did not`,
+    record(`clicked ${mine.length} of this page's menu items · ${kept} kept scroll and kept the search typed · ${moved} did not`,
       moved === 0, complaints.slice(0, 4).join(' | '));
-    // 4 for REF, 4 for RS, 3 owner-only.
-    record('every menu item is reachable, and the owner-only ones are shown to the owner',
-      navs === 11, `${navs} visible`);
+    // 4 for REF, 4 for RS, 3 owner-only loading screens.
+    record('every Busy Data screen is reachable from the menu, owner-only ones included',
+      mine.length === 11, `${mine.length} entries for this page`);
   }
 
   /* ============ 5. THE LIST SCREEN ============ */
-  await page.locator('#nav .nav-item[data-firm="REF"][data-view="price"]').click();
+  await H.go(page, 'price', 'REF');
   await page.waitForTimeout(200);
   {
     // The real server honours p_limit and p_offset. The stub must too, or the
@@ -325,7 +326,7 @@ async function openBusy(server, browser, user) {
   }
 
   /* ============ 3 and 8: THE UPLOAD SCREEN ============ */
-  await page.locator('#nav .nav-item[data-view="upload"]').click();
+  await H.go(page, 'upload');
   await page.waitForTimeout(300);
   {
     record('Load history opens', await page.locator('#view-upload').isVisible());
@@ -338,6 +339,78 @@ async function openBusy(server, browser, user) {
     record('the whole-year rule is stated on screen, not just in the code',
       /whole year|entire year|all of the year/i.test(words),
       words.match(/[^.]*whole year[^.]*/i)?.[0]?.trim().slice(0, 120) || 'not found');
+  }
+
+  /* ---- THE COUNTERS ----
+     These read ZERO on 18 Sep 2026 while the table held 98,644 rows, because
+     the read was refused and the screen wrote the refusal down as a number.
+     Two things are tested: the count comes from the rows, and a refusal is
+     never shown as a count. */
+  {
+    const tiles = () => page.evaluate(() =>
+      Array.from(document.querySelectorAll('#loadTotals .kpi')).map(k => k.innerText.replace(/\n/g, ' ')));
+
+    await page.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_row_counts'] = () => [
+        { company: 'REF', kind: 'item',    rows: 21470, expected: 21470 },
+        { company: 'REF', kind: 'ledger',  rows: 67763, expected: 67763 },
+        { company: 'REF', kind: 'opening', rows:  1065, expected:  1065 },
+        { company: 'RS',  kind: 'item',    rows:  1432, expected:  1432 },
+        { company: 'RS',  kind: 'ledger',  rows:  6532, expected:  6532 },
+        { company: 'RS',  kind: 'opening', rows:   382, expected:   382 },
+      ];
+    });
+    await H.go(page, 'price', 'REF');
+    await H.go(page, 'upload');
+    await page.waitForTimeout(400);
+
+    const asked = await page.evaluate(() => window.__TEST_DB_CALLS__.map(c => c.name));
+    record('the counts are asked of the ROWS, not of a batch record',
+      asked.includes('rpc:busy_row_counts') &&
+      !asked.some(n => /busy_import_batches/.test(n) && false),
+      'called busy_row_counts');
+
+    const full = await tiles();
+    record(`every company and kind gets its own counter (${full.length})`,
+      full.length === 7, full.map(t => t.split(' ')[0]).join(' · '));
+    record('the total is added up from the parts, and matches',
+      full.some(t => /all rows, both firms/i.test(t) && /98,644/.test(t)),
+      full.find(t => /all rows/i.test(t)) || 'no total tile');
+    record('a figure that matches what was expected says so',
+      full.filter(t => /matches/.test(t)).length === 7,
+      `${full.filter(t => /matches/.test(t)).length} of 7 say "matches"`);
+
+    // Short by a year: the shortfall is a number, in red.
+    await page.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_row_counts'] = () => [
+        { company: 'REF', kind: 'item', rows: 6342, expected: 21470 },
+      ];
+    });
+    await H.go(page, 'price', 'REF');
+    await H.go(page, 'upload');
+    await page.waitForTimeout(400);
+    const short = (await tiles()).join(' | ');
+    record('a load that is short says how short, as a number',
+      /15,128 SHORT of 21,470/.test(short), short);
+
+    // THE ONE THAT MATTERS: a refused read must never become a number.
+    await page.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_row_counts'] =
+        () => ({ error: { message: 'permission denied for table busy_history' } });
+    });
+    await H.go(page, 'price', 'REF');
+    await H.go(page, 'upload');
+    await page.waitForTimeout(400);
+    const refused = await page.locator('#loadTotals').innerText();
+    record('a REFUSED read is never shown as a count',
+      !/\b0\b/.test(refused) && (await tiles()).length === 0,
+      refused.replace(/\n/g, ' ').slice(0, 100));
+    record('and it says what went wrong instead',
+      /Could not load/.test(refused) && /permission denied/.test(refused),
+      refused.replace(/\n/g, ' ').slice(0, 100));
+
+    // Put the real answer back for everything after this.
+    await page.evaluate(() => { delete window.__TEST_DATA__['rpc:busy_row_counts']; });
   }
   {
     // A real file, through the real browser file input.
@@ -390,7 +463,7 @@ async function openBusy(server, browser, user) {
   }
 
   /* ============ the frozen-years limit, in plain words ============ */
-  await page.locator('#nav .nav-item[data-firm="REF"][data-view="deleted"]').click();
+  await H.go(page, 'deleted', 'REF');
   await page.waitForTimeout(400);
   {
     const text = await page.locator('#view-deleted').textContent();
@@ -586,6 +659,125 @@ async function openBusy(server, browser, user) {
       shading.fuzzyShaded && !shading.exactShaded,
       `exact shaded: ${shading.exactShaded}, close shaded: ${shading.fuzzyShaded}`);
 
+    // WHICH KIND OF MATCH THIS ROW IS
+    // A guess must never look like an exact hit. Every row says which layer
+    // of the search answered it, and the two guessing layers are tinted.
+    await p.evaluate(rows => {
+      window.__TEST_DATA__['rpc:busy_search'] = () => [
+        Object.assign({}, rows[0], { item: 'TIER ONE',   match_tier: 1 }),
+        Object.assign({}, rows[0], { item: 'TIER TWO',   match_tier: 2 }),
+        Object.assign({}, rows[0], { item: 'TIER THREE', match_tier: 3 }),
+        Object.assign({}, rows[0], { item: 'TIER FOUR',  match_tier: 4 }),
+      ];
+    }, DB['rpc:busy_search']);
+    await p.locator('#q').fill('');
+    await p.locator('#q').type('juneja', { delay: 10 });
+    await p.waitForTimeout(600);
+    const kinds = await p.evaluate(() => {
+      const head = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const col = head.indexOf('Match');
+      const rowFor = text => Array.from(document.querySelectorAll('#rows tr'))
+        .find(r => r.innerText.includes(text));
+      const read = text => {
+        const r = rowFor(text);
+        if (!r || col < 0) return null;
+        return { label: r.children[col].textContent.trim(), tinted: r.classList.contains('fuzzy') };
+      };
+      return { col, one: read('TIER ONE'), two: read('TIER TWO'),
+               three: read('TIER THREE'), four: read('TIER FOUR') };
+    });
+    record('there is a Match column saying which kind of match each row is',
+      kinds.col >= 0);
+    record('an exact match says so', kinds.one && kinds.one.label === 'Exact', kinds.one && kinds.one.label);
+    record('a match on spacing alone says Spacing',
+      kinds.two && kinds.two.label === 'Spacing', kinds.two && kinds.two.label);
+    record('a close SPELLING says Spelling, and is never shown as exact',
+      kinds.three && kinds.three.label === 'Spelling' && kinds.three.tinted,
+      kinds.three && `${kinds.three.label}, tinted ${kinds.three.tinted}`);
+    record('words typed RUN TOGETHER say Split, and are never shown as exact',
+      kinds.four && kinds.four.label === 'Split' && kinds.four.tinted,
+      kinds.four && `${kinds.four.label}, tinted ${kinds.four.tinted}`);
+    record('the two guesses are tinted and the two real matches are not',
+      kinds.one && kinds.two && !kinds.one.tinted && !kinds.two.tinted);
+    const saidSo = await p.evaluate(() => document.getElementById('rowCount').textContent);
+    record('the line under the table says how many are guesses',
+      /close match/.test(saidSo), saidSo);
+
+    // With nothing typed there is nothing to be a guess about, so the column
+    // stays empty rather than claiming every row is an exact match.
+    await p.locator('#q').press('Escape');
+    await p.waitForTimeout(600);
+    const blank = await p.evaluate(() => {
+      const head = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const col = head.indexOf('Match');
+      return Array.from(document.querySelectorAll('#rows tr'))
+        .every(r => !r.children[col] || r.children[col].textContent.trim() === '');
+    });
+    record('with nothing typed, no row claims to be a match of any kind', blank);
+
+    // WHAT BUSY DID NOT GIVE US IS SHOWN AS MISSING, NOT AS BLANK
+    // Five Credit Note rows in the real data carry no voucher number. A row
+    // that exists and cannot be fully described is information about the
+    // source, not a defect to tidy away — so it is shown, and marked.
+    await p.evaluate(rows => {
+      window.__TEST_DATA__['rpc:busy_search'] = () => [
+        Object.assign({}, rows[0], { item: 'HAS BOTH', vch_no: 'V-1', vch_date: '2024-06-01', match_tier: 1 }),
+        Object.assign({}, rows[0], { item: 'NO NUMBER', vch_no: '',  vch_date: '2024-06-02', match_tier: 1 }),
+        Object.assign({}, rows[0], { item: 'NO DATE',   vch_no: 'V-3', vch_date: null,       match_tier: 1 }),
+      ];
+    }, DB['rpc:busy_search']);
+    await p.locator('#q').fill('');
+    await p.locator('#q').type('pipe', { delay: 10 });
+    await p.waitForTimeout(600);
+    const marked = await p.evaluate(() => {
+      const head = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      const rowFor = t => Array.from(document.querySelectorAll('#rows tr')).find(r => r.innerText.includes(t));
+      const cell = (t, col) => {
+        const r = rowFor(t); const i = head.indexOf(col);
+        return r && i >= 0 ? r.children[i].textContent.trim() : null;
+      };
+      return {
+        goodDate: cell('HAS BOTH', 'Date'),
+        goodVch: cell('HAS BOTH', 'Vch No'),
+        noNumber: cell('NO NUMBER', 'Vch No'),
+        noDate: cell('NO DATE', 'Date'),
+        allThreeShown: ['HAS BOTH', 'NO NUMBER', 'NO DATE'].every(rowFor),
+      };
+    });
+    record('a row Busy could not fully describe is still SHOWN, not hidden',
+      marked.allThreeShown);
+    record('a missing voucher number says so, rather than sitting blank',
+      marked.noNumber === 'no number in Busy', marked.noNumber);
+    record('a missing date says so, rather than sitting blank',
+      marked.noDate === 'no date in Busy', marked.noDate);
+    record('a row that HAS both still shows the real values',
+      marked.goodVch === 'V-1' && /Jun/.test(marked.goodDate || ''),
+      `${marked.goodVch} · ${marked.goodDate}`);
+
+    // A DATE RANGE SAYS WHAT IT LEFT OUT
+    // Undated rows cannot be inside any range, so a range drops them. The
+    // count must say so rather than quietly shrinking.
+    await p.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_search_count'] =
+        (args) => (args && args.p_undated_only) ? 5 : 120;
+    });
+    await p.locator('#from').fill('2024-04-01');
+    await p.waitForTimeout(700);
+    const said = await p.locator('#rowCount').innerText();
+    record('with a date range set, the screen says how many rows it left out for having no date',
+      /5 rows have no date and are not included in this range/.test(said), said);
+    const askedUndated = await p.evaluate(() => window.__TEST_DB_CALLS__
+      .filter(c => c.name === 'rpc:busy_search_count' && c.args && c.args.p_undated_only).length);
+    record('and it asks that question with the SAME filters, not a guess',
+      askedUndated > 0, `${askedUndated} calls`);
+
+    // With no range there is nothing being left out, so nothing is claimed.
+    await p.locator('#from').fill('');
+    await p.waitForTimeout(700);
+    const noRange = await p.locator('#rowCount').innerText();
+    record('with no date range, the screen claims nothing about undated rows',
+      !/no date/.test(noRange), noRange);
+
     // 8 — Back to ERP on the left
     const sides = await p.evaluate(() => {
       const back = document.querySelector('.topbar a[href="admin.html"]').getBoundingClientRect();
@@ -599,7 +791,8 @@ async function openBusy(server, browser, user) {
 
     // 9 — the nav says REF
     const heads = await p.evaluate(() =>
-      Array.from(document.querySelectorAll('.nav-section-label')).map(n => n.textContent.trim()));
+      Array.from(document.querySelectorAll('#refnav-host .refnav-section, #refnav-host .refnav-brand .n'))
+        .map(n => n.textContent.trim()));
     record('the left menu says REF, not the full company name',
       heads.includes('REF') && !heads.some(h => /Raghbir Erectors/.test(h)), heads.join(' · '));
 
@@ -625,8 +818,16 @@ async function openBusy(server, browser, user) {
 
     await p.click('#colBtn');
     record('the columns control opens', await p.locator('#colList').isVisible());
+    // Checked against the table itself, not against a number typed here. A
+    // number typed here goes stale the moment a column is added. Turn every
+    // tickbox on and the table must show exactly that many headings: one
+    // tickbox per column, and no column without one.
     const boxes = await p.locator('#colList input').count();
-    record(`every column can be turned on or off (${boxes} of them)`, boxes === 11);
+    for (let i = 0; i < boxes; i++) await p.locator('#colList input').nth(i).check();
+    await p.waitForTimeout(600);
+    const allOn = await headOf();
+    record(`every column can be turned on or off (${boxes} tickboxes, ${allOn.length} headings)`,
+      boxes > 0 && boxes === allOn.length, allOn.join(' · '));
     record('the Sr. column cannot be turned off',
       await p.locator('#colList input[data-col="sr"]').isDisabled());
 
@@ -794,7 +995,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(400);
     await p.evaluate(() => {
       window.__CLEARED__ = [];
@@ -874,9 +1075,9 @@ async function openBusy(server, browser, user) {
     await p2.waitForTimeout(500);
     const reachable = await p2.evaluate(() => {
       const b = document.getElementById('clearBusyBtn');
-      const menu = document.querySelector('#nav .nav-item[data-view="upload"]');
+      const menu = document.querySelector('#refnav-host .refnav-item[data-view="upload"]');
       return {
-        loadHistoryInMenu: !!menu && menu.style.display !== 'none',
+        loadHistoryInMenu: !!menu,      // absent, not hidden: it is not built into the page at all
         clearOnScreen: !!b && b.offsetParent !== null,
       };
     });
@@ -897,7 +1098,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(400);
 
     // Two firms, three years each, and vch_code DELIBERATELY REPEATED across
@@ -1035,6 +1236,56 @@ async function openBusy(server, browser, user) {
     record('at the bottom right, down and right do not run off either',
       edge.row === lastRow && edge.col === 'Amount', `${edge.col}, row ${edge.row}`);
 
+    // ENTER, TAB AND SHIFT+TAB — reading across, then on to the next row
+    await p.evaluate(() => {
+      const heads = Array.from(document.querySelectorAll('#headRow th')).map(t => t.textContent.trim());
+      document.querySelectorAll('#rows tr')[1].cells[heads.indexOf('Party')].click();
+    });
+    const fromCol = (await sel()).col;
+    await wrap.press('Enter');
+    record('Enter moves one cell to the right', (await sel()).col === 'Item',
+      `${fromCol} -> ${(await sel()).col}`);
+    await wrap.press('Tab');
+    record('Tab does the same as Enter', (await sel()).col === 'Description',
+      (await sel()).col);
+    await wrap.press('Shift+Tab');
+    record('Shift+Tab moves back one cell', (await sel()).col === 'Item',
+      (await sel()).col);
+
+    // The wrap is the point: the end of a row is not the end of the reading.
+    await wrap.press('End');
+    const beforeWrapRow = (await sel()).row;
+    await wrap.press('Enter');
+    let now = await sel();
+    record('at the END of a row, Enter goes to the FIRST cell of the next row',
+      now.row === beforeWrapRow + 1 && now.col === 'Sr.', `row ${now.row}, ${now.col}`);
+    await wrap.press('Shift+Tab');
+    now = await sel();
+    record('at the START of a row, Shift+Tab goes to the LAST cell of the row above',
+      now.row === beforeWrapRow && now.col === 'Amount', `row ${now.row}, ${now.col}`);
+
+    // And it must stop at the two real ends rather than wrapping round.
+    await wrap.press('Control+ArrowDown');
+    await wrap.press('End');
+    await wrap.press('Enter');
+    now = await sel();
+    record('the last cell of the last row is the end — Enter stays put',
+      now.row === lastRow && now.col === 'Amount', `row ${now.row}, ${now.col}`);
+    await wrap.press('Control+ArrowUp');
+    await wrap.press('Home');
+    await wrap.press('Shift+Tab');
+    now = await sel();
+    record('the first cell of the first row is the start — Shift+Tab stays put',
+      now.row === 0 && now.col === 'Sr.', `row ${now.row}, ${now.col}`);
+
+    // Tab must still walk between CONTROLS when the table does not have focus,
+    // or registering it as a table key would have broken every form on screen.
+    await p.locator('#q').focus();
+    await p.keyboard.press('Tab');
+    const movedOn = await p.evaluate(() => document.activeElement?.id || document.activeElement?.tagName);
+    record('outside the table, Tab still moves to the next control',
+      movedOn !== 'q', `focus is now ${movedOn}`);
+
     // Ctrl+C
     await p.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
     await p.evaluate(() => {
@@ -1068,7 +1319,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(400);
     await p.evaluate(() => {
       // One year refuses, the rest are fine — the shape of the real upload.
@@ -1241,8 +1492,13 @@ async function openBusy(server, browser, user) {
       await click('the ' + c + ' column box', `#colList input[data-col="${c}"]`);
     }
     await click('the Columns button again', '#colBtn');
-    for (let i = 0; i < 11; i++) {
-      await click('menu item ' + (i + 1), `#nav .nav-item:nth-of-type(${i + 1})`);
+    const menuViews = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('#refnav-host button.refnav-item[data-view]'))
+        .map(b => b.dataset.view + (b.dataset.firm ? ':' + b.dataset.firm : '')));
+    for (const v of menuViews) {
+      const [view, firm] = v.split(':');
+      clicked.push('menu ' + v);
+      await H.go(p, view, firm);
     }
 
     record(`every control on the screen was clicked (${clicked.length})`,
@@ -1290,7 +1546,7 @@ async function openBusy(server, browser, user) {
       const wrap = document.querySelector('.tbl-wrap');
       const firstRowTop = document.querySelector('#rows tr')?.getBoundingClientRect().top;
       return {
-        sidebar: box(document.querySelector('.sidebar')),
+        sidebar: box(document.getElementById('refnav-host')),
         topbar:  box(document.querySelector('.topbar')),
         back:    box(document.querySelector('.topbar a[href="admin.html"]')),
         header:  box(th),
@@ -1314,25 +1570,26 @@ async function openBusy(server, browser, user) {
     await p.close();
   }
 
-  /* ============ THE MENU LOOKS LIKE THE REST OF THE ERP ============ */
+  /* ============ THE MENU IS THE ERP'S, NOT THIS PAGE'S ============ */
+  /* What the menu looks like is tested once, in tests/nav.test.js, against
+     the one file that draws it. All this page has to prove is that it uses
+     that menu rather than keeping one of its own. */
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    const nav = await p.evaluate(() => {
-      const items = Array.from(document.querySelectorAll('#nav .nav-item'));
-      const labels = Array.from(document.querySelectorAll('.nav-section-label'));
-      return {
-        items: items.length,
-        withIcon: items.filter(n => n.querySelector('svg')).length,
-        withLabel: items.filter(n => n.querySelector('.nav-label')).length,
-        headingsBold: labels.every(l => Number(getComputedStyle(l).fontWeight) >= 700),
-        headings: labels.length,
-      };
-    });
-    record(`every menu item has an icon (${nav.withIcon} of ${nav.items})`, nav.withIcon === nav.items);
-    record('every menu item has its label in a span, as admin.html does',
-      nav.withLabel === nav.items);
-    record(`the group headings are bold (${nav.headings} of them)`, nav.headingsBold);
+    const nav = await p.evaluate(() => ({
+      shared: !!document.getElementById('refnav-host'),
+      ownMenu: !!document.querySelector('#nav, #sidebarNav'),
+      entries: document.querySelectorAll('#refnav-host .refnav-item[data-page]').length,
+      reachesOtherPages: [...new Set(Array.from(
+        document.querySelectorAll('#refnav-host .refnav-item[data-page]'))
+        .map(i => i.dataset.page))].sort(),
+    }));
+    record('this page uses the ERP\'s shared menu', nav.shared);
+    record('and does not keep a second menu of its own', !nav.ownMenu);
+    record(`the menu reaches the rest of the ERP from here (${nav.reachesOtherPages.length} pages)`,
+      nav.reachesOtherPages.includes('admin.html') && nav.reachesOtherPages.includes('busy.html'),
+      nav.reachesOtherPages.join(', '));
     await p.close();
   }
 
@@ -1342,7 +1599,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(300);
 
     // Record every call the page makes, and let staging and finalise answer.
@@ -1394,7 +1651,7 @@ async function openBusy(server, browser, user) {
   {
     const { page: p } = await openBusy(server, browser, OWNER);
     await p.waitForSelector('#shell', { state: 'visible' });
-    await p.locator('#nav .nav-item[data-view="upload"]').click();
+    await H.go(p, 'upload');
     await p.waitForTimeout(300);
     await p.evaluate(() => {
       window.__CALLS__ = [];

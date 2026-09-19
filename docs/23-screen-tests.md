@@ -295,6 +295,200 @@ menu item — is fine. Indexing into the cells of a row is not.
 
 ---
 
+## 5d. A COUNT TYPED INTO A TEST GOES STALE
+
+The sister of 5c, and it cost a red run the day the Match column was added.
+
+```js
+record(`every column can be turned on or off (${boxes} of them)`, boxes === 11);
+```
+
+Eleven was right when it was written. The twelfth column made it wrong, and the
+test then failed for a reason that had nothing to do with what it was testing.
+Worse, a count like this can go the other way: it passes while the thing it
+claims to check has quietly gone missing, because the number still matches.
+
+**Measure the count against the thing itself.** Turn every tickbox on, then
+count the headings:
+
+```js
+const boxes = await p.locator('#colList input').count();
+for (let i = 0; i < boxes; i++) await p.locator('#colList input').nth(i).check();
+record('every column can be turned on or off', boxes === (await headOf()).length);
+```
+
+Now the test says what it means — one tickbox per column, no column without one
+— and a thirteenth column joins by existing.
+
+**Careful:** replacing the number with something that is trivially equal is
+worse than the number, because it looks like a check and is not. Counting the
+tickboxes and then comparing that with the labels beside the same tickboxes
+proves nothing. Compare across the two sides of the thing you are testing.
+
+---
+
+## 5e. A GUESS IS NEVER SHOWN AS A HIT
+
+A search that guesses must say, on every row, that it guessed.
+
+Price History answers in four layers, and the row carries which layer answered:
+
+| Layer | Shown as | What it means |
+|---|---|---|
+| 1 | Exact | the words appear as typed |
+| 2 | Spacing | the same words, different spacing or punctuation |
+| 3 | Spelling | a close spelling — **a guess** |
+| 4 | Split | words typed run together — **a guess** |
+
+Layers 3 and 4 are tinted as well as labelled, and the line under the table
+says how many of the rows on screen are guesses. Nothing typed means no label
+at all: with no search there is nothing to be right or wrong about, and a row
+that says "Exact" when nothing was typed is a lie that costs nothing until the
+day somebody believes it.
+
+**The rule under it:** numbers and codes match exactly, always. Fuzzy applies
+to words, never to digits. 80X40X2.5 and 80X40X3 are different pipes, and no
+layer of guessing is allowed to blur them.
+
+**Report as:** `Exact · Spacing · Spelling · Split · nothing typed = no label`
+
+---
+
+## 5f. KEYBOARD MOVEMENT IN A RESULT TABLE
+
+**Every result table in the ERP, not just Price History.** The data is
+read-only, so the keys are for reading and copying, never for editing.
+
+| Key | What it does |
+|---|---|
+| Arrow keys | one cell in that direction, stopping at the edges |
+| **Enter** | next cell to the right. At the END of a row, the FIRST cell of the next row |
+| **Tab** | the same as Enter |
+| **Shift + Tab** | back one cell. At the START of a row, the LAST cell of the row above |
+| Home / End | first / last cell of the row |
+| Ctrl + ↑ / ↓ | first / last row |
+| Ctrl + C | copy the selected cell |
+
+The end of a row is not the end of the reading, which is why Enter and Tab
+carry on to the next row. The two real ends — the first cell of the first row
+and the last cell of the last row — stop. They do not wrap round to the other
+end of the table, because that loses the person's place.
+
+**Two things to prove every time:**
+
+1. **Nothing is editable.** No `input`, no `textarea`, no `contenteditable`,
+   anywhere in the table body. Enter and Tab move; they never open a cell.
+2. **Tab still works outside the table.** Registering Tab as a table key is
+   one line away from breaking every form on the screen. Focus a field that is
+   not in the table, press Tab, and prove the focus moved on.
+
+**Report as:** `Enter · Tab · Shift+Tab · wraps at both row ends · stops at
+both table ends · Tab still walks the controls outside`
+
+---
+
+## 5g. A NUMBER THAT REPORTS SUCCESS MUST COUNT THE THING
+
+The Load history counters read **zero** while `busy_history` held 98,644 rows.
+Raghbir had been told to check the load against those numbers. Zero on a full
+table is worse than no number at all: had the load really failed, he could not
+have told the difference.
+
+The first version of this rule was "never count records", and that is too
+wide. The employee count on the HR screen counts employee rows, and the
+employee row **is** the thing. Nothing is wrong with it.
+
+**The rule is narrower and more useful:**
+
+> **If a number's job is to tell you whether something WORKED, it must count
+> the thing, not a record about the thing.**
+
+The counters that lied were answering *"did the load work"* by counting
+batches. The question was about rows; the answer came from batches. That is
+the fault, and it is the only one worth hunting.
+
+### So check every number that reports SUCCESS, COMPLETENESS or STATE
+
+And leave alone every number that simply counts what it says it counts.
+
+| Number | Reports | Answers from | |
+|---|---|---|---|
+| Load history counters | did the load work | **was** views over `busy_history`, refused → 0 | **fixed** — `busy_row_counts()` over the rows |
+| rows per financial year | is this year complete | `count(*)` over `busy_history` | the thing |
+| clear preview, "this will remove N" | what is about to happen | `count(*)` over `busy_history` | the thing |
+| "added N, changed N, marked gone N" | did the import work | counted as the import wrote them, and the counters refresh straight after | the thing |
+| last checked against Busy | when a sync last finished | a batch record | **the sync IS the thing** — but the wording had to say so; "as at 1:05 pm" read as "the rows are current to then" |
+| failed syncs in the last 7 days | is syncing healthy | batch records | the sync IS the thing |
+| year is "frozen" | is this year still compared | batch timestamps | the sync IS the thing |
+| uploader version | what is installed on that PC | a typed-in setting | it cannot be observed from here, so the screen says it is typed in |
+| expected row counts | what Busy should hold | typed in, from Busy | correct — this is the target, not the measurement |
+| price history row count and pager | how many match | `count(*)` over `busy_history` | counts what it says |
+| employees, vendors, approvals, salary sheets, holidays | how many | `.length` of the list being shown | counts what it says |
+| payroll totals, monthly totals, GST | how much | summed from the rows | counts what it says |
+
+**One number was wrong.** It was the one he had been told to check the load
+against.
+
+### And the fault underneath it, which is the more common one
+
+`busy_history` had a read policy for `authenticated` and **no SELECT grant
+behind it**, so every read was refused before the policy was ever consulted.
+The screen then wrote:
+
+```js
+return sel.then(function (r) { return r.count || 0; });   // a refusal becomes 0
+```
+
+**A call that fails is never turned into a number, a zero, or an empty list.**
+Four shapes of the same lie, all found on these passes:
+
+| Written as | Reads on screen as | Actually means |
+|---|---|---|
+| `r.count \|\| 0` | `0` | the read was refused |
+| `r.live_rows \|\| 0` | `0 rows this year` | the field never arrived |
+| `(res.success && res.requests) \|\| []` | `Nothing pending right now.` | the call failed |
+| `res.entries.filter(...)` | a blank screen, no message | the reply left the list out |
+
+The last one is the opposite failure and just as bad: three screens threw and
+showed nothing at all. An **absent** list is a broken reply, not an empty one.
+Say which it was, in red, and show no number.
+
+`tests/check-rls-grants.sql` asks the grant question of every table at once —
+a read policy with no grant, a grant with no policy, and no row security at
+all. Run it after any migration that adds a table, a policy or a view.
+
+**Report as:** `88 tables · all reachable on purpose`
+
+---
+
+## 5h. A FILTER SAYS WHAT IT LEFT OUT
+
+A row with no date cannot satisfy "on or after 1 April". Postgres is right to
+drop it — null is not less than, not greater than, and not equal to anything.
+But the total then quietly excludes rows that exist, and nothing says so.
+Same family as 5g: the number is not wrong, the **silence** is.
+
+So a filtered screen asks a second question with the same filters — how many
+rows match everything except the filter, and have nothing to filter on? — and
+says so in words:
+
+> `3,411 rows found · 5 rows have no date and are not included in this range`
+
+Asked only when a filter is actually set, because with no filter nothing is
+being left out and there is nothing to claim.
+
+### And what is missing is SHOWN as missing, never as blank
+
+A blank cell reads as "nobody has filled this in yet". `no date in Busy` and
+`no number in Busy` read as what they are: **this is what came out of Busy**.
+Five Credit Note rows in the real data carry no voucher number.
+
+**Never guess the value. Never hide the row.** A row that exists and cannot be
+fully described is information about the source data, not a defect to tidy
+away.
+
+---
+
 ## 6. POPUPS
 
 - Open one, then another from inside it. **Two deep works**
@@ -327,13 +521,76 @@ menu item — is fine. Indexing into the cells of a row is not.
 
 ## 9. THE PHONE
 
-Only for the screens genuinely used on one — raising a request, approving.
+This section was three lines for months, and in that time the ERP shipped
+with **no menu at all on a phone**. The left nav collapsed under 880px, which
+was right, and nothing was ever built to bring it back. On a phone the ERP was
+one screen and a Log out button, and no test said so.
 
-- Nothing needs a sideways scroll
-- Tapping a field does not hide it behind the keyboard
-- Buttons are big enough to hit
-- **Approvals that need care stay desk-only.** A phone screen works against
-  careful checking
+### TEST IT AT A REAL PHONE WIDTH
+
+**380 x 740, `isMobile`, `hasTouch`. Not a shrunk desktop window.** The faults
+are different, and a narrow window will pass a page a phone cannot use:
+
+| A shrunk window | A real phone |
+|---|---|
+| keeps the mouse, so hover still reveals things | there is no hover |
+| keeps `click`, so a broken tap target still works | `tap` is what fires |
+| does not match `isMobile` media features | it does |
+| lets you see 30px buttons and think them fine | a thumb is 9mm across |
+
+`tests/phone.test.js` runs the checklist below on every screen at that size.
+
+### THE CHECKLIST — run it on every screen
+
+1. **The menu opens and closes.** There is a hamburger, it is at least 44px,
+   it slides the menu in **over** the page rather than pushing it sideways,
+   and it closes on the backdrop, on Escape, **and on picking something** — a
+   menu you have to close by hand is a menu covering the answer you just asked
+   for.
+2. **Every control is reachable and big enough to tap.** 44px minimum, both
+   ways. Measured, not judged by eye: `Log out` was 68x28, `Add loan` 91x28,
+   the clear-search x 20x21, the km-tracker sub-tabs 19px wide.
+3. **Nothing overflows sideways.** The *page* never scrolls sideways. A wide
+   table scrolling inside its own box does, and that is correct — so the check
+   ignores anything inside an element that scrolls on purpose, and flags
+   everything else.
+4. **A form can be filled start to finish without the keyboard hiding a
+   field.** Every field gets `scroll-margin-bottom` so the browser keeps room
+   under it, and **16px text** so iOS does not zoom the page the moment it is
+   tapped. 15.5px zooms; 16px does not.
+5. **A table can be read.** It scrolls inside its own box, the page stays
+   still, and the column headings stay put while the rows move under them.
+   Prove the table is actually wider than the phone first, or the test passes
+   on a table that never needed to scroll.
+
+### TEXT IS MADE BIGGER, NEVER SMALLER
+
+**Do not shrink text to fit.** A screen that "works" at 10px is a screen that
+cannot be read. Nothing under 12px, and anything a person actually reads —
+table rows, field labels, messages — at 13px or more. If something does not
+fit, it is the layout that gives way, not the reading.
+
+### BE HONEST ABOUT WHICH SCREENS THESE ARE
+
+| | What it has to be |
+|---|---|
+| **Used on a phone** — raising a material request, approving, looking up a past price, checking a ledger balance before a call | good, not merely functional |
+| **Desk screens** — building a purchase order, the salary sheet, the permission grid | **reflow without breaking.** Nobody builds a PO on a phone, and pretending otherwise would ruin the desktop screen |
+
+Both must pass the checklist. Only the first has to be pleasant.
+
+**Approvals that need care stay desk-only.** A phone screen works against
+careful checking, and that is a decision, not an oversight.
+
+### ONE MENU, NOT TWO
+
+Every page in the ERP opens its menu the same way, at the same width, with the
+same markup. Busy Data used to turn its nav into a strip of items scrolling
+sideways above the screen — workable, and a different thing from everywhere
+else. A second way to reach the menu is a second thing to drift.
+
+**Report as:** `86 of 86 at 380x740 · menu opens and closes on every page ·
+nothing sideways · 44px everywhere · nothing under 12px`
 
 ---
 
@@ -344,6 +601,118 @@ Only for the screens genuinely used on one — raising a request, approving.
 - Sign in as a supervisor: sees department attendance, **not** bank details
 - Owner-only screens are **absent from the menu**, not greyed
 - A screen reached by typing its address directly is still refused
+
+---
+
+## ABSENT OR GREYED — TWO DIFFERENT REASONS, TWO DIFFERENT ANSWERS
+
+| Why it is not usable | What the menu does |
+|---|---|
+| **This person may not see it** | **absent.** A greyed row still tells them the screen exists, and who may see what is not their business |
+| **It is not built yet** | **greyed, visible, not clickable.** Everyone sees it |
+
+In Raghbir's words: *"A menu that grows a new item every week looks
+unfinished; a menu that is complete with some items greyed looks like a
+plan."*
+
+Getting these the same way round is a real fault in both directions. Greying
+a permission leaks what exists. Hiding an unbuilt screen hides the shape of
+the ERP from the person paying for it.
+
+---
+
+## EVERY SCREEN CAN BE REACHED, AND CAN REACH BACK
+
+Raghbir asked for the menu to work on a phone. There was no menu. Three of the
+five pages had none at all, and the two that did could not reach each other's
+screens.
+
+He had been arriving at `admin.html` through a bookmark for weeks, so the ERP
+looked navigable to the one person using it.
+
+**The rule:**
+
+> A screen that can be reached must be able to reach every other screen the
+> person is allowed to open. On every page, at every width.
+
+Tested by opening each page at 380px and **going to every other page through
+the menu** — not by asserting a link exists. `tests/nav.test.js`.
+
+And the menu is **one file**. Two menus is two lists to keep in step, and the
+one nobody is looking at is the one that rots.
+
+### The larger lesson, in his words
+
+> "For weeks I have been using an ERP with no navigation and neither of us
+> noticed, because I always arrived at admin.html through a bookmark. Worth
+> asking what else is invisible because of how I happen to reach it."
+
+**How you habitually reach a thing hides everything about reaching it any
+other way.** The bookmark hid the missing menu. The desktop hid the phone. A
+test that always signs in as the owner hides what a fitter sees; one that
+always starts at the same screen hides what a cold arrival looks like.
+
+So: for anything a person uses daily, ask **how else would somebody arrive at
+this**, and try that way at least once. The answers so far —
+
+| Habit | What it hid |
+|---|---|
+| a bookmark straight to `admin.html` | there was no navigation anywhere |
+| a desktop browser | the phone had no menu, and 30px buttons |
+| signing in as the owner in every test | what a fitter's menu contains |
+| opening a screen from its own page | arriving at it from another page |
+
+**Report as:** `5 pages · every page reaches every other · 380px and desk`
+
+### A PAGE SWEEP DOES NOT SEE INSIDE A PAGE
+
+`admin.html` holds nine screens behind one address. A screen that could only
+be opened from inside another one would have exactly the fault the whole ERP
+had — reachable only if you already knew the way — and no sweep of the five
+pages would find it.
+
+So the check is made against the page's own markup: every `view-*` in
+`admin.html` must have an entry in the menu, and every menu entry must point
+at a screen that exists. Both directions, because a menu pointing at nothing
+is the same class of lie.
+
+A form field that appears when a box is ticked is not a screen. Twenty-one of
+those turned up on the first pass — bank details, MSME numbers, ESI and PF
+fields, loan instalment fields — and they are correct: they belong to the form
+they are in.
+
+---
+
+## OPEN EVERY PAGE COLD
+
+> "A page I have never opened normally, that nobody has ever checked, sitting
+> on a live site."
+
+A **cold open** is a brand-new browser with nothing stored, arriving straight
+at the address. Not a link from another page, not a tab that already has a
+session. Run it at **380px and at desk width**, and **signed in and with no
+session at all** — four openings per page.
+
+This is the only check that sees what a stranger sees, and the only one that
+sees a page nobody ever visits directly. It found three:
+
+| Page | What a stranger actually saw |
+|---|---|
+| `admin.html` | **a blank white screen.** Nothing at all, while the redirect to sign-in happened — and for ever if it did not |
+| `submit.html` | the whole odometer form, fields and all, rendered before the redirect |
+| `reset.html` | a **"Set Your Password" form**. The server would have refused it, but inviting an action that cannot work is its own fault |
+
+All three now say *"Taking you to the sign-in page… One moment."* from the
+first paint, which is what `busy.html` already did.
+
+**Three things to assert on a cold open with no session:**
+
+1. The page **says what is happening**. A blank page is a failure, not a
+   redirect in progress.
+2. The working screen is **not rendered behind it**.
+3. **No company data** appears anywhere on it.
+
+**Report as:** `5 pages × 2 widths × signed in and not · 108 checks`
 
 ---
 

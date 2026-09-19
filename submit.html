@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Submit Reading — Vehicle KM Tracker</title>
-<script>window.__BUILD_VERSION__ = '1789727686';</script>
+<script>window.__BUILD_VERSION__ = '1789755258';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -195,17 +195,68 @@
     color: var(--primary);
     margin-bottom: 4px;
   }
+  .signout-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.4); color: #fff;
+    padding: 7px 12px; border-radius: 5px; font-size: 12.5px; cursor: pointer;
+  }
+
+  /* ---- ON A PHONE ----
+     This is one of the screens that is genuinely USED on a phone — a fitter
+     raising a request from the yard, not someone at a desk. So the rules are
+     the same ones the rest of the ERP follows: 44px to tap, nothing under
+     12px to read, 16px in a field so iOS does not zoom the page, and room
+     under a field so the keyboard does not sit on top of it. */
+  @media (max-width: 880px) {
+    button, .signout-btn, input[type="submit"] { min-height: 44px; }
+    .signout-btn { padding: 10px 14px; }
+    .topbar-sub { font-size: 12px; }
+    input, select, textarea { font-size: 16px; min-height: 44px; }
+    textarea { min-height: 88px; }
+    input, select, textarea { scroll-margin-top: 80px; scroll-margin-bottom: 120px; }
+    label { font-size: 13px; }
+  }
+  .submit-main { flex:1; min-width:0; }
+  /* The top bar is white here, so the hamburger keeps the page's own colours. */
+  .refnav-open-btn { border-color:rgba(255,255,255,.45); color:#fff; }
+
+  /* ---- WHAT A COLD ARRIVAL SEES ----
+     Opened straight at this address with no session, this page showed
+     NOTHING -- a blank white screen while the redirect to sign-in happened,
+     and a blank white screen for ever if it did not. Found by opening every
+     page cold, which nobody had ever done because we all arrive through
+     other pages. Something is on screen from the first paint now. */
+  .boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+          background:#f4f6f8; z-index:200; padding:20px; text-align:center; }
+  .boot-title { font-size:16px; font-weight:600; color:#1a2229; }
+  .boot-sub { font-size:13.5px; color:#55606b; margin-top:6px; line-height:1.5; }
 </style>
 </head>
 <body>
-<div class="topbar">
+<div id="boot" class="boot">
   <div>
-    <span class="topbar-title">REF</span>
-    <span class="topbar-sub">KM TRACKER</span>
+    <div class="boot-title" id="bootTitle">Opening the ERP…</div>
+    <div class="boot-sub" id="bootSub">Checking who you are.</div>
+  </div>
+</div>
+<!-- The same menu every other page carries. This screen used to be a dead end:
+     a fitter could send a reading and then had no way to reach anything else. -->
+<div class="refnav-shell">
+  <div id="refnav-host"></div>
+  <div class="submit-main">
+<div class="topbar">
+  <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+    <button class="refnav-open-btn" id="navOpenBtn" type="button"
+            aria-label="Open the menu" aria-controls="refnav-host" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <div>
+      <span class="topbar-title">REF</span>
+      <span class="topbar-sub">KM TRACKER</span>
+    </div>
   </div>
   <div style="display:flex; align-items:center; gap:10px;">
     <span class="topbar-sub" id="empNameDisplay"></span>
-    <button onclick="REF.signOut().then(function(){ window.location.href='index.html'; });" style="background:none; border:1px solid rgba(255,255,255,0.4); color:#fff; padding:4px 10px; border-radius:5px; font-size:11px; cursor:pointer;">Log out</button>
+    <button class="signout-btn" onclick="REF.signOut().then(function(){ window.location.href='index.html'; });">Log out</button>
   </div>
 </div>
 <div class="wrap">
@@ -253,8 +304,12 @@
   </div>
 </div>
 
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
+<script src="nav.js"></script>
 <script>
   // Who is signed in comes from the session token, never from anything
   // this page could have been told to believe.
@@ -406,10 +461,31 @@
     checkFormReady();
   }
 
+
+  /* Shown until we know who this is. A person who is not signed in is told
+     so and sent on; they never sit looking at a blank page, and they never
+     see the working screen behind it either. */
+  function bootSay(title, sub) {
+    var b = document.getElementById('boot');
+    if (!b) return;
+    b.style.display = 'flex';
+    document.getElementById('bootTitle').textContent = title;
+    document.getElementById('bootSub').innerHTML = sub;
+  }
+  function bootDone() {
+    var b = document.getElementById('boot');
+    if (b) b.style.display = 'none';
+  }
+
   REF.requireSession().then(function (user) {
-    if (!user) return;               // REF already redirected
+    if (!user) {                     // REF is already sending them to sign in
+      bootSay('Taking you to the sign-in page…', 'One moment.');
+      return;
+    }
+    bootDone();
     CURRENT_USER = user;
     document.getElementById('empNameDisplay').textContent = user.name || '';
+    REFNav.mount({ page: 'submit.html', user: user });
     loadMyVehicle();
     requestLocation();
   }).catch(function () { REF.goToLogin(); });

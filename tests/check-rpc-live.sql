@@ -12,7 +12,32 @@
 -- ============================================================
 with call(where_at, fn, args) as (values
   -- >>> paste node tests/list-call-sites.js here <<<
-  ('example','busy_search',array['p_company']::text[])
+  ('busy.html:1087','busy_doc_types',array['p_company']::text[]),
+  ('busy.html:1197','busy_search_count',array['p_company','p_query','p_party','p_doc_types','p_date_from','p_date_to','p_undated_only']::text[]),
+  ('busy.html:1211','busy_search_count',array['p_company','p_query','p_party','p_doc_types','p_date_from','p_date_to','p_undated_only']::text[]),
+  ('busy.html:1222','busy_search',array['p_company','p_query','p_party','p_doc_types','p_date_from','p_date_to','p_limit','p_offset']::text[]),
+  ('busy.html:1331','busy_monthly_totals',array['p_company']::text[]),
+  ('busy.html:1418','busy_gst_ledger',array['p_company']::text[]),
+  ('busy.html:1517','busy_row_counts',array[]::text[]),
+  ('busy.html:1772','busy_import_abandon',array['p_batch_id']::text[]),
+  ('busy.html:1791','busy_import_stage',array['p_batch_id','p_company','p_fy','p_rows']::text[]),
+  ('busy.html:1810','busy_import_finalise',array['p_batch_id','p_company','p_fy']::text[]),
+  ('busy.html:1946','busy_clear_preview',array[]::text[]),
+  ('busy.html:1990','busy_clear_history',array['p_confirm']::text[]),
+  ('supabase/functions/admin-actions/index.ts:667','next_human_number',array['p_series_key']::text[]),
+  ('supabase/functions/hr-actions/index.ts:644','current_salary',array['p_party_id']::text[]),
+  ('supabase/functions/hr-actions/index.ts:1253','next_human_number',array['p_series_key']::text[]),
+  ('supabase/functions/hr-actions/index.ts:1660','current_salary',array['p_party_id']::text[]),
+  ('supabase/functions/hr-actions/index.ts:1676','current_salary',array['p_party_id']::text[]),
+  ('supabase/functions/hr-actions/index.ts:1805','replace_attachment',array['p_old_id','p_file_name','p_mime_type','p_size_bytes','p_storage_bucket','p_storage_path','p_checksum']::text[]),
+  ('supabase/functions/hr-actions/index.ts:1931','create_login_for_party',array['p_party_id','p_login_email','p_password']::text[]),
+  ('supabase/functions/hrms-actions/index.ts:591','next_human_number',array['p_series_key']::text[]),
+  ('supabase/functions/hrms-actions/index.ts:965','next_human_number',array['p_series_key']::text[]),
+  ('supabase/functions/nightly-backup/index.ts:377','job_secret',array['p_key']::text[]),
+  ('supabase/functions/nightly-backup/index.ts:458','list_public_tables',array[]::text[]),
+  ('supabase/functions/nightly-backup/index.ts:659','prune_backup_runs',array[]::text[]),
+  ('supabase/functions/payroll-actions/index.ts:349','current_salary',array['p_party_id','p_on']::text[]),
+  ('supabase/functions/payroll-actions/index.ts:491','next_human_number',array['p_series_key']::text[])
 ),
 fn as (
   select p.proname::text as name,

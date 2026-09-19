@@ -8,6 +8,12 @@
 const path = require('path');
 const { rpcCallSites } = require('./call-sites');
 const rows = rpcCallSites(path.resolve(__dirname, '..'));
-console.log(rows.map(o =>
+const readable = rows.filter(o => o.args !== null);
+console.log(readable.map(o =>
   `  ('${o.where}','${o.fn}',array[${o.args.map(a => `'${a}'`).join(',')}]::text[])`
 ).join(',\n'));
+// A call whose arguments cannot be read from the source is not silently
+// dropped: it is named here so it is checked by hand rather than forgotten.
+for (const o of rows.filter(o => o.args === null)) {
+  console.log(`-- NOT LISTED: ${o.where} calls ${o.fn} with arguments this cannot read. Check it by hand.`);
+}

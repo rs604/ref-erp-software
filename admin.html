@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1789727686';</script>
+<script>window.__BUILD_VERSION__ = '1789755258';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -137,18 +137,6 @@
 
   .app-shell { display: flex; min-height: 100vh; }
 
-  .sidebar {
-    width: var(--sidebar-w);
-    background: var(--steel-dark);
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-  }
   .sidebar-brand { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.1); }
   .sidebar-brand .name { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 1.5px; }
   .sidebar-brand .tag { font-size: 10.5px; color: rgba(255,255,255,0.55); letter-spacing: 1.5px; margin-top: 2px; }
@@ -245,25 +233,20 @@
      40px of side padding alone left only 12px — so the text goes and the toggle stays,
      centred, since it is the only way back to the expanded menu. */
   .app-shell.nav-collapsed .sidebar .sidebar-brand .name { display: none; }
-  .app-shell.nav-collapsed .sidebar .sidebar-brand {
-    justify-content: center; padding: 18px 0;
-  }
   .app-shell.nav-collapsed .sidebar .nav-toggle-btn { margin: 0; }
   /* When collapsed, hovering an icon shows a tooltip with the item's name. */
   .app-shell.nav-collapsed .sidebar .nav-item { position: relative; }
-  .app-shell.nav-collapsed .sidebar .nav-item::after {
-    content: attr(data-tip);
-    position: absolute; left: 100%; top: 50%; transform: translateY(-50%);
-    margin-left: 8px; background: #24313d; color: #fff; font-size: 11.5px;
-    padding: 5px 9px; border-radius: 5px; white-space: nowrap;
-    opacity: 0; pointer-events: none; transition: opacity 0.12s; z-index: 300;
-  }
   .app-shell.nav-collapsed .sidebar .nav-item:hover::after { opacity: 1; }
 
-  .nav-toggle-btn {
-    background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.75);
-    padding: 5px 6px; border-radius: 5px; display: flex; align-items: center; flex-shrink: 0;
-  }
+  /* ---- THE MENU ON A PHONE ----
+     The left nav is hidden under 880px, which is right — there is no room for
+     it. But for months there was NOTHING to bring it back, so on a phone the
+     ERP was one screen and a Log out button. This is the way back: a hamburger
+     in the top bar that slides the same menu in over the page, and a backdrop
+     that closes it. Same menu, same items, same order — not a second menu that
+     can drift away from the first. */
+  .nav-backdrop { display: none; }
+
   .nav-toggle-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
   /* Spreadsheet grid. Horizontal scrolling is necessary: the full column set is wider
@@ -625,18 +608,29 @@
   .subtab-item.active { color: var(--steel); border-bottom-color: var(--steel); }
   .subtab-settings { margin-left: auto; padding: 13px 4px; }
 
-  .nav-future-note {
-    padding: 10px 20px;
-    color: rgba(255,255,255,0.35);
-    font-size: 11px;
-    font-style: italic;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    margin-top: 10px;
-    line-height: 1.5;
-  }
 
   @media (max-width: 880px) {
-    .sidebar { display: none; }
+    /* The menu is a drawer, not a column. It is off to the left until the
+       hamburger is pressed, and it lies OVER the page rather than squeezing
+       it, so nothing reflows when it opens. */
+    .nav-open-btn { display: inline-flex; }
+    .app-shell { position: relative; }
+    .app-shell.nav-open .sidebar { transform: none; }
+    /* A phone never collapses the menu to icons — it is open or it is away. */
+    .app-shell.nav-collapsed .sidebar { width: 272px; max-width: 84vw; }
+    .app-shell.nav-collapsed .sidebar .nav-label,
+    .app-shell.nav-collapsed .sidebar .nav-arrow,
+    .app-shell.nav-collapsed .sidebar .nav-section-label,
+    .app-shell.nav-collapsed .sidebar .sidebar-brand .name,
+    .app-shell.nav-collapsed .sidebar .sidebar-brand .tag { display: block; }
+    .app-shell.nav-collapsed .sidebar .nav-children { display: block !important; }
+    .app-shell.nav-collapsed .sidebar .nav-item { justify-content: flex-start; }
+    .nav-toggle-btn { display: none; }     /* collapsing is a desk idea */
+
+    .app-shell.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
+    /* Tapping a menu item on a phone is a tap, not a hover-and-click. */
+    .sidebar .nav-item { min-height: 44px; }
+
     .content { padding: 14px; }
     .topbar { padding: 12px 14px; }
     .subtabs { padding: 0 14px 0; -webkit-overflow-scrolling: touch; }
@@ -646,6 +640,41 @@
 
     /* Prevent iOS Safari from auto-zooming when tapping inputs */
     input, select, textarea { font-size: 16px !important; }
+
+    /* ---- TAP TARGETS ----
+       Measured at 380px: Log out was 68x28, Add loan 91x28, the km-tracker
+       sub-tabs 19px wide. A thumb is about 9mm across; 44px is the smallest
+       square it hits reliably. Height comes from padding so nothing is
+       stretched out of shape. */
+    .btn, .btn-sm, a.btn { min-height: 44px; }
+    .btn-sm { padding: 10px 12px; font-size: 13px; }
+    .subtab-item { min-width: 56px; min-height: 44px; padding: 13px 10px; }
+    .sidebar .nav-item { min-height: 44px; }
+    /* The documentation screen has a menu of its own, inside the page. */
+    .doc-tree-toggle, .doc-tree-leaf { min-height: 44px; }
+    select { min-height: 44px; }
+
+    /* ---- TEXT ----
+       Made bigger, never smaller. Shrinking text to fit is how a screen
+       "works" on a phone and still cannot be read. Nothing under 12px, and
+       the things a person actually reads at 13px or more. */
+    .topbar-sub, #pageSub { font-size: 12.5px; }
+    .pill-section-label, .nav-section-label, .nav-future-note,
+    .sidebar-footer, .empty-state { font-size: 12px; }
+    .msg { font-size: 13px; }
+
+    /* ---- NOTHING GOES SIDEWAYS ----
+       The documentation screen pushed the page 7px wider than the phone
+       because one long unbroken word would not wrap. A word breaks before a
+       page does. */
+    .panel-body, .content { overflow-wrap: anywhere; }
+    /* A wide table scrolls inside its own box. The page never does. */
+    .table-scroll, .pg-wrap, .grid-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ---- THE KEYBOARD MUST NOT SIT ON THE FIELD ----
+       A field near the bottom of a form disappears behind the keyboard when
+       it is tapped. scroll-margin gives the browser room to put it above. */
+    input, select, textarea { scroll-margin-top: 90px; scroll-margin-bottom: 120px; }
 
     /* Compact topbar on small screens: role text hides, name stays */
     .topbar-title { font-size: 15.5px; }
@@ -719,98 +748,41 @@
     }
     table.ledger td.action-cell { justify-content: flex-end; padding-top: 10px; }
   }
+
+  /* ---- WHAT A COLD ARRIVAL SEES ----
+     Opened straight at this address with no session, this page showed
+     NOTHING -- a blank white screen while the redirect to sign-in happened,
+     and a blank white screen for ever if it did not. Found by opening every
+     page cold, which nobody had ever done because we all arrive through
+     other pages. Something is on screen from the first paint now. */
+  .boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+          background:#f4f6f8; z-index:200; padding:20px; text-align:center; }
+  .boot-title { font-size:16px; font-weight:600; color:#1a2229; }
+  .boot-sub { font-size:13.5px; color:#55606b; margin-top:6px; line-height:1.5; }
 </style>
 </head>
 <body>
 
-<div class="app-shell" id="appShell" style="display:none">
-  <div class="sidebar">
-    <div class="sidebar-brand" style="display:flex; align-items:center; justify-content:space-between;">
-      <div style="display:flex; align-items:baseline; gap:6px;">
-        <div class="name">REF</div>
-        <div class="tag">ERP</div>
-      </div>
-      <button class="nav-toggle-btn" id="navToggleBtn" title="Collapse / expand menu" aria-label="Toggle menu">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-      </button>
-    </div>
-    <nav class="sidebar-nav" id="sidebarNav">
-      <button class="nav-item" data-view="home">
-        <svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
-        <span class="nav-label">Home</span>
-      </button>
-      <a class="nav-item" href="busy.html" style="text-decoration:none;">
-        <svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5c0-1.1 4-2 9-2s9 .9 9 2v14c0 1.1-4 2-9 2s-9-.9-9-2z"/><path d="M3 5c0 1.1 4 2 9 2s9-.9 9-2M3 12c0 1.1 4 2 9 2s9-.9 9-2"/></svg>
-        <span class="nav-label">Busy Data</span>
-      </a>
-      <button class="nav-item" data-view="km-tracker">
-        <svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg>
-        <span class="nav-label">Km Tracker</span>
-      </button>
-
-      <button class="nav-item nav-parent" data-toggle="tree-hrms">
-        <svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span class="nav-label">HRMS</span>
-        <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-      <div class="nav-children" id="tree-hrms" style="display:none">
-        <button class="nav-item level-2" data-view="salary-calculator">
-          <svg class="ic-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M13 11h3M8 15h3M13 15h3"/></svg>
-          <span class="nav-label">Salary Calculator</span>
-        </button>
-        <button class="nav-item level-2" data-view="loans-advances">
-          <svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span class="nav-label">Loans &amp; Advances</span>
-        </button>
-      </div>
-
-      <button class="nav-item nav-parent" data-toggle="tree-control-panel">
-        <svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span class="nav-label">Control Panel</span>
-        <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-      <div class="nav-children" id="tree-control-panel" style="display:none">
-
-        <div class="nav-section-label">Masters</div>
-        <button class="nav-item nav-parent level-2" data-toggle="tree-hr">
-          <svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
-          <span class="nav-label">HR</span>
-          <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
-        <div class="nav-children" id="tree-hr" style="display:none">
-          <button class="nav-item level-3" data-view="employee-master">
-            <svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
-            <span class="nav-label">Employee Master</span>
-          </button>
-          <button class="nav-item level-3" data-view="hr-dropdowns">
-            <svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h9"/></svg>
-            <span class="nav-label">HR Dropdowns</span>
-          </button>
-        </div>
-        <button class="nav-item level-2" data-view="vendor-master">
-          <svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
-          <span class="nav-label">Vendor</span>
-        </button>
-
-        <div class="nav-section-label">System</div>
-        <button class="nav-item level-2" data-view="admin-panel">
-          <svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/></svg>
-          <span class="nav-label">Admin Panel</span>
-        </button>
-        <button class="nav-item level-2" data-view="documentation">
-          <svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg>
-          <span class="nav-label">Documentation</span>
-        </button>
-      </div>
-
-      <div class="nav-future-note">More ERP modules will appear here as they're added</div>
-    </nav>
-    <div class="sidebar-footer">Raghbir Erectors &amp; Fabricators</div>
+<div id="boot" class="boot">
+  <div>
+    <div class="boot-title" id="bootTitle">Opening the ERP…</div>
+    <div class="boot-sub" id="bootSub">Checking who you are.</div>
   </div>
+</div>
+
+<div class="app-shell refnav-shell" id="appShell" style="display:none">
+  <!-- The menu is not written here. It is nav.js, shared by every page, so a
+       screen added to the ERP appears everywhere at once and there is no
+       second copy to forget. -->
+  <div id="refnav-host"></div>
 
   <div class="main">
     <div class="topbar">
       <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+        <button class="refnav-open-btn" id="navOpenBtn" type="button"
+                aria-label="Open the menu" aria-controls="refnav-host" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
         <div id="topbarLead" style="display:flex; align-items:center;"></div>
         <div style="min-width:0;">
           <div class="topbar-title" id="pageTitle">Km Tracker</div>
@@ -931,6 +903,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
+<script src="nav.js"></script>
 <script>
   let currentUser = null;
   let dashboardData = null;
@@ -1067,54 +1040,20 @@
   let isOwnerUser = false;
   let myPermissionKeys = [];
 
-  async function applyNavVisibility() {
-    isOwnerUser = currentUser.is_owner;
-    myPermissionKeys = currentUser.permissions || [];
-    document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-      const view = btn.dataset.view;
-      if (view === 'admin-panel') {
-        btn.style.display = isOwnerUser ? '' : 'none';
-        return;
-      }
-      if (view === 'documentation' || view === 'home') return; // always visible to any logged-in ERP user
-      const requiredKey = VIEW_PERMISSION_MAP[view];
-      if (!requiredKey) return; // no mapping — leave as-is
-      const hasAccess = isOwnerUser || myPermissionKeys.includes(requiredKey);
-      btn.style.display = hasAccess ? '' : 'none';
-    });
-    // Hide any expandable parent group whose children are now all hidden — avoids an empty, pointless section
-    document.querySelectorAll('.nav-children').forEach(childrenEl => {
-      const visibleChildren = Array.from(childrenEl.children).filter(c => c.style.display !== 'none');
-      const toggleBtn = document.querySelector(`.nav-parent[data-toggle="${childrenEl.id}"]`);
-      if (toggleBtn) {
-        const wrapper = toggleBtn.parentElement;
-        const hideGroup = childrenEl.id && visibleChildren.length === 0;
-        toggleBtn.style.display = hideGroup ? 'none' : '';
-        if (hideGroup) childrenEl.style.display = 'none';
-      }
-    });
-  }
+  /* Who sees what is decided in nav.js, once, for every page. It was decided
+     here as well until the menu was shared, and two places deciding the same
+     thing is how one of them drifts. */
 
   function completeLogin(user) {
     currentUser = user;
     appShell.style.display = 'flex';
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userRole').textContent = (currentUser.is_owner ? 'OWNER' : (currentUser.roles[0] || 'STAFF')).toUpperCase();
-    applyNavVisibility();
-    switchMainView('home');
+    isOwnerUser = currentUser.is_owner;
+    myPermissionKeys = currentUser.permissions || [];
+    mountNav(currentUser);
   }
 
-  // --- Sidebar tree: expandable parents (Control Panel, Masters, HR) ---
-  document.querySelectorAll('.nav-parent').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const childrenEl = document.getElementById(btn.dataset.toggle);
-      const isOpen = childrenEl.style.display !== 'none';
-      childrenEl.style.display = isOpen ? 'none' : 'block';
-      btn.classList.toggle('expanded', !isOpen);
-    });
-  });
-
-  // --- Sidebar tree: leaf items (Km Tracker, Employee Master, HR Dropdowns, Admin Panel) ---
   const viewTitles = {
     'home': ['Home', 'Your approvals and requests'],
     'km-tracker': ['Km Tracker', 'Daily odometer tracking, approvals, and payments'],
@@ -1139,7 +1078,7 @@
       setTopbarActions(''); setTopbarLead('');
       document.querySelector('#view-salary-calculator .content')?.classList.remove('content-flush');
     }
-    document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === viewKey));
+    if (refnav) refnav.select(viewKey);
     document.querySelectorAll('.view-content').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + viewKey).style.display = 'block';
     document.getElementById('pageTitle').textContent = viewTitles[viewKey][0];
@@ -1181,27 +1120,8 @@
       loadDashboard();
     }
 
-    // Every view's full ancestor tree path — including nested sub-trees like "HR" inside "Masters" —
-    // must expand so the active item is actually visible in the nav, not just its top-level parent.
-    const VIEW_ANCESTOR_TREES = {
-      'employee-master': ['tree-control-panel', 'tree-hr'],
-      'hr-dropdowns': ['tree-control-panel', 'tree-hr'],
-      'loans-advances': ['tree-hrms'],
-      'salary-calculator': ['tree-hrms'],
-      'vendor-master': ['tree-control-panel'],
-      'admin-panel': ['tree-control-panel'],
-      'documentation': ['tree-control-panel'],
-    };
-    (VIEW_ANCESTOR_TREES[viewKey] || []).forEach(treeId => {
-      const el = document.getElementById(treeId);
-      if (el) el.style.display = 'block';
-      document.querySelector(`.nav-parent[data-toggle="${treeId}"]`)?.classList.add('expanded');
-    });
   }
 
-  document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-    btn.addEventListener('click', () => switchMainView(btn.dataset.view));
-  });
 
   // --- Km Tracker's own subtabs (Approvals / Reports / Payments / Settings) ---
   function switchTab(tab) {
@@ -1223,6 +1143,31 @@
   document.getElementById('lightboxClose').addEventListener('click', () => document.getElementById('lightbox').classList.remove('open'));
   document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target.id === 'lightbox') e.currentTarget.classList.remove('open'); });
 
+  /* A reply that says "success" must still carry what it promised. An ABSENT
+     list is a broken reply, not an empty one, and rendering it as "nothing
+     here" is how a screen lies quietly — the same fault as a counter reading
+     zero on a full table. Three screens crashed on it instead: km-tracker,
+     vendor-master and the admin panel all did `res.<list>.filter(...)` and
+     threw, leaving a blank page with no explanation. */
+  function requireLists(res, keys, containerId) {
+    const missing = keys.filter(k => !Array.isArray(res[k]));
+    if (!missing.length) return true;
+    const el = document.getElementById(containerId);
+    if (el) el.innerHTML =
+      '<div class="panel"><div class="panel-body msg error" style="display:block;">' +
+      'The server answered but left out: ' + missing.map(escapeHtml).join(', ') +
+      '. This is not an empty screen — something is wrong. Reload the page, and ' +
+      'tell Raghbir if it keeps happening.</div></div>';
+    return false;
+  }
+
+  /* A message from the server goes on screen as TEXT, never as markup. */
+  function escapeHtml(v) {
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   async function loadHome() {
     showSpinner('homeContent');
     const isOwner = currentUser.is_owner;
@@ -1234,6 +1179,11 @@
 
     // A reply that says success but carries no list used to crash this screen
     // on .length. Caught by the screen tests; see docs/23-screen-tests.md.
+    // And a reply that FAILED is not an empty list: showing "Nothing pending"
+    // when the call was refused is the same lie as a counter reading zero on
+    // a full table. Say which it was.
+    const pendingFailed = isOwner && !pendingRes.success;
+    const myFailed = !myRes.success;
     const pending = (pendingRes.success && pendingRes.requests) || [];
     const myRequests = (myRes.success && myRes.requests) || [];
 
@@ -1245,7 +1195,9 @@
           ${isOwner ? `
           <span class="pill-section-label">Pending Approvals</span>
           <p style="font-size:12px; color:var(--muted); margin:6px 0 14px;">Things that need your decision — organized by department/category.</p>
-          ${pending.length === 0 ? '<div class="empty-state">Nothing pending right now.</div>' : `
+          ${pendingFailed
+            ? `<div class="empty-state" style="color:var(--danger);">Could not read the pending approvals — ${escapeHtml(pendingRes.error || 'the request was refused')}. This is NOT "nothing pending": reload the page.</div>`
+            : pending.length === 0 ? '<div class="empty-state">Nothing pending right now.</div>' : `
             <p class="section-label" style="margin-top:0;">HRMS</p>
             <div id="homeApprovalsList">
               ${pending.map(r => `
@@ -1264,7 +1216,9 @@
 
           <span class="pill-section-label" style="${isOwner ? 'margin-top:26px; display:inline-block; padding-top:20px; border-top:1px solid var(--border);' : ''}">My Requests</span>
           <p style="font-size:12px; color:var(--muted); margin:6px 0 14px;">Status of ERP access requests you've submitted for others.</p>
-          ${myRequests.length === 0 ? `<div class="empty-state">You haven't submitted any requests.</div>` : `
+          ${myFailed
+            ? `<div class="empty-state" style="color:var(--danger);">Could not read your requests — ${escapeHtml(myRes.error || 'the request was refused')}. This is NOT "none submitted": reload the page.</div>`
+            : myRequests.length === 0 ? `<div class="empty-state">You haven't submitted any requests.</div>` : `
             ${myRequests.map(r => `
               <div style="border:1px solid var(--border); border-radius:6px; padding:12px 14px; margin-bottom:10px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
@@ -1310,6 +1264,7 @@
       document.getElementById('tab-approvals').innerHTML = `<div class="msg error" style="display:block">${data.error}</div>`;
       return;
     }
+    if (!requireLists(data, ['entries', 'vehicles', 'employees'], 'tab-approvals')) return;
     dashboardData = data;
     renderApprovals();
     renderReports();
@@ -4951,30 +4906,25 @@
     setTimeout(() => renderEmployeeMasterList(), empResult.generatedPin ? 3500 : 800);
   }
 
-  // --- Restore session on page refresh instead of forcing re-login ---
-  function setNavCollapsed(collapsed) {
-    const shell = document.getElementById('appShell');
-    shell.classList.toggle('nav-collapsed', collapsed);
-    sessionStorage.setItem('nav_collapsed', collapsed ? '1' : '0');
+  /* ---- THE MENU ----
+     Built by nav.js, which every page loads. Nothing about the list, the
+     drawer, the hamburger or the permissions lives here any more: that is
+     the whole point. This page only says which page it is, who is looking,
+     and what to do when something on this page is chosen. */
+  let refnav = null;
+
+  function mountNav(user) {
+    refnav = REFNav.mount({
+      page: 'admin.html',
+      user: user,
+      onView: (view) => { switchMainView(view); },
+    });
+    // Arriving from another page: the address bar says which screen was asked
+    // for, so the menu works across files and not only inside one.
+    const asked = REFNav.fromHash();
+    if (asked && asked.view) switchMainView(asked.view);
+    else switchMainView('home');
   }
-  document.getElementById('navToggleBtn').addEventListener('click', () => {
-    setNavCollapsed(!document.getElementById('appShell').classList.contains('nav-collapsed'));
-  });
-  if (sessionStorage.getItem('nav_collapsed') === '1') {
-    document.getElementById('appShell').classList.add('nav-collapsed');
-  }
-  // Tooltips for the collapsed state, taken from each item's own label.
-  document.querySelectorAll('#sidebarNav .nav-item').forEach(btn => {
-    const label = btn.querySelector('.nav-label')?.textContent?.trim();
-    if (label) btn.setAttribute('data-tip', label);
-  });
-  // Clicking a group while collapsed would otherwise appear to do nothing, since the
-  // child list is hidden — so expand the sidebar first, then let the normal toggle run.
-  document.querySelectorAll('#sidebarNav .nav-parent').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (document.getElementById('appShell').classList.contains('nav-collapsed')) setNavCollapsed(false);
-    }, true);
-  });
 
   document.getElementById('logoutBtn').addEventListener('click', () => {
     REF.signOut().then(function () { window.location.href = 'index.html'; });
@@ -5010,6 +4960,7 @@
     showSpinner('adminPanelContent');
     const res = await apiPermissions({ action: 'get_permissions_data' });
     if (res.success) {
+      if (!requireLists(res, ['employees', 'permissions', 'grants'], 'adminPanelContent')) return;
       permissionsData = res;
     } else {
       document.getElementById('adminPanelContent').innerHTML = `<div class="panel"><div class="panel-body msg error" style="display:block;">${res.error || 'Failed to load.'}</div></div>`;
@@ -5441,7 +5392,12 @@
       return;
     }
     vendorDropdowns = ddRes;
-    vendorListData = listRes.success ? listRes.vendors : [];
+    if (!listRes.success) {
+      document.getElementById('vendorMasterContent').innerHTML = `<div class="panel"><div class="panel-body msg error" style="display:block;">${escapeHtml(listRes.error || 'The vendor list could not be read.')}</div></div>`;
+      return;
+    }
+    if (!requireLists(listRes, ['vendors'], 'vendorMasterContent')) return;
+    vendorListData = listRes.vendors;
     switchVendorView('list');
   }
 
@@ -6474,10 +6430,34 @@
   // This is the actual security fix: identity comes only from the signed session token that
   // REF holds. Nobody is logged in here — index.html does that, and anyone arriving without a
   // valid session (or still on a starter password) is sent back there by REF.requireSession.
+
+  /* Shown until we know who this is. A person who is not signed in is told
+     so and sent on; they never sit looking at a blank page, and they never
+     see the working screen behind it either. */
+  function bootSay(title, sub) {
+    var b = document.getElementById('boot');
+    if (!b) return;
+    b.style.display = 'flex';
+    document.getElementById('bootTitle').textContent = title;
+    document.getElementById('bootSub').innerHTML = sub;
+  }
+  function bootDone() {
+    var b = document.getElementById('boot');
+    if (b) b.style.display = 'none';
+  }
+
   REF.requireSession().then(function (user) {
-    if (!user) return;               // REF already redirected
+    if (!user) {                     // REF is already sending them to sign in
+      bootSay('Taking you to the sign-in page…', 'One moment.');
+      return;
+    }
+    bootDone();
     completeLogin(user);
-  }).catch(function () { REF.goToLogin(); });
+  }).catch(function (err) {
+    bootSay('The ERP could not open',
+      ((err && err.message) || 'Something went wrong before the screen could load.') +
+      '<br><br><a href="index.html">Sign in again</a>');
+  });
 </script>
 
 

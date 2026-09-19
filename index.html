@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Refcon ERP — Sign In</title>
-<script>window.__BUILD_VERSION__ = '1789727686';</script>
+<script>window.__BUILD_VERSION__ = '1789755258';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -187,9 +187,27 @@
     color: var(--primary);
     margin-bottom: 10px;
   }
+
+  /* ---- ON A PHONE ----
+     Signing in happens wherever the person is. The form is already full
+     width; what it needed was a field iOS will not zoom into (16px, not
+     15.5px) and a "Forgot password" link tall enough to tap — it was only as
+     tall as its own letters. */
+  @media (max-width: 880px) {
+    input { font-size: 16px; min-height: 44px; }
+    button { min-height: 44px; }
+    .linkbtn { min-height: 44px; padding: 12px 0; }
+    input { scroll-margin-top: 80px; scroll-margin-bottom: 120px; }
+  }
 </style>
 </head>
 <body>
+<!-- Every page in the ERP loads the one menu, this one included, so a page can
+     never ship without it. Nothing is drawn here: signing in is the one screen
+     where there is nobody to show a menu to, and a signed-out stranger is not
+     told which screens the ERP has. A person who IS signed in is sent onward
+     from here before a menu could help them. -->
+<div id="refnav-host"></div>
 
   <div class="card">
     <div class="simple-brand">REF</div>
@@ -222,6 +240,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
+<script src="nav.js"></script>
 <script>
 (function () {
   'use strict';

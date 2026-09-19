@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789727686';</script>
+<script>window.__BUILD_VERSION__ = '1789755258';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -95,6 +95,9 @@
   .firm-REF { background:var(--steel-tint); color:var(--steel-dark); }
   .firm-RS  { background:var(--amber-bg);  color:var(--amber); }
   .sync-stamp { font-size:11.5px; color:var(--muted); }
+  /* The small caption under a number. A class, not an inline size, so a phone
+     can make every one of them bigger in one rule. */
+  .sub { font-size:11.5px; color:var(--muted); }
   .content { padding:12px 16px 16px; flex:1; overflow-y:auto; min-height:0; }
 
   .card { background:var(--surface); border:1px solid var(--border); border-radius:4px;
@@ -130,6 +133,9 @@
   table.tbl tbody tr:hover td { background:#eef4f9; }
   mark { background:var(--hit); padding:0 1px; }
   .desc { color:#3c4a57; font-size:12px; }
+  /* What Busy did not give us. Said in words, in a quieter colour, so it
+     reads as a note about the source rather than as a value. */
+  .missing { color:var(--muted); font-style:italic; font-size:11.5px; white-space:nowrap; }
   .pill { display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:10px;
           border:1px solid transparent; white-space:nowrap; }
   .pill-amber { background:var(--amber-bg); color:var(--amber); border-color:#e6d2a8; }
@@ -254,19 +260,62 @@
   .boot-sub { font-size:13px; color:var(--muted); margin-top:6px; line-height:1.5; }
   .loading { padding:20px; text-align:center; color:var(--muted); }
 
-  @media (max-width:860px) {
+  /* ---- THE MENU ON A PHONE ----
+     Same drawer as admin.html, on purpose: one way to reach the menu across
+     the whole ERP. A strip of menu items scrolling sideways above the screen
+     was what this had before, and it made the nav a different thing here from
+     everywhere else. The breakpoint is 880px in both pages for the same
+     reason. */
+  .nav-backdrop { display:none; }
+
+  @media (max-width:880px) {
     /* A phone has no room for a fixed frame; the page scrolls as one again. */
-    .app-shell { flex-direction:column; height:auto; overflow:visible; }
+    .app-shell { flex-direction:column; height:auto; overflow:visible; position:relative; }
     .main { height:auto; overflow:visible; }
     .content { overflow:visible; }
-    .sidebar { width:100%; flex:none; }
-    .sidebar-nav { display:flex; overflow-x:auto; padding:4px; }
-    .nav-item { white-space:nowrap; width:auto; }
-    .nav-section-label, .sidebar-footer { display:none; }
+
+    .nav-open-btn { display:inline-flex; }
+    .app-shell.nav-open .sidebar { transform:none; }
+    .sidebar-nav { display:block; overflow:visible; padding:10px 8px; }
+    .nav-item { width:100%; min-height:44px; white-space:normal; }
+    .sidebar-footer { display:none; }
+
+    .app-shell.nav-open .nav-backdrop { opacity:1; pointer-events:auto; }
+
     .filters { grid-template-columns:1fr 1fr; }
-    .searchbar-end { margin-left:0; }
-    .tbl-wrap { max-height:none; }
+    .searchbar-end { margin-left:0; width:100%; }
     .shortcut-hint { display:none; }
+
+    /* ---- TAP TARGETS ----
+       Measured at 380px: every button here was 30px tall and the little x
+       that clears the search box was 20x21. 44px is the smallest square a
+       thumb hits reliably. */
+    .btn, .btn-back, .btn-sm { height:auto; min-height:44px; padding-top:0; padding-bottom:0; }
+    .chip { min-height:44px; padding:8px 12px; }
+    .searchbox button { min-width:44px; min-height:44px; right:0; }
+    .f, .f.dt, .f.sm, select, input { min-height:44px; }
+    .nav-item { min-height:44px; }
+
+    /* ---- TEXT ----
+       Bigger, never smaller. Nothing under 12px, and the table itself at 13px
+       so a rate can be read without pinching. */
+    input, select, textarea, .f { font-size:16px; }   /* 16px: iOS will not zoom */
+    .f.dt, .f.sm { width:auto; flex:1 1 140px; }
+    table.tbl { font-size:13px; }
+    .desc { font-size:12.5px; }
+    .pill, .kpi .k, .colmenu-note, .nav-section-label,
+    .sidebar-brand .tag, .rowcount { font-size:12px; }
+    .topbar-sub, #syncStamp, .sub, .sync-stamp { font-size:12.5px; }
+
+    /* ---- THE TABLE SCROLLS IN ITS OWN BOX, NOT THE PAGE ----
+       It used to be max-height:none here, which made the whole page scroll
+       for a 200-row table and took the column headings away with it. */
+    .tbl-wrap { max-height:68vh; min-height:220px; overflow:auto; -webkit-overflow-scrolling:touch; }
+    .kpis { grid-template-columns:1fr; }
+    .pager { flex-wrap:wrap; }
+
+    /* A field tapped near the bottom must not end up under the keyboard. */
+    input, select, textarea { scroll-margin-top:80px; scroll-margin-bottom:120px; }
   }
 </style>
 </head>
@@ -286,31 +335,19 @@
   </div>
 </div>
 
-<div class="app-shell" id="shell" style="display:none">
-  <div class="sidebar">
-    <div class="sidebar-brand"><div class="name">REF</div><div class="tag">ERP · Busy Data</div></div>
-    <nav class="sidebar-nav" id="nav">
-      <div class="nav-section-label">REF</div>
-      <button class="nav-item level-2 active" data-firm="REF" data-view="price"><svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="nav-label">Price History</span></button>
-      <button class="nav-item level-2" data-firm="REF" data-view="challans"><svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg><span class="nav-label">Challans</span></button>
-      <button class="nav-item level-2" data-firm="REF" data-view="reports"><svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg><span class="nav-label">Reports</span></button>
-      <button class="nav-item level-2 owner-only" data-firm="REF" data-view="deleted" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span class="nav-label">Deleted in Busy</span></button>
-      <div class="nav-section-label">RS</div>
-      <button class="nav-item level-2" data-firm="RS" data-view="price"><svg class="ic-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="nav-label">Price History</span></button>
-      <button class="nav-item level-2" data-firm="RS" data-view="challans"><svg class="ic-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17h14M5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM19 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM3 17V9l2-5h10l4 5h2v8"/></svg><span class="nav-label">Challans</span></button>
-      <button class="nav-item level-2" data-firm="RS" data-view="reports"><svg class="ic-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg><span class="nav-label">Reports</span></button>
-      <button class="nav-item level-2 owner-only" data-firm="RS" data-view="deleted" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span class="nav-label">Deleted in Busy</span></button>
-      <div class="nav-section-label owner-only" style="display:none">Owner only</div>
-      <button class="nav-item level-2 owner-only" data-view="upload" style="display:none"><svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><span class="nav-label">Load history</span></button>
-      <button class="nav-item level-2 owner-only" data-view="download" style="display:none"><svg class="ic-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span class="nav-label">Download the uploader</span></button>
-      <button class="nav-item level-2 owner-only" data-view="setup" style="display:none"><svg class="ic-slate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="nav-label">Setup instructions</span></button>
-    </nav>
-    <div class="sidebar-footer">Imported from Busy. Read only.</div>
-  </div>
+<div class="app-shell refnav-shell" id="shell" style="display:none">
+  <!-- The menu is nav.js, shared by every page. Busy Data's own screens are
+       entries in that one list, so they can be reached from anywhere in the
+       ERP and not only from inside this file. -->
+  <div id="refnav-host"></div>
 
   <div class="main">
     <div class="topbar">
       <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+        <button class="refnav-open-btn" id="navOpenBtn" type="button"
+                aria-label="Open the menu" aria-controls="refnav-host" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
         <a class="btn btn-outline btn-back" href="admin.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Back to ERP
@@ -493,7 +530,7 @@
             </div>
             <input type="file" id="fileInput" multiple accept=".bds,.csv,.json,.jsonl,.ndjson" style="display:none" />
           </div>
-          <div style="font-size:11.5px; color:var(--muted); margin-top:9px;">
+          <div class="sub" style="margin-top:9px;">
             The firm and the financial year are worked out for you — you never type them.
             <strong>A rows file</strong> is read here in the browser and split into one batch per
             firm and year. <strong>A <code>.bds</code> file</strong> goes to the parse service,
@@ -695,6 +732,7 @@ upload_token = (shown on the download screen)</pre>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app-config.js"></script>
+<script src="nav.js"></script>
 <script>
 (function () {
   'use strict';
@@ -718,6 +756,8 @@ upload_token = (shown on the download screen)</pre>
      decoded, and half the world decodes it the other way round. The month in
      letters cannot be read wrongly. The rest of this page already did it this
      way; the search table was the one place that did not. */
+  function btrim(v) { return String(v === null || v === undefined ? '' : v).trim(); }
+
   function dmy(iso) {
     if (!iso) return '';
     var p = String(iso).slice(0, 10).split('-');
@@ -869,7 +909,10 @@ upload_token = (shown on the download screen)</pre>
           var seen = r.last_seen_at ? new Date(r.last_seen_at).toLocaleDateString('en-IN',
                        { day: 'numeric', month: 'short', year: 'numeric' }) : '';
           return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.fy) + '</td>' +
-            '<td class="r">' + inr.format(r.live_rows || 0) + '</td>' +
+            // A count that did not arrive is not zero rows. Say nothing
+            // rather than say 0, which would read as "this year is empty".
+            '<td class="r">' + (r.live_rows === null || r.live_rows === undefined
+                                ? '—' : inr.format(r.live_rows)) + '</td>' +
             '<td class="r">' + (r.deleted_rows ? inr.format(r.deleted_rows) : '') + '</td>' +
             '<td>' + seen + '</td>' +
             '<td>' + (r.is_frozen
@@ -909,19 +952,25 @@ upload_token = (shown on the download screen)</pre>
       .then(function (res) {
         var row = res.data && res.data[0];
         if (!row || !row.last_success_at) {
-          $('syncStamp').textContent = 'never synced';
+          $('syncStamp').textContent = 'never checked against Busy';
           $('syncStamp').style.color = 'var(--danger)';
           return;
         }
+        // "as at 1:05 pm" invited a reading this cannot support: that the rows
+        // are current to then. What this number actually knows is that a sync
+        // FINISHED then. It is the right source for that question -- the sync
+        // is the thing being asked about, and a sync that was refused is
+        // recorded as cancelled, not completed -- but the words have to say
+        // which question it is answering.
         var d = new Date(row.last_success_at);
-        $('syncStamp').textContent = 'as at ' +
+        $('syncStamp').textContent = 'last checked against Busy at ' +
           d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) + ', ' +
           d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
         $('syncStamp').style.color = '';
       })
-      .catch(function () { $('syncStamp').textContent = 'sync time unknown'; });
+      .catch(function () { $('syncStamp').textContent = 'when it was last checked is not known'; });
     setTimeout(function () {
-      if ($('syncStamp').textContent === 'checking…') $('syncStamp').textContent = 'sync time unknown';
+      if ($('syncStamp').textContent === 'checking…') $('syncStamp').textContent = 'when it was last checked is not known';
     }, SLOW_AFTER_MS);
   }
 
@@ -931,6 +980,7 @@ upload_token = (shown on the download screen)</pre>
      choice is a per-person convenience, so it lives in this browser. */
   var COLUMNS = [
     { key: 'sr',    label: 'Sr.',         width: '44px',  always: true },
+    { key: 'match', label: 'Match',       width: '84px' },
     { key: 'date',  label: 'Date',        width: '92px'  },
     { key: 'fy',    label: 'FY',          width: '74px', offByDefault: true },
     { key: 'type',  label: 'Type',        width: '112px' },
@@ -942,6 +992,16 @@ upload_token = (shown on the download screen)</pre>
     { key: 'rate',  label: 'Rate',        width: '116px' },
     { key: 'amt',   label: 'Amount',      width: '116px' },
   ];
+  /* ---- WHICH KIND OF MATCH THIS ROW IS ----
+     The search answers in layers, and the row says which layer answered.
+     A guess is never shown as though it were exact. */
+  var MATCH_KINDS = {
+    1: { label: 'Exact',    cls: 'pill-grey',  why: 'The words appear exactly as you typed them' },
+    2: { label: 'Spacing',  cls: 'pill-grey',  why: 'The same words, written with different spacing or punctuation' },
+    3: { label: 'Spelling', cls: 'pill-amber', why: 'A close spelling of what you typed \u2014 a guess, not an exact match' },
+    4: { label: 'Split',    cls: 'pill-amber', why: 'Words typed run together, searched for separately \u2014 a guess, not an exact match' }
+  };
+
   var COL_STORE = 'ref-busy-columns';
   var shownCols = null;
 
@@ -1069,6 +1129,11 @@ upload_token = (shown on the download screen)</pre>
       ' of ' + inr.format(totalRows);
   }
 
+  /* How many rows the date range left out because they have no date at all.
+     Nothing to do with the search: a row that exists and cannot be dated is
+     information about what came out of Busy, not a defect to tidy away. */
+  var undatedOut = 0;
+
   function run() {
     clearTimeout(typingTimer);
     var q = $('q').value.trim();
@@ -1090,13 +1155,32 @@ upload_token = (shown on the download screen)</pre>
 
     // How many match in total, so the pager can say "page 2 of 14". Counted
     // with the same filters, so it counts the same rows.
-    Promise.resolve(REF.supabase().rpc('busy_search_count', filters))
+    // p_undated_only is passed rather than left to its default, so the two
+    // calls below read as the pair they are: the rows inside the range, and
+    // the rows the range can never hold.
+    Promise.resolve(REF.supabase().rpc('busy_search_count',
+      Object.assign({}, filters, { p_undated_only: false })))
       .then(function (c) {
         if (mine !== runToken) return;
         totalRows = (c && !c.error && Number(c.data)) || 0;
         if (pageNo > pageCount()) pageNo = pageCount();
       })
       .catch(function () { totalRows = 0; });
+
+    // A row with no date cannot be inside any range, so a range silently
+    // drops it. Asked only when a range is actually set, because with no
+    // range nothing is being left out and there is nothing to say.
+    undatedOut = 0;
+    if (filters.p_date_from || filters.p_date_to) {
+      Promise.resolve(REF.supabase().rpc('busy_search_count',
+        Object.assign({}, filters, { p_undated_only: true })))
+        .then(function (c) {
+          if (mine !== runToken) return;
+          undatedOut = (c && !c.error && Number(c.data)) || 0;
+          if (undatedOut) drawRowCount();
+        })
+        .catch(function () { undatedOut = 0; });
+    }
 
     var say = intoTable('rows', cols);
     guard(REF.supabase().rpc('busy_search', Object.assign({}, filters, {
@@ -1141,12 +1225,19 @@ upload_token = (shown on the download screen)</pre>
       } else {
         rateCell = money(r.rate);
       }
+      var kind = q ? MATCH_KINDS[r.match_tier] : null;
       var cell = {
         sr:    '<td>' + (i + 1) + '</td>',
-        date:  '<td>' + dmy(r.vch_date) + '</td>',
+        match: '<td>' + (kind ? '<span class="pill ' + kind.cls + '" title="' + esc(kind.why) + '">' +
+                                esc(kind.label) + '</span>' : '') + '</td>',
+        // A missing value is shown as missing, never as blank. Blank reads as
+        // "nobody filled this in yet"; this is "Busy does not have it".
+        date:  '<td>' + (r.vch_date ? dmy(r.vch_date)
+                                    : '<span class="missing">no date in Busy</span>') + '</td>',
         fy:    '<td>' + esc(r.fy) + '</td>',
         type:  '<td>' + esc(r.doc_type) + '</td>',
-        vch:   '<td>' + esc(r.vch_no) + '</td>',
+        vch:   '<td>' + (btrim(r.vch_no) ? esc(r.vch_no)
+                                        : '<span class="missing">no number in Busy</span>') + '</td>',
         party: '<td class="l">' + hi(r.party, q) + '</td>',
         item:  '<td class="l">' + hi(r.item, q) + '</td>',
         desc:  '<td class="l desc">' + hi(r.description, q) + '</td>',
@@ -1155,18 +1246,45 @@ upload_token = (shown on the download screen)</pre>
         amt:   '<td class="r">' + money(r.amount) + '</td>'
       };
       // Tier 1 and 2 are real matches and get their letters picked out; tier 3
-      // is close but not exact, so the whole row is tinted instead.
-      return '<tr class="' + (q && r.match_tier === 3 ? 'fuzzy' : '') + '">' +
+      // (close spelling) and tier 4 (words run together) are guesses, so the
+      // whole row is tinted and the Match column says which guess it is.
+      return '<tr class="' + (q && (r.match_tier === 3 || r.match_tier === 4) ? 'fuzzy' : '') + '">' +
         cols.map(function (c) { return cell[c.key]; }).join('') + '</tr>';
     }).join('');
     $('rows').innerHTML = html;
     if (grid) grid.clear();
 
-    var fuzzy = rows.filter(function (r) { return r.match_tier === 3 && q; }).length;
+    lastShown = { rows: rows, q: q };
+    drawRowCount();
+  }
+
+  /* The line under the table. Drawn from whatever is known at the time, and
+     drawn AGAIN when the undated count arrives, because that answer comes
+     back on its own and must not be lost by having got there second. */
+  var lastShown = { rows: [], q: '' };
+
+  function drawRowCount() {
+    var rows = lastShown.rows, q = lastShown.q;
+    var close = rows.filter(function (r) { return q && (r.match_tier === 3 || r.match_tier === 4); }).length;
+    var split = rows.filter(function (r) { return q && r.match_tier === 4; }).length;
+    var note = '';
+    if (close) {
+      note = ' · ' + close + ' shaded yellow ' + (close === 1 ? 'is a close match' : 'are close matches') +
+             ', not exact';
+      if (split === close) note += ' — the words look to have been typed run together';
+      else if (split) note += ' (' + split + ' of them words typed run together)';
+    }
+    // A date range cannot hold a row that has no date, so it drops it. Say
+    // so. A total that quietly shrinks is the same fault as a counter that
+    // reads zero on a full table: the number is not wrong, the silence is.
+    if (undatedOut) {
+      note += ' · ' + inr.format(undatedOut) + ' row' + (undatedOut === 1 ? '' : 's') +
+              ' ha' + (undatedOut === 1 ? 's' : 've') + ' no date and ' +
+              (undatedOut === 1 ? 'is' : 'are') + ' not included in this range';
+    }
     $('rowCount').textContent =
       inr.format(totalRows || rows.length) + ' row' + ((totalRows || rows.length) === 1 ? '' : 's') +
-      ' found' +
-      (fuzzy ? ' · ' + fuzzy + ' shaded yellow are close matches, not exact' : '');
+      ' found' + note;
   }
 
   /* ---------------- reports ---------------- */
@@ -1209,7 +1327,7 @@ upload_token = (shown on the download screen)</pre>
     function delta(now, prev) {
       if (!prev) return '';
       var pc = Math.round(((now - prev) / prev) * 100);
-      return '<div style="font-size:11.5px" class="' + (pc >= 0 ? 'up' : 'down') + '">' +
+      return '<div class="sub ' + (pc >= 0 ? 'up' : 'down') + '">' +
              (pc >= 0 ? '+' : '') + pc + '% against last year</div>';
     }
     $('kpis').innerHTML =
@@ -1254,7 +1372,7 @@ upload_token = (shown on the download screen)</pre>
       '<div class="kpi"><div class="k">Output tax on sales, this FY</div><div class="v">' + moneyShort(out) + '</div></div>' +
       '<div class="kpi"><div class="k">Input tax on purchases, this FY</div><div class="v">' + moneyShort(inp) + '</div></div>' +
       '<div class="kpi"><div class="k">Difference — indicative only</div><div class="v">' + moneyShort(out - inp) + '</div>' +
-      '<div style="font-size:11.5px; color:var(--muted)">not a payable figure</div></div>';
+      '<div class="sub">not a payable figure</div></div>';
   }
 
   /* ------- GST from the ledger: computed against actually paid ------- */
@@ -1285,14 +1403,14 @@ upload_token = (shown on the download screen)</pre>
 
       $('gstPaidKpis').innerHTML =
         '<div class="kpi"><div class="k">Actually paid</div><div class="v">' + moneyShort(paid) +
-        '</div><div style="font-size:11.5px; color:var(--muted)">' +
+        '</div><div class="sub">' +
         rows.filter(function (r) { return r.vch_type === '19'; }).length + ' payments</div></div>' +
         '<div class="kpi"><div class="k">Computed in the journals</div><div class="v">' +
-        moneyShort(computed) + '</div><div style="font-size:11.5px; color:var(--muted)">' +
+        moneyShort(computed) + '</div><div class="sub">' +
         rows.filter(function (r) { return r.vch_type === '16'; }).length + ' monthly workings</div></div>' +
         '<div class="kpi"><div class="k">Difference</div><div class="v ' +
         (Math.abs(gap) > 1 ? 'down' : '') + '">' + moneyShort(gap) + '</div>' +
-        '<div style="font-size:11.5px; color:var(--muted)">computed less paid</div></div>';
+        '<div class="sub">computed less paid</div></div>';
 
       $('gstRows').innerHTML = rows.slice().reverse().map(function (r, i) {
         var isPay = r.vch_type === '19';
@@ -1338,38 +1456,73 @@ upload_token = (shown on the download screen)</pre>
       .then(function (res) { settings = res.data || {}; return settings; });
   }
 
-  function loadUploadScreen() { getSettings().then(refreshTotals); }
+  function loadUploadScreen() {
+    // The counts no longer wait on the settings row: they come from the rows.
+    getSettings();
+    refreshTotals();
+  }
 
+  /* ---- HOW MANY ROWS ARE ACTUALLY IN THERE ----
+     These counters read ZERO on 18 Sep 2026 while busy_history held all
+     98,644 rows. They were counting the table, not batch records -- but the
+     read was REFUSED, and the screen wrote `r.count || 0` and showed 0. A
+     number whose job is to say whether the load worked, and which reads zero
+     on a full table, is worse than no number at all.
+
+     Two rules come out of that, and both are kept here:
+       1. Count the THING, never a record about the thing. busy_row_counts
+          counts busy_history by company and kind. No batch record is asked
+          whether it finished.
+       2. A call that fails is never turned into a number. If the count
+          cannot be read, the tiles say so, in red, and show nothing. */
   function refreshTotals() {
-    getSettings().then(function (cfg) {
-      var q = function (view, kind) {
-        var sel = REF.supabase().from(view).select('*', { count: 'exact', head: true });
-        if (kind) sel = sel.eq('kind', kind);
-        return sel.then(function (r) { return r.count || 0; });
-      };
-      Promise.all([
-        q('busy_history_ref', 'item'), q('busy_history_rs', 'item'),
-        q('busy_history_ref', null),   q('busy_history_rs', null)
-      ]).then(function (n) {
-        function tile(label, got, want) {
-          var done = (got === want);
-          var short = want - got;
-          // "16,987 of 21,307 expected" reads like progress. It was a year
-          // missing. Say the shortfall as a number, in red.
-          return '<div class="kpi"><div class="k">' + label + '</div>' +
-                 '<div class="v ' + (done ? 'up' : 'down') + '">' + inr.format(got) + '</div>' +
-                 '<div style="font-size:11.5px; color:' + (done ? 'var(--muted)' : 'var(--danger)') + '">' +
-                 (done ? 'of ' + inr.format(want) + ' · matches'
-                       : (short > 0 ? inr.format(short) + ' SHORT of ' + inr.format(want)
-                                    : inr.format(-short) + ' MORE than the ' + inr.format(want) + ' expected')) +
-                 '</div></div>';
+    var say = intoBox('loadTotals');
+    $('loadTotals').innerHTML = '<div class="loading">Counting the rows…</div>';
+    guard(REF.supabase().rpc('busy_row_counts'), say, 'the row counts')
+      .then(function (res) {
+        if (!res) return;                       // guard has already said why
+        var rows = res.data || [];
+        if (!rows.length) {
+          say('No rows have been loaded yet, and nothing is expected. ' +
+              'Send a year up with Load history.');
+          return;
         }
-        $('loadTotals').innerHTML =
-          tile('Item rows, REF', n[0], cfg.expected_item_rows_ref || 21307) +
-          tile('Item rows, RS', n[1], cfg.expected_item_rows_rs || 1425) +
-          tile('All rows, both firms', n[2] + n[3], cfg.expected_total_rows || 47635);
+        $('loadTotals').innerHTML = totalsHtml(rows);
       });
-    });
+  }
+
+  var KIND_LABEL = { item: 'Item rows', ledger: 'Ledger rows', opening: 'Opening balances' };
+
+  function totalsHtml(rows) {
+    function tile(label, got, want) {
+      // A count with nothing to compare it against says so, rather than
+      // pretending the number is right because it is the only one there.
+      if (want === null || want === undefined) {
+        return '<div class="kpi"><div class="k">' + esc(label) + '</div>' +
+               '<div class="v">' + inr.format(got) + '</div>' +
+               '<div class="sub">counted · nothing expected was set</div></div>';
+      }
+      var done = (got === want);
+      var short = want - got;
+      // "16,987 of 21,307 expected" reads like progress. It was a year
+      // missing. Say the shortfall as a number, in red.
+      return '<div class="kpi"><div class="k">' + esc(label) + '</div>' +
+             '<div class="v ' + (done ? 'up' : 'down') + '">' + inr.format(got) + '</div>' +
+             '<div class="sub" style="color:' + (done ? 'var(--muted)' : 'var(--danger)') + '">' +
+             (done ? 'of ' + inr.format(want) + ' · matches'
+                   : (short > 0 ? inr.format(short) + ' SHORT of ' + inr.format(want)
+                                : inr.format(-short) + ' MORE than the ' + inr.format(want) + ' expected')) +
+             '</div></div>';
+    }
+    var html = rows.map(function (r) {
+      return tile((KIND_LABEL[r.kind] || r.kind) + ', ' + r.company, Number(r.rows), r.expected);
+    }).join('');
+    // The total is ADDED UP from the parts, never stored and never read from
+    // anywhere else, so it cannot disagree with the tiles above it.
+    var got  = rows.reduce(function (a, r) { return a + Number(r.rows); }, 0);
+    var want = rows.every(function (r) { return r.expected !== null && r.expected !== undefined; })
+      ? rows.reduce(function (a, r) { return a + Number(r.expected); }, 0) : null;
+    return html + tile('All rows, both firms', got, want);
   }
 
   /* A CSV reader that copes with quoted fields, because descriptions hold
@@ -1830,7 +1983,7 @@ upload_token = (shown on the download screen)</pre>
           esc(when) + '</div></div>' +
         '<div class="kpi"><div class="k">Runs at</div><div class="v" style="font-size:15px">' +
           esc((cfg.run_at_times || []).join('  ·  ') || 'not set') + '</div>' +
-          '<div style="font-size:11.5px; color:var(--muted)">changed here, never on that PC</div></div>';
+          '<div class="sub">changed here, never on that PC</div></div>';
 
       if (cfg.uploader_storage_path) {
         REF.supabase().storage.from(cfg.uploader_bucket || 'app-downloads')
@@ -1855,16 +2008,33 @@ upload_token = (shown on the download screen)</pre>
   }
 
   /* ---------------- wiring ---------------- */
-  document.getElementById('nav').addEventListener('click', function (e) {
-    var b = e.target.closest('.nav-item');
-    if (!b) return;
-    Array.prototype.forEach.call(document.querySelectorAll('.nav-item'), function (n) {
-      n.classList.remove('active');
+  /* ---- THE MENU ----
+     Built by nav.js, the one list every page in the ERP loads. This page's
+     own screens -- Price History, Challans, Reports, Deleted, and the owner's
+     loading screens -- are entries in that list, so they can be reached from
+     anywhere and not only from inside this file. */
+  var refnav = null;
+
+  function mountNav(user) {
+    refnav = REFNav.mount({
+      page: 'busy.html',
+      user: user,
+      onView: function (view, firm) {
+        if (firm) setFirm(firm);
+        setView(view);
+      }
     });
-    b.classList.add('active');
-    if (b.dataset.firm) setFirm(b.dataset.firm);
-    setView(b.dataset.view);
-  });
+    var asked = REFNav.fromHash();
+    if (asked && asked.view) {
+      if (asked.firm) setFirm(asked.firm);
+      setView(asked.view);
+      if (refnav) refnav.select(asked.view, asked.firm);
+    } else if (refnav) {
+      refnav.select('price', firm);
+    }
+  }
+  function setNavOpen(open) { if (refnav) refnav.setOpen(open); }
+  function navIsOpen() { return !!refnav && refnav.isOpen(); }
 
   (function wireUpload() {
     var zone = $('dropZone'), input = $('fileInput');
@@ -1906,7 +2076,8 @@ upload_token = (shown on the download screen)</pre>
 
      Written against a table by id so the next result table in the ERP gets it
      by calling wireGrid(). See docs/23. */
-  var GRID_TIP = 'Arrow keys move · Ctrl+C copies · Home/End ends of the row · Ctrl+Up/Down top and bottom';
+  var GRID_TIP = 'Arrow keys move · Enter or Tab next cell, then the next row · Shift+Tab back · ' +
+                 'Ctrl+C copies · Home/End ends of the row · Ctrl+Up/Down top and bottom';
 
   function wireGrid(tbodyId) {
     var body = $(tbodyId);
@@ -1942,6 +2113,28 @@ upload_token = (shown on the download screen)</pre>
       paint();
     }
 
+    /* One cell forward or back, carrying on to the next row rather than
+       stopping at the edge. This is how a person reads across a table: the
+       end of a row is not the end of the reading. Nothing here is editable —
+       Enter and Tab move, they never open a cell. */
+    function step(forward) {
+      var rows = cells();
+      if (!rows.length) return;
+      if (!sel) { sel = forward ? { r: 0, c: 0 }
+                                : { r: rows.length - 1, c: rows[rows.length - 1].cells.length - 1 };
+                  paint(); return; }
+      var r = sel.r, c = sel.c + (forward ? 1 : -1);
+      if (c >= rows[r].cells.length) {
+        if (r >= rows.length - 1) return;      // last cell of the last row: stay put
+        r = r + 1; c = 0;                      // FIRST cell of the next row
+      } else if (c < 0) {
+        if (r <= 0) return;                    // first cell of the first row: stay put
+        r = r - 1; c = rows[r].cells.length - 1;   // LAST cell of the row above
+      }
+      sel = { r: r, c: c };
+      paint();
+    }
+
     body.addEventListener('click', function (e) {
       var td = e.target.closest('td');
       if (!td || td.classList.contains('loading')) return;
@@ -1972,6 +2165,11 @@ upload_token = (shown on the download screen)</pre>
         e.preventDefault();
         var rr = (sel || { r: 0 }).r;
         sel = { r: rr, c: rows[rr].cells.length - 1 }; paint();
+      } else if (k === 'Enter' || k === 'Tab') {
+        // Tab would otherwise walk out of the table and into the page
+        // furniture, which loses the person's place in the data.
+        e.preventDefault();
+        step(!e.shiftKey);
       } else if (k === 'c' && (e.ctrlKey || e.metaKey)) {
         var td = body.querySelector('td.sel');
         if (!td) return;
@@ -2127,11 +2325,15 @@ upload_token = (shown on the download screen)</pre>
   var SHORTCUTS = [
     { keys: ['Ctrl+/'],  label: 'Ctrl + /',  does: 'This list',
       run: function () { toggleShortcutPanel(); } },
-    { keys: ['Escape'],  label: 'Esc',       does: 'Close this list, or clear the search box',
+    { keys: ['Escape'],  label: 'Esc',       does: 'Close the menu or this list, or clear the search box',
       run: function () {
+        if (navIsOpen()) { setNavOpen(false); $('navOpenBtn').focus(); return; }
         if (shortcutPanelOpen()) { closeShortcutPanel(); return; }
         if (document.activeElement === $('q')) clearSearch();
       } },
+    { keys: ['Enter'],          label: 'Enter',    does: 'In the table: next cell, on to the next row at the end' },
+    { keys: ['Tab'],            label: 'Tab',      does: 'In the table: the same as Enter' },
+    { keys: ['Shift+Tab'],      label: 'Shift + Tab', does: 'In the table: back one cell, on to the row above at the start' },
     { keys: ['Ctrl+ArrowUp'],   label: 'Ctrl + ↑', does: 'First row of the table' },
     { keys: ['Ctrl+ArrowDown'], label: 'Ctrl + ↓', does: 'Last row of the table' },
     { keys: ['Home'],           label: 'Home',     does: 'First cell of the row' },
@@ -2144,7 +2346,7 @@ upload_token = (shown on the download screen)</pre>
   ];
   var TYPING_NOTE = [
     ['Typing', 'The results follow as you type — there is no Search button'],
-    ['Tab', 'Next control'],
+    ['Tab', 'Next control — but inside the results table it moves one cell'],
     ['In a date box: T', 'Today'],
     ['In a date box: Delete', 'Clear the date'],
   ];
@@ -2261,6 +2463,7 @@ upload_token = (shown on the download screen)</pre>
       grid = wireGrid('rows');
       setFirm('REF');
       setView('price');
+      mountNav(user);          // the menu comes last: it may send us elsewhere
       $('q').focus();
     }).catch(openFailed);
   } catch (err) {
