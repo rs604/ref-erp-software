@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1789788757';</script>
+<script>window.__BUILD_VERSION__ = '1789821056';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -33,29 +33,10 @@
   document.addEventListener('visibilitychange', function() { if (!document.hidden) checkVersion(); });
 })();
 </script>
+<link rel="stylesheet" href="theme.css?v=1789821056">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 
-  :root {
-    --ink: #1a2229;
-    --paper: #f4f6f8;
-    --surface: #ffffff;
-    --surface-sunken: #eef1f4;
-    --border: #d8dee5;
-    --steel: #2d4a5e;
-    --steel-dark: #1f3547;
-    --steel-tint: #e7edf1;
-    --amber: #b7791f;
-    --amber-bg: #fbf1de;
-    --green: #2f7a52;
-    --green-bg: #e7f3ec;
-    --slate: #5b6b7a;
-    --slate-bg: #eaedf0;
-    --danger: #a13d33;
-    --danger-bg: #fbeceb;
-    --muted: #6b7684;
-    --sidebar-w: 232px;
-  }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -137,10 +118,9 @@
 
   .app-shell { display: flex; min-height: 100vh; }
 
-  .sidebar-brand { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-  .sidebar-brand .name { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 1.5px; }
-  .sidebar-brand .tag { font-size: 10.5px; color: rgba(255,255,255,0.55); letter-spacing: 1.5px; margin-top: 2px; }
-  .sidebar-nav { flex: 1; padding: 14px 10px; }
+  /* THE MENU IS NOT WRITTEN HERE either -- nav.js draws it, with its own
+     styles, into #refnav-host. What is left of .nav-item below is NOT dead:
+     documentation.js builds the Decisions tree out of the same classes. */
   .nav-item {
     display: flex;
     align-items: center;
@@ -170,21 +150,6 @@
   .nav-item.level-3 { font-size: 12px; padding-left: 46px; color: rgba(255,255,255,0.62); }
   .nav-item.level-3.active { color: #fff; }
   .nav-item.nav-parent.level-2 .nav-arrow { margin-left: auto; }
-  .nav-section-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.32);
-    padding: 12px 20px 4px 34px;
-  }
-  /* Distinct accent colors per icon, matching the reference's colorful style */
-  .ic-blue { color: #5b9bd5; }
-  .ic-slate { color: #9aa7b5; }
-  .ic-teal { color: #4fb8a6; }
-  .ic-purple { color: #b28ce0; }
-  .ic-amber { color: var(--amber); }
-  .sidebar-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11.5px; color: rgba(255,255,255,0.5); }
 
   .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .topbar {
@@ -219,35 +184,6 @@
     overflow: hidden;
   }
   .panel.panel-no-clip { overflow: visible; }
-
-  /* Collapsible sidebar */
-  .sidebar { transition: width 0.16s ease; }
-  .app-shell.nav-collapsed .sidebar { width: 52px; }
-  .app-shell.nav-collapsed .sidebar .nav-label,
-  .app-shell.nav-collapsed .sidebar .nav-arrow,
-  .app-shell.nav-collapsed .sidebar .nav-section-label,
-  .app-shell.nav-collapsed .sidebar .sidebar-brand .tag { display: none; }
-  .app-shell.nav-collapsed .sidebar .nav-children { display: none !important; }
-  .app-shell.nav-collapsed .sidebar .nav-item { justify-content: center; padding-left: 0; padding-right: 0; }
-  /* At 52px wide there isn't room for the brand text and the toggle together — the
-     40px of side padding alone left only 12px — so the text goes and the toggle stays,
-     centred, since it is the only way back to the expanded menu. */
-  .app-shell.nav-collapsed .sidebar .sidebar-brand .name { display: none; }
-  .app-shell.nav-collapsed .sidebar .nav-toggle-btn { margin: 0; }
-  /* When collapsed, hovering an icon shows a tooltip with the item's name. */
-  .app-shell.nav-collapsed .sidebar .nav-item { position: relative; }
-  .app-shell.nav-collapsed .sidebar .nav-item:hover::after { opacity: 1; }
-
-  /* ---- THE MENU ON A PHONE ----
-     The left nav is hidden under 880px, which is right — there is no room for
-     it. But for months there was NOTHING to bring it back, so on a phone the
-     ERP was one screen and a Log out button. This is the way back: a hamburger
-     in the top bar that slides the same menu in over the page, and a backdrop
-     that closes it. Same menu, same items, same order — not a second menu that
-     can drift away from the first. */
-  .nav-backdrop { display: none; }
-
-  .nav-toggle-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
   /* Spreadsheet grid. Horizontal scrolling is necessary: the full column set is wider
      than any screen, and hiding the overflow made the deduction columns unreachable.
@@ -624,26 +560,10 @@
   }
 
   @media (max-width: 880px) {
-    /* The menu is a drawer, not a column. It is off to the left until the
-       hamburger is pressed, and it lies OVER the page rather than squeezing
-       it, so nothing reflows when it opens. */
-  .nav-open-btn { display: inline-flex; }
+    /* The drawer, the hamburger and the backdrop are nav.js's, on every page.
+       What was here was a second description of them, for a .sidebar this
+       page has not had since the shared menu arrived. */
     .app-shell { position: relative; }
-    .app-shell.nav-open .sidebar { transform: none; }
-    /* A phone never collapses the menu to icons — it is open or it is away. */
-    .app-shell.nav-collapsed .sidebar { width: 272px; max-width: 84vw; }
-    .app-shell.nav-collapsed .sidebar .nav-label,
-    .app-shell.nav-collapsed .sidebar .nav-arrow,
-    .app-shell.nav-collapsed .sidebar .nav-section-label,
-    .app-shell.nav-collapsed .sidebar .sidebar-brand .name,
-    .app-shell.nav-collapsed .sidebar .sidebar-brand .tag { display: block; }
-    .app-shell.nav-collapsed .sidebar .nav-children { display: block !important; }
-    .app-shell.nav-collapsed .sidebar .nav-item { justify-content: flex-start; }
-    .nav-toggle-btn { display: none; }     /* collapsing is a desk idea */
-
-    .app-shell.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
-    /* Tapping a menu item on a phone is a tap, not a hover-and-click. */
-    .sidebar .nav-item { min-height: 44px; }
 
     .content { padding: 14px; }
     .topbar { padding: 12px 14px; }
@@ -663,7 +583,6 @@
     .btn, .btn-sm, a.btn { min-height: 44px; }
     .btn-sm { padding: 10px 12px; font-size: 13px; }
     .subtab-item { min-width: 56px; min-height: 44px; padding: 13px 10px; }
-    .sidebar .nav-item { min-height: 44px; }
     /* The documentation screen has a menu of its own, inside the page. */
     .doc-tree-toggle, .doc-tree-leaf { min-height: 44px; }
     select { min-height: 44px; }
@@ -673,8 +592,7 @@
        "works" on a phone and still cannot be read. Nothing under 12px, and
        the things a person actually reads at 13px or more. */
     .topbar-sub, #pageSub { font-size: 12.5px; }
-    .pill-section-label, .nav-section-label, .nav-future-note,
-    .sidebar-footer, .empty-state { font-size: 12px; }
+    .pill-section-label, .nav-future-note, .empty-state { font-size: 12px; }
     .msg { font-size: 13px; }
 
     /* ---- NOTHING GOES SIDEWAYS ----

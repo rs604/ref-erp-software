@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789788757';</script>
+<script>window.__BUILD_VERSION__ = '1789821056';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -27,26 +27,11 @@
   window.addEventListener('online', checkVersion);
 })();
 </script>
+<link rel="stylesheet" href="theme.css?v=1789821056">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-  :root {
-    /* Plain enough to sit in front of for an hour. The page is white; the
-       only colour is what carries meaning. Rows alternate white and a very
-       light blue, the heading is a darker version of the same blue, and
-       nothing on the table is stronger than that. The one loud colour on the
-       screen is the search highlight, because it has to be read at a glance. */
-    --ink:#1a2229; --paper:#ffffff; --surface:#ffffff; --surface-sunken:#f6f8fa;
-    --border:#dfe4ea; --steel:#2d4a5e; --steel-dark:#1f3547; --steel-tint:#e7edf1;
-    --row-alt:#f4f8fb;            /* the light blue every other row */
-    --row-head:#dbe6ef;           /* the heading: darker than the rows, still sober */
-    --hit:#ffd21f;                /* the typed letters. Dark enough to read */
-    --hit-row:#fffbe6;            /* a close match: the faintest tint */
-    --amber:#b7791f; --amber-bg:#fbf1de; --green:#2f7a52; --green-bg:#e7f3ec;
-    --slate:#5b6b7a; --slate-bg:#f0f3f6; --danger:#a13d33; --danger-bg:#fbeceb;
-    --muted:#6b7684; --sidebar-w:232px;
-  }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--paper); color:var(--ink);
+  body { margin:0; background:var(--paper-plain); color:var(--ink);
          font-family:'IBM Plex Sans',system-ui,sans-serif; font-size:13px; }
   /* The page used to scroll as a whole, which took the menu, the page title
      and the Back to ERP button off the screen together, and carried the
@@ -55,33 +40,11 @@
      only the content underneath them scrolls. */
   .app-shell { display:flex; height:100vh; overflow:hidden; }
 
-  .sidebar { width:var(--sidebar-w); flex:0 0 var(--sidebar-w); background:var(--steel-dark);
-             color:#dfe7ed; display:flex; flex-direction:column; }
-  .sidebar-brand { padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.08);
-                   display:flex; align-items:baseline; gap:6px; }
-  .sidebar-brand .name { font-weight:700; font-size:16px; color:#fff; letter-spacing:.5px; }
-  .sidebar-brand .tag { font-size:11px; color:#9fb4c4; }
-  .sidebar-nav { padding:8px 0; flex:1; overflow:auto; }
-  /* The same shape as the menu in admin.html: bold group headings, an icon on
-     every item. It read as a different application because it was built as
-     one. */
-  .nav-section-label { font-size:10px; text-transform:uppercase; letter-spacing:.8px;
-                       font-weight:700; color:#9fb4c4; padding:12px 16px 4px; }
-  .nav-item { display:flex; align-items:center; gap:10px; width:100%; text-align:left;
-              background:none; border:0; color:#dfe7ed; padding:7px 16px;
-              font-size:13px; cursor:pointer; font-family:inherit;
-              border-left:3px solid transparent; }
-  .nav-item svg { flex-shrink:0; width:16px; height:16px; }
-  .nav-item .nav-label { flex:1; }
-  .nav-item.level-2 { padding-left:22px; font-size:12.5px; color:#bfd0dc; }
-  .ic-amber { color:#c58a2e; } .ic-teal { color:#2e8b76; }
-  .ic-blue { color:#5b8db8; }  .ic-purple { color:#b28ce0; }
-  .ic-slate { color:#9fb4c4; }
-  .nav-item:hover { background:rgba(255,255,255,.06); }
-  .nav-item.active { background:var(--steel); color:#fff; font-weight:600;
-                     border-left-color:var(--amber); }
-  .sidebar-footer { padding:10px 16px; font-size:11px; color:#7f97a8;
-                    border-top:1px solid rgba(255,255,255,.08); }
+  /* THE MENU IS NOT WRITTEN HERE. It is nav.js, drawn into #refnav-host on
+     every page, and it brings its own styles with it. Twenty-seven lines
+     describing a .sidebar that has not existed on this page since the shared
+     menu arrived were still sitting here -- a second, unused description of
+     the very thing that was the wrong colour. */
 
   .main { flex:1; min-width:0; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
   .topbar { background:var(--surface); border-bottom:1px solid var(--border);
@@ -173,7 +136,10 @@
                margin:6px 0; font-size:12px;
                white-space:pre-wrap; overflow-wrap:anywhere; }
   code { overflow-wrap:anywhere; }
-  .pill { display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:10px;
+  /* 12px is the floor for anything anyone has to read -- docs/23 section 9.
+     This was 10.5px, lifted to 12px only inside the phone media query, so the
+     desk read it at 10.5px. The floor is not a phone rule. */
+  .pill { display:inline-block; font-size:12px; padding:1px 6px; border-radius:10px;
           border:1px solid transparent; white-space:nowrap; }
   .pill-amber { background:var(--amber-bg); color:var(--amber); border-color:#e6d2a8; }
   .pill-grey  { background:var(--slate-bg); color:var(--slate); }
@@ -347,20 +313,16 @@
   table.tbl tbody tr.fuzzy, table.tbl tbody tr.fuzzy:nth-child(even) { background:var(--hit-row); }
   table.tbl tbody tr.fuzzy td { border-color:#efe4b8; }
 
+  /* --bg is not a colour in this ERP and never was, so this overlay was
+     transparent: "Checking who you are." was printed over whatever the page
+     had already drawn. Nothing reported it because a CSS variable that does
+     not exist fails in silence. */
   .boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-          background:var(--bg); z-index:60; padding:20px; }
+          background:var(--paper-plain); z-index:60; padding:20px; }
   .boot-card { max-width:460px; text-align:center; }
   .boot-title { font-size:16px; font-weight:600; color:var(--ink); }
   .boot-sub { font-size:13px; color:var(--muted); margin-top:6px; line-height:1.5; }
   .loading { padding:20px; text-align:center; color:var(--muted); }
-
-  /* ---- THE MENU ON A PHONE ----
-     Same drawer as admin.html, on purpose: one way to reach the menu across
-     the whole ERP. A strip of menu items scrolling sideways above the screen
-     was what this had before, and it made the nav a different thing here from
-     everywhere else. The breakpoint is 880px in both pages for the same
-     reason. */
-  .nav-backdrop { display:none; }
 
   /* ---- A PHONE IS NOT A NARROW DESK ----
      Everything below the breakpoint is a SEPARATE layout, not the desktop
@@ -485,14 +447,6 @@
     .main { height:auto; overflow:visible; }
     .content { overflow:visible; }
 
-    .nav-open-btn { display:inline-flex; }
-    .app-shell.nav-open .sidebar { transform:none; }
-    .sidebar-nav { display:block; overflow:visible; padding:10px 8px; }
-    .nav-item { width:100%; min-height:44px; white-space:normal; }
-    .sidebar-footer { display:none; }
-
-    .app-shell.nav-open .nav-backdrop { opacity:1; pointer-events:auto; }
-
     .filters { grid-template-columns:1fr 1fr; }
     .searchbar-end { margin-left:0; width:100%; }
     .shortcut-hint { display:none; }
@@ -505,7 +459,6 @@
     .chip { min-height:44px; padding:8px 12px; }
     .searchbox button { min-width:44px; min-height:44px; right:0; }
     .f, .f.dt, .f.sm, select, input { min-height:44px; }
-    .nav-item { min-height:44px; }
 
     /* ---- TEXT ----
        Bigger, never smaller. Nothing under 12px, and the table itself at 13px
@@ -514,8 +467,7 @@
     .f.dt, .f.sm { width:auto; flex:1 1 140px; }
     table.tbl { font-size:13px; }
     .desc { font-size:12.5px; }
-    .pill, .kpi .k, .colmenu-note, .nav-section-label,
-    .sidebar-brand .tag, .rowcount, .method { font-size:12px; }
+    .kpi .k, .colmenu-note, .rowcount, .method { font-size:12px; }
     /* label.fl, not .fl. The base rule is written label.fl, which outranks a
        bare class, so the bump to 12px was simply ignored and the labels
        stayed at 10.5px. */
@@ -2958,23 +2910,55 @@ upload_token = (shown on the download screen)</pre>
         'labour, transport and margin are left where they were.</div>';
     }
 
+    /* SAME NAME IS NOT THE SAME MACHINE. SKD CONVEYOR covers an extension
+       at 3.25 lakh and a complete assembly line at 26.25 lakh; listing the
+       eleven of them as a price history does not look wrong, which is the
+       worst thing a pricing screen can be. So the server compares the
+       DESCRIPTION too — fuzzy on words, exact on numbers, and a blank
+       description only against another blank one. Every matched description
+       is printed, so what was compared can be seen rather than trusted. */
     function matHistory() {
+      var ref = sale.description || '';
+      var what = esc(matItem) + (btrim(ref) ? ', ' + esc(ref) : ' with no description');
       Promise.resolve(REF.supabase().rpc('busy_item_price_history',
-        { p_company: firm, p_item: matItem }))
+        { p_company: firm, p_item: matItem, p_desc: ref, p_match_desc: true }))
         .then(function (r) {
           if (!r || r.error) { $('matHist').innerHTML = '<div class="loading">Could not load it.</div>'; return; }
           var rows = (r.data || []).filter(function (x) { return Number(x.amount); });
-          if (!rows.length) { $('matHist').innerHTML = '<div class="loading">No earlier sales.</div>'; return; }
-          $('matHist').innerHTML = '<div class="method" style="font-size:13px; color:var(--ink)">' +
-            rows.map(function (x) {
-              var y = new Date(x.vch_date).getFullYear();
-              var here = (x.vch_date === sale.vch_date);
-              return (here ? '<strong>' : '') + moneyShort(x.amount) + ' in ' + y +
-                     (here ? ' ← this one</strong>' : '');
-            }).join(' · ') + '</div>' +
-            '<div class="method">Never averaged: the size is in the description, so two sales ' +
-            'of the same name are not the same machine.</div>';
+          if (rows.length <= 1) {
+            $('matHist').innerHTML =
+              '<div class="loading">No comparable earlier sale.</div>' +
+              '<div class="method" id="matHistWhat">Nothing else was sold as <strong>' +
+              what + '</strong>. ' + matchRule() + '</div>';
+            return;
+          }
+          $('matHist').innerHTML =
+            twoWay([{ label: 'Customer', cls: 'l' },
+                    { label: 'Description', cls: 'l desc' },
+                    { label: 'Amount', w: '120px', cls: 'r' },
+                    { label: 'Date', w: '96px' }],
+              rows.map(function (x) {
+                var here = (x.vch_date === sale.vch_date &&
+                            Number(x.amount) === Number(sale.amount));
+                return { cells: [
+                  esc(x.party || '') +
+                    (here ? ' <span class="pill pill-grey">this one</span>' : ''),
+                  '<span class="clip"' + (x.description ? ' title="' + esc(x.description) + '"' : '') +
+                    '>' + esc(x.description || '—') + '</span>',
+                  moneyShort(x.amount), dmy(x.vch_date)] };
+              }), 'No comparable earlier sale.', 3) +
+            '<div class="method" id="matHistWhat"><strong>' + rows.length + ' sales of ' +
+            what + '</strong> — never averaged. ' + matchRule() + '</div>';
         });
+    }
+
+    /* Said in full both times, because the panel that reports nothing to
+       compare against is the one he will doubt. */
+    function matchRule() {
+      return 'Matched on the item name AND the description: fuzzy on words, exact on ' +
+             'numbers — “130 FEET LENGTH” and “130 FEET” are one machine, “130 FEET” ' +
+             'and “38 FEET” are not. A sale with no description matches only other ' +
+             'sales with no description.';
     }
 
     function matOther(item) {
@@ -2987,7 +2971,7 @@ upload_token = (shown on the download screen)</pre>
       }
       $('matOtherOut').innerHTML = '<div class="loading">Looking…</div>';
       Promise.resolve(REF.supabase().rpc('busy_item_price_history',
-        { p_company: firm, p_item: hits[0].item }))
+        { p_company: firm, p_item: hits[0].item, p_desc: null, p_match_desc: false }))
         .then(function (r) {
           if (!r || r.error) { $('matOtherOut').innerHTML = '<div class="loading">Could not load it.</div>'; return; }
           var near = (r.data || []).filter(function (x) { return Number(x.amount); });
@@ -2995,7 +2979,12 @@ upload_token = (shown on the download screen)</pre>
           $('matOtherOut').innerHTML = '<div class="method" style="font-size:13px; color:var(--ink)">' +
             esc(hits[0].item) + ': ' + near.map(function (x) {
               return moneyShort(x.amount) + ' in ' + new Date(x.vch_date).getFullYear();
-            }).join(' · ') + '</div>';
+            }).join(' · ') + '</div>' +
+            /* Said plainly, because the panel above it does match on the
+               description and these two lists must not be read as the same
+               kind of thing. */
+            '<div class="method">Every priced sale of that item — not narrowed by ' +
+            'description, because there is no sale of it in hand to compare against.</div>';
         });
     }
   }
@@ -3869,6 +3858,12 @@ upload_token = (shown on the download screen)</pre>
       setView(asked.view);
       if (refnav) refnav.select(asked.view, asked.firm);
     } else if (refnav) {
+      /* No screen asked for, so open the firm he was last in -- the same
+         answer the menu folds itself to. RS is a fraction of the data and he
+         works in one firm at a time; arriving in the other one every morning
+         is two taps he should not have to make. */
+      var last = REFNav.lastSection && REFNav.lastSection(user);
+      if (last === 'REF' || last === 'RS') setFirm(last);
       refnav.select('price', firm);
     }
   }

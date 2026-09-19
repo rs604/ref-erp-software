@@ -1818,6 +1818,54 @@ async function openBusy(server, browser, user) {
       step3.monthsOnPanel && step3.shareOnPanel && step3.otherItemOnPanel,
       JSON.stringify(step3));
 
+    /* THE PRICE HISTORY IS ABOUT ONE MACHINE, NOT ONE NAME.
+
+       Under SKD CONVEYOR the old panel listed an extension at 3.25 lakh
+       beside a complete assembly line at 26.25 lakh and called it a price
+       history. The server compares the description now, so the panel must
+       show what it compared -- and must say "no comparable earlier sale"
+       rather than draw an empty box. */
+    const hist = await p3.evaluate(() => {
+      const el = document.getElementById('matHist');
+      const t = el.textContent.replace(/\s+/g, ' ');
+      return {
+        text: t,
+        rows: el.querySelectorAll('.tbl tbody tr').length,
+        cards: el.querySelectorAll('.rc').length,
+        marksThisOne: /this one/.test(t),
+        // Its own element: textContent runs the cells together, so the amount
+        // above this line ends "...12,00,000" and "2 sales of" has no edge.
+        what: (document.getElementById('matHistWhat') || {}).textContent || '',
+      };
+    });
+    record('the price history says HOW MANY sales it compared, and of what',
+      /^2 sales of INCLINED SLAT CONVEYOR, L 24 FT X 3 FT W\b/.test(hist.what),
+      hist.what.slice(0, 120));
+    record('it prints every matched description, so what was compared can be seen',
+      /24 FT L X 3 FT W/.test(hist.text) && /L 24 FT X 3 FT W/.test(hist.text),
+      `${hist.rows} rows · ${hist.cards} cards`);
+    record('it never lists a sale of a different size under this one\'s heading',
+      !/16 FEET/.test(hist.text) && !/20"/.test(hist.text), hist.text.slice(0, 200));
+    record('and it says which of them is the sale in hand', hist.marksThisOne);
+    record('the rule itself is on the screen, not only in the code',
+      /fuzzy on words, exact on numbers/i.test(hist.text) &&
+      /no description matches only other sales with no description/i.test(hist.text));
+    record('the matched sales are on the phone too, as cards, not a hidden table',
+      hist.cards >= 2, `${hist.cards} cards`);
+
+    /* The stub answers the same rows whatever it is asked, so the only place
+       the new rule can be checked on this side is the QUESTION. It must carry
+       the sale's own description and ask the server to match on it -- and the
+       "check another item" box, which has no sale in hand, must not. */
+    const asked = await p3.evaluate(() => (window.__TEST_RPCS__ || [])
+      .filter(c => c.fn === 'busy_item_price_history').map(c => c.params));
+    record('the price history asks the server to match on the description',
+      asked.length > 0 && asked[asked.length - 1].p_match_desc === true,
+      JSON.stringify(asked[asked.length - 1] || null));
+    record('and hands it the description of the sale he picked',
+      asked.length > 0 && asked[asked.length - 1].p_desc === 'L 24 FT X 3 FT W',
+      String(asked.length && asked[asked.length - 1].p_desc));
+
     // Sum the parts, compare against the whole -- his rule, now standard.
     await p3.evaluate(() => document.querySelector('.rep-tab[data-rep="items"]').click());
     await p3.waitForTimeout(900);

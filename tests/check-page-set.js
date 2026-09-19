@@ -58,6 +58,14 @@ const RULES = [
   // menu now, and this is what stops a new page shipping without it.
   { what: 'nav.js, the one menu every page loads',
     find: /<script src="(nav\.js)"><\/script>/, sameAcrossPages: true },
+  /* THE PALETTE. busy.html kept its own copy of the ERP's colours, so the
+     border was #dfe4ea on one screen and #d8dee5 on the next, the page was
+     white here and grey there, and the left menu was near-black on both
+     because nav.js had a third copy. One file now, linked by every page,
+     and the version on the link must be the build version or a browser
+     serves yesterday's colours over today's page. */
+  { what: 'theme.css, the one palette every page links',
+    find: /<link rel="stylesheet" href="(theme\.css\?v=\d+)">/, sameAcrossPages: true },
   { what: 'somewhere for that menu to be drawn',
     find: /(id="refnav-host")/, sameAcrossPages: true },
 ];
@@ -99,10 +107,45 @@ for (const [what, values] of Object.entries(seen)) {
   }
   const v = onDisk.trim();
   for (const page of PAGES) {
-    const m = /window\.__BUILD_VERSION__ = '(\d+)';/.exec(fs.readFileSync(path.join(ROOT, page), 'utf8'));
+    const src = fs.readFileSync(path.join(ROOT, page), 'utf8');
+    const m = /window\.__BUILD_VERSION__ = '(\d+)';/.exec(src);
     if (m && m[1] !== v) {
       findings.push(`${page} says it is build ${m[1]} but version.txt says ${v} — ` +
                     `every open copy of that page would reload itself for ever`);
+    }
+    // A page reload adds ?_v= to the PAGE. It does nothing for a stylesheet
+    // the browser already has, so theme.css carries the build version too.
+    const t = /theme\.css\?v=(\d+)/.exec(src);
+    if (t && t[1] !== v) {
+      findings.push(`${page} asks for theme.css?v=${t[1]} but version.txt says ${v} — ` +
+                    `it would be served yesterday's colours`);
+    }
+  }
+}
+
+/* A CSS VARIABLE THAT DOES NOT EXIST FAILS IN SILENCE.
+
+   busy.html's "Checking who you are." overlay covered the whole screen with
+   background:var(--bg). --bg is not a colour in this ERP and never was, so
+   the overlay was transparent and the half-drawn page showed through it.
+   Nothing reported it: a browser does not warn, the page parses, and the
+   tests stub the data so the overlay is gone before a screenshot is taken.
+
+   var(--x, fallback) is fine -- it says what happens when --x is absent.
+   var(--x) alone must resolve, in theme.css or in the page's own rules. */
+{
+  const palette = new Set(
+    [...fs.readFileSync(path.join(ROOT, 'theme.css'), 'utf8').matchAll(/--([a-z0-9-]+)\s*:/g)]
+      .map(m => m[1]));
+  for (const file of [...PAGES, 'nav.js']) {
+    const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
+    const own = new Set([...src.matchAll(/--([a-z0-9-]+)\s*:/g)].map(m => m[1]));
+    const used = new Set([...src.matchAll(/var\(\s*--([a-z0-9-]+)\s*\)/g)].map(m => m[1]));
+    for (const name of used) {
+      if (!palette.has(name) && !own.has(name)) {
+        findings.push(`${file} uses var(--${name}), which is defined nowhere — ` +
+                      `that rule does nothing, silently`);
+      }
     }
   }
 }

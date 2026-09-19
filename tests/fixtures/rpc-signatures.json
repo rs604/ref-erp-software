@@ -1,335 +1,352 @@
 {
- "_refresh": "see tests/check-rpc-calls.js",
- "_taken_from": "public schema of refcon-erp, 19 Sep 2026, after migration 70",
- "functions": {
-  "busy_clear_history": {
-   "args": [
-    "p_confirm"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_clear_preview": {
-   "args": [],
-   "total": 0,
-   "with_defaults": 0
-  },
-  "busy_compact": {
-   "args": [
-    "p_text"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_customer_detail": {
-   "args": [
-    "p_company",
-    "p_customer"
-   ],
-   "total": 2,
-   "with_defaults": 0
-  },
-  "busy_customer_list": {
-   "args": [
-    "p_company"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_doc_types": {
-   "args": [
-    "p_company"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_fy_of": {
-   "args": [
-    "p_d"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_fy_start": {
-   "args": [
-    "p_fy"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_gst_ledger": {
-   "args": [
-    "p_company"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_import_abandon": {
-   "args": [
-    "p_batch_id"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_import_finalise": {
-   "args": [
-    "p_batch_id",
-    "p_company",
-    "p_fy"
-   ],
-   "total": 3,
-   "with_defaults": 0
-  },
-  "busy_import_fy": {
-   "args": [
-    "p_batch_id",
-    "p_company",
-    "p_fy",
-    "p_rows"
-   ],
-   "total": 4,
-   "with_defaults": 0
-  },
-  "busy_import_rows": {
-   "args": [
-    "p_batch_id",
-    "p_rows"
-   ],
-   "total": 2,
-   "with_defaults": 0
-  },
-  "busy_import_stage": {
-   "args": [
-    "p_batch_id",
-    "p_company",
-    "p_fy",
-    "p_rows"
-   ],
-   "total": 4,
-   "with_defaults": 0
-  },
-  "busy_is_tax_line": {
-   "args": [
-    "p_group"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_is_value_line": {
-   "args": [
-    "p_group",
-    "p_ledger"
-   ],
-   "total": 2,
-   "with_defaults": 0
-  },
-  "busy_item_price_history": {
-   "args": [
-    "p_company",
-    "p_item"
-   ],
-   "total": 2,
-   "with_defaults": 0
-  },
-  "busy_item_sales": {
-   "args": [
-    "p_company",
-    "p_item"
-   ],
-   "total": 2,
-   "with_defaults": 0
-  },
-  "busy_items_sold": {
-   "args": [
-    "p_company"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_ledger": {
-   "args": [
-    "p_company",
-    "p_party",
-    "p_from",
-    "p_to"
-   ],
-   "total": 4,
-   "with_defaults": 0
-  },
-  "busy_material_prices": {
-   "args": [
-    "p_company",
-    "p_on",
-    "p_months_before"
-   ],
-   "total": 3,
-   "with_defaults": 2
-  },
-  "busy_monthly_totals": {
-   "args": [
-    "p_company"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_near": {
-   "args": [
-    "p_a",
-    "p_b"
-   ],
-   "total": 2,
-   "with_defaults": 0
-  },
-  "busy_normalise": {
-   "args": [
-    "p_text"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_numbers": {
-   "args": [
-    "p_text"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_party_list": {
-   "args": [
-    "p_company",
-    "p_query",
-    "p_limit"
-   ],
-   "total": 3,
-   "with_defaults": 2
-  },
-  "busy_row_counts": {
-   "args": [],
-   "total": 0,
-   "with_defaults": 0
-  },
-  "busy_search": {
-   "args": [
-    "p_company",
-    "p_query",
-    "p_party",
-    "p_doc_types",
-    "p_date_from",
-    "p_date_to",
-    "p_limit",
-    "p_offset"
-   ],
-   "total": 8,
-   "with_defaults": 7
-  },
-  "busy_search_count": {
-   "args": [
-    "p_company",
-    "p_query",
-    "p_party",
-    "p_doc_types",
-    "p_date_from",
-    "p_date_to",
-    "p_undated_only"
-   ],
-   "total": 7,
-   "with_defaults": 6
-  },
-  "busy_split_query": {
-   "args": [
-    "p_company",
-    "p_words"
-   ],
-   "total": 2,
-   "with_defaults": 0
-  },
-  "busy_vouchers": {
-   "args": [
-    "p_company"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "busy_word_matches": {
-   "args": [
-    "p_words",
-    "p_comp",
-    "p_word",
-    "p_word_compact"
-   ],
-   "total": 4,
-   "with_defaults": 0
-  },
-  "create_login_for_party": {
-   "args": [
-    "p_party_id",
-    "p_login_email",
-    "p_password"
-   ],
-   "total": 3,
-   "with_defaults": 0
-  },
-  "current_party_id": {
-   "args": [],
-   "total": 0,
-   "with_defaults": 0
-  },
-  "current_salary": {
-   "args": [
-    "p_party_id",
-    "p_on"
-   ],
-   "total": 2,
-   "with_defaults": 1
-  },
-  "has_permission": {
-   "args": [
-    "p_key"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "is_owner": {
-   "args": [],
-   "total": 0,
-   "with_defaults": 0
-  },
-  "job_secret": {
-   "args": [
-    "p_key"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "list_public_tables": {
-   "args": [],
-   "total": 0,
-   "with_defaults": 0
-  },
-  "next_human_number": {
-   "args": [
-    "p_series_key"
-   ],
-   "total": 1,
-   "with_defaults": 0
-  },
-  "prune_backup_runs": {
-   "args": [],
-   "total": 0,
-   "with_defaults": 0
-  },
-  "replace_attachment": {
-   "args": [
-    "p_old_id",
-    "p_file_name",
-    "p_mime_type",
-    "p_size_bytes",
-    "p_storage_bucket",
-    "p_storage_path",
-    "p_checksum"
-   ],
-   "total": 7,
-   "with_defaults": 1
+  "_refresh": "see tests/check-rpc-calls.js",
+  "_taken_from": "public schema of refcon-erp, 19 Sep 2026, after migration 71",
+  "functions": {
+    "busy_clear_history": {
+      "args": [
+        "p_confirm"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_clear_preview": {
+      "args": [],
+      "total": 0,
+      "with_defaults": 0
+    },
+    "busy_compact": {
+      "args": [
+        "p_text"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_comparable": {
+      "args": [
+        "p_a",
+        "p_b"
+      ],
+      "total": 2,
+      "with_defaults": 0
+    },
+    "busy_customer_detail": {
+      "args": [
+        "p_company",
+        "p_customer"
+      ],
+      "total": 2,
+      "with_defaults": 0
+    },
+    "busy_customer_list": {
+      "args": [
+        "p_company"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_desc_words": {
+      "args": [
+        "p_text"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_doc_types": {
+      "args": [
+        "p_company"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_fy_of": {
+      "args": [
+        "p_d"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_fy_start": {
+      "args": [
+        "p_fy"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_gst_ledger": {
+      "args": [
+        "p_company"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_import_abandon": {
+      "args": [
+        "p_batch_id"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_import_finalise": {
+      "args": [
+        "p_batch_id",
+        "p_company",
+        "p_fy"
+      ],
+      "total": 3,
+      "with_defaults": 0
+    },
+    "busy_import_fy": {
+      "args": [
+        "p_batch_id",
+        "p_company",
+        "p_fy",
+        "p_rows"
+      ],
+      "total": 4,
+      "with_defaults": 0
+    },
+    "busy_import_rows": {
+      "args": [
+        "p_batch_id",
+        "p_rows"
+      ],
+      "total": 2,
+      "with_defaults": 0
+    },
+    "busy_import_stage": {
+      "args": [
+        "p_batch_id",
+        "p_company",
+        "p_fy",
+        "p_rows"
+      ],
+      "total": 4,
+      "with_defaults": 0
+    },
+    "busy_is_tax_line": {
+      "args": [
+        "p_group"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_is_value_line": {
+      "args": [
+        "p_group",
+        "p_ledger"
+      ],
+      "total": 2,
+      "with_defaults": 0
+    },
+    "busy_item_price_history": {
+      "args": [
+        "p_company",
+        "p_item",
+        "p_desc",
+        "p_match_desc"
+      ],
+      "total": 4,
+      "with_defaults": 2
+    },
+    "busy_item_sales": {
+      "args": [
+        "p_company",
+        "p_item"
+      ],
+      "total": 2,
+      "with_defaults": 0
+    },
+    "busy_items_sold": {
+      "args": [
+        "p_company"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_ledger": {
+      "args": [
+        "p_company",
+        "p_party",
+        "p_from",
+        "p_to"
+      ],
+      "total": 4,
+      "with_defaults": 0
+    },
+    "busy_material_prices": {
+      "args": [
+        "p_company",
+        "p_on",
+        "p_months_before"
+      ],
+      "total": 3,
+      "with_defaults": 2
+    },
+    "busy_monthly_totals": {
+      "args": [
+        "p_company"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_near": {
+      "args": [
+        "p_a",
+        "p_b"
+      ],
+      "total": 2,
+      "with_defaults": 0
+    },
+    "busy_normalise": {
+      "args": [
+        "p_text"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_numbers": {
+      "args": [
+        "p_text"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_party_list": {
+      "args": [
+        "p_company",
+        "p_query",
+        "p_limit"
+      ],
+      "total": 3,
+      "with_defaults": 2
+    },
+    "busy_row_counts": {
+      "args": [],
+      "total": 0,
+      "with_defaults": 0
+    },
+    "busy_search": {
+      "args": [
+        "p_company",
+        "p_query",
+        "p_party",
+        "p_doc_types",
+        "p_date_from",
+        "p_date_to",
+        "p_limit",
+        "p_offset"
+      ],
+      "total": 8,
+      "with_defaults": 7
+    },
+    "busy_search_count": {
+      "args": [
+        "p_company",
+        "p_query",
+        "p_party",
+        "p_doc_types",
+        "p_date_from",
+        "p_date_to",
+        "p_undated_only"
+      ],
+      "total": 7,
+      "with_defaults": 6
+    },
+    "busy_split_query": {
+      "args": [
+        "p_company",
+        "p_words"
+      ],
+      "total": 2,
+      "with_defaults": 0
+    },
+    "busy_vouchers": {
+      "args": [
+        "p_company"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_word_matches": {
+      "args": [
+        "p_words",
+        "p_comp",
+        "p_word",
+        "p_word_compact"
+      ],
+      "total": 4,
+      "with_defaults": 0
+    },
+    "create_login_for_party": {
+      "args": [
+        "p_party_id",
+        "p_login_email",
+        "p_password"
+      ],
+      "total": 3,
+      "with_defaults": 0
+    },
+    "current_party_id": {
+      "args": [],
+      "total": 0,
+      "with_defaults": 0
+    },
+    "current_salary": {
+      "args": [
+        "p_party_id",
+        "p_on"
+      ],
+      "total": 2,
+      "with_defaults": 1
+    },
+    "has_permission": {
+      "args": [
+        "p_key"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "is_owner": {
+      "args": [],
+      "total": 0,
+      "with_defaults": 0
+    },
+    "job_secret": {
+      "args": [
+        "p_key"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "list_public_tables": {
+      "args": [],
+      "total": 0,
+      "with_defaults": 0
+    },
+    "next_human_number": {
+      "args": [
+        "p_series_key"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "prune_backup_runs": {
+      "args": [],
+      "total": 0,
+      "with_defaults": 0
+    },
+    "replace_attachment": {
+      "args": [
+        "p_old_id",
+        "p_file_name",
+        "p_mime_type",
+        "p_size_bytes",
+        "p_storage_bucket",
+        "p_storage_path",
+        "p_checksum"
+      ],
+      "total": 7,
+      "with_defaults": 1
+    }
   }
- }
 }

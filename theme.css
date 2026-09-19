@@ -1,0 +1,72 @@
+/* ============================================================
+   THE ERP'S COLOURS — one file, every page.
+
+   busy.html was built as its own page and kept its own copy of the
+   palette. The two copies drifted: the border was #dfe4ea on one screen
+   and #d8dee5 on the next, the page behind the cards was white on one
+   and grey on the other, and the left menu was near-black on both
+   because nav.js had a third copy nobody was looking at. Each was a
+   small thing. The cause was that there were three places to change.
+
+   So: ONE definition. A page LINKS this file and then writes only what
+   is its own. Changing the ERP's blue is one line here, and every screen
+   and the menu move together.
+
+     <link rel="stylesheet" href="theme.css">
+     <style> ... the page's own rules ... </style>
+
+   The link comes FIRST, so a page that still keeps a palette of its own
+   (the sign-in, reset and submit screens do) overrides rather than
+   fights it. Those three are a second vocabulary -- --primary and --bg
+   rather than --steel and --paper -- and folding them in would restyle
+   three screens nobody asked about. They are listed at the bottom as
+   what is left to do, not quietly changed.
+   ============================================================ */
+:root {
+  /* Ink and paper */
+  --ink: #1a2229;             /* everything that is read */
+  --paper: #f4f6f8;           /* the page behind the cards */
+  /* A SCREEN THAT IS ONE LONG TABLE SITS ON WHITE. Busy Data is read for an
+     hour at a time and the alternating rows are the only tint on it; grey
+     paper behind them puts a third shade in the same eye. That is a frozen
+     decision with a test on it (busy.test.js, "the page is white"), so it
+     is a NAMED colour here rather than a second palette over there. */
+  --paper-plain: #ffffff;
+  --surface: #ffffff;         /* a card */
+  --surface-sunken: #eef1f4;  /* a well inside a card */
+  --border: #d8dee5;
+
+  /* The one blue the ERP is built out of */
+  --steel: #2d4a5e;
+  --steel-dark: #1f3547;
+  --steel-tint: #e7edf1;
+
+  /* Meaning, never decoration */
+  --amber: #b7791f;  --amber-bg: #fbf1de;
+  --green: #2f7a52;  --green-bg: #e7f3ec;
+  --slate: #5b6b7a;  --slate-bg: #eaedf0;
+  --danger: #a13d33; --danger-bg: #fbeceb;
+  --muted: #6b7684;
+
+  /* A long table, read for an hour. Rows alternate white and a very
+     light blue, the heading is a darker version of the same blue, and
+     nothing on the table is stronger than that. The one loud colour is
+     the search highlight, because it has to be read at a glance. */
+  --row-alt: #f4f8fb;
+  --row-head: #dbe6ef;
+  --hit: #ffd21f;
+  --hit-row: #fffbe6;
+
+  /* The left menu, drawn by nav.js on every page. It reads the tokens
+     above rather than carrying hexes of its own -- that is how it came
+     to be near-black while the rest of the ERP was steel blue. */
+  --nav-bg: var(--steel-dark);
+  --nav-ink: rgba(255,255,255,.82);
+  --nav-ink-bright: #ffffff;
+  --nav-ink-dim: rgba(255,255,255,.45);
+  --nav-hover: rgba(255,255,255,.09);
+  --nav-active: rgba(255,255,255,.16);
+  --nav-rule: rgba(255,255,255,.12);
+  --nav-accent: var(--amber);
+  --sidebar-w: 232px;
+}

@@ -122,19 +122,32 @@
     check:    'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
   };
 
+  /* EVERY COLOUR HERE COMES FROM theme.css, the one palette the whole ERP
+     is drawn from. The menu used to carry its own near-black -- #1a2229 --
+     so it sat on every page looking like a different application while the
+     rest of the ERP was steel blue. The hexes after the commas are what a
+     browser falls back to if theme.css did not load, and nothing else. */
   var CSS = [
     '.refnav-shell { display:flex; min-height:100vh; }',
-    '.refnav { width:232px; flex:0 0 232px; background:#1a2229; color:#fff;',
+    '.refnav { width:var(--sidebar-w,232px); flex:0 0 var(--sidebar-w,232px);',
+    '  background:var(--nav-bg,#1f3547); color:var(--nav-ink-bright,#fff);',
     '  display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto; }',
-    '.refnav-brand { padding:18px 18px 14px; border-bottom:1px solid rgba(255,255,255,.1); }',
+    '.refnav-brand { padding:18px 18px 14px; border-bottom:1px solid var(--nav-rule,rgba(255,255,255,.12)); }',
     '.refnav-brand .n { font-weight:700; font-size:16px; letter-spacing:1.5px; }',
-    '.refnav-brand .t { font-size:12px; color:rgba(255,255,255,.55); letter-spacing:1.4px; margin-top:2px; }',
+    '.refnav-brand .t { font-size:12px; color:var(--nav-ink-dim,rgba(255,255,255,.45)); letter-spacing:1.4px; margin-top:2px; }',
     '.refnav-list { flex:1; padding:10px 8px; }',
     '.refnav-item { display:flex; align-items:center; gap:10px; width:100%;',
-    '  background:none; border:0; color:rgba(255,255,255,.82); font:inherit; font-size:13px;',
+    '  background:none; border:0; border-left:3px solid transparent;',
+    '  color:var(--nav-ink,rgba(255,255,255,.82)); font:inherit; font-size:13px;',
     '  text-align:left; padding:9px 10px; border-radius:6px; cursor:pointer; text-decoration:none; }',
-    '.refnav-item:hover { background:rgba(255,255,255,.09); color:#fff; }',
-    '.refnav-item.active { background:rgba(255,255,255,.14); color:#fff; font-weight:600; }',
+    '.refnav-item:hover { background:var(--nav-hover,rgba(255,255,255,.09)); color:var(--nav-ink-bright,#fff); }',
+    /* A ring of our own. Left to the browser it is rgb(229,151,0) on a dark
+       background in Chromium -- all but identical to the amber edge that
+       means "you are here", so opening the drawer showed two rows that both
+       looked picked. White cannot be mistaken for the accent. */
+    '.refnav-item:focus-visible { outline:2px solid var(--nav-ink-bright,#fff); outline-offset:-2px; }',
+    '.refnav-item.active { background:var(--nav-active,rgba(255,255,255,.16));',
+    '  color:var(--nav-ink-bright,#fff); font-weight:600; border-left-color:var(--nav-accent,#b7791f); }',
     '.refnav-item svg { width:17px; height:17px; flex:0 0 17px; }',
     '.refnav-item .lbl { flex:1; min-width:0; }',
     '.refnav-arrow { width:13px; height:13px; transition:transform .15s ease; opacity:.65; }',
@@ -143,23 +156,34 @@
     '.refnav-children.open { display:block; }',
     '.refnav-children .refnav-item { font-size:12.5px; padding-left:14px; }',
     '.refnav-section { font-size:12px; letter-spacing:.8px; text-transform:uppercase;',
-    '  color:rgba(255,255,255,.4); padding:9px 12px 3px; }',
-    '.refnav-divider { border-top:1px solid rgba(255,255,255,.12); margin:10px 6px 2px; }',
+    '  color:var(--nav-ink-dim,rgba(255,255,255,.45)); padding:9px 12px 3px; }',
+    /* REF and RS are the two BRANCHES of the menu, not faint labels above it,
+       so they are bright and bold and they fold. He works in one firm at a
+       time and RS is a fraction of the data. */
+    '.refnav-sec { font-weight:700; letter-spacing:.8px; text-transform:uppercase;',
+    '  font-size:12px; color:var(--nav-ink-bright,#fff); margin-top:6px; }',
+    '.refnav-sec .refnav-arrow { margin-left:auto; }',
+    '.refnav-sub { display:none; }',
+    '.refnav-sub.open { display:block; }',
+    /* Stepped in under its heading, so the fold has somewhere to fold into
+       and REF is plainly the branch these four hang from. */
+    '.refnav-sub .refnav-item { padding-left:26px; }',
+    '.refnav-divider { border-top:1px solid var(--nav-rule,rgba(255,255,255,.12)); margin:10px 6px 2px; }',
     /* A screen that is not built yet says so. It is never a working-looking
        button that does nothing. */
     '.refnav-soon { display:flex; align-items:center; gap:10px; padding:9px 10px;',
-    '  font-size:13px; color:rgba(255,255,255,.34); cursor:default; }',
+    '  font-size:13px; color:var(--nav-ink-dim,rgba(255,255,255,.45)); cursor:default; }',
     '.refnav-soon svg { width:17px; height:17px; flex:0 0 17px; opacity:.5; }',
     '.refnav-soon .lbl { flex:1; min-width:0; }',
     /* 12px is the floor for anything anyone has to read -- docs/23 section 9.
        This said "not built yet" at 11.5px and the phone test caught it. */
     '.refnav-soon .tag { font-size:12px; font-style:italic; white-space:nowrap; }',
     '.refnav-children .refnav-soon { font-size:12.5px; padding-left:14px; }',
-    '.refnav-foot { padding:12px 18px; border-top:1px solid rgba(255,255,255,.1);',
-    '  font-size:12px; color:rgba(255,255,255,.45); }',
+    '.refnav-foot { padding:12px 18px; border-top:1px solid var(--nav-rule,rgba(255,255,255,.12));',
+    '  font-size:12px; color:var(--nav-ink-dim,rgba(255,255,255,.45)); }',
     /* The hamburger only exists where the menu cannot. */
-    '.refnav-open-btn { display:none; background:none; border:1px solid #d9dfe5; border-radius:8px;',
-    '  color:#1a2229; cursor:pointer; flex:0 0 auto; width:44px; height:44px;',
+    '.refnav-open-btn { display:none; background:none; border:1px solid var(--border,#d8dee5); border-radius:8px;',
+    '  color:var(--ink,#1a2229); cursor:pointer; flex:0 0 auto; width:44px; height:44px;',
     '  align-items:center; justify-content:center; }',
     '.refnav-backdrop { display:none; }',
     '@media (max-width:880px) {',
@@ -176,9 +200,28 @@
     '}',
   ].join('\n');
 
+  /* WHICH FIRM IS OPEN, REMEMBERED PER PERSON.
+
+     Keyed on the signed-in person's id, so two people sharing one machine
+     keep their own answer, and localStorage is wrapped both ways: a phone
+     in private mode throws on read AND on write, and a menu that cannot be
+     drawn because a preference could not be stored is a worse fault than a
+     preference that is forgotten. */
+  function memKey(user) { return 'refnav.section.' + ((user && user.id) || 'anon'); }
+  function remembered(user) {
+    try { return window.localStorage.getItem(memKey(user)) || null; } catch (e) { return null; }
+  }
+  function remember(user, sec) {
+    try { window.localStorage.setItem(memKey(user), sec); } catch (e) { /* nothing to do */ }
+  }
+
   function svg(path) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' +
            '<path d="' + path + '"/></svg>';
+  }
+  function arrow() {
+    return '<svg class="refnav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+           'stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>';
   }
   function esc(s) {
     return String(s === null || s === undefined ? '' : s)
@@ -259,10 +302,42 @@
         html += '<button type="button" class="refnav-item' + (openNow ? ' open' : '') +
                 '" data-toggle="' + id + '">' +
                 svg(ICONS[entry.icon] || ICONS.box) +
-                '<span class="lbl">' + esc(entry.label) + '</span>' +
-                '<svg class="refnav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>' +
+                '<span class="lbl">' + esc(entry.label) + '</span>' + arrow() +
                 '</button><div class="refnav-children' + (openNow ? ' open' : '') + '" id="' + id + '">';
-        kids.forEach(function (k) { html += leafHtml(k, opts, n++); });
+
+        /* A heading and the screens under it are one thing that opens and
+           shuts together. Everything before the first heading has no heading
+           and is simply listed. */
+        var groups = [], cur = null;
+        kids.forEach(function (k) {
+          if (k.section) { cur = { name: k.label || k.section, items: [] }; groups.push(cur); return; }
+          if (!cur) { cur = { name: null, items: [] }; groups.push(cur); }
+          cur.items.push(k);
+        });
+
+        var named = groups.filter(function (g) { return g.name; });
+        var want = remembered(user);
+        // The one he used last. Failing that, the first -- never none, and
+        // never all of them.
+        var openSec = named.some(function (g) { return g.name === want; })
+          ? want : (named.length ? named[0].name : null);
+
+        groups.forEach(function (g) {
+          if (!g.name) {
+            g.items.forEach(function (k) { html += leafHtml(k, opts, n++); });
+            return;
+          }
+          var sid = 'refnav-sec-' + (n++);
+          var on = (g.name === openSec);
+          html += '<button type="button" class="refnav-item refnav-sec' + (on ? ' open' : '') +
+                  '" data-sectoggle="' + sid + '" data-sec="' + esc(g.name) + '"' +
+                  ' aria-expanded="' + (on ? 'true' : 'false') + '" aria-controls="' + sid + '">' +
+                  '<span class="lbl">' + esc(g.name) + '</span>' + arrow() + '</button>' +
+                  '<div class="refnav-sub' + (on ? ' open' : '') + '" id="' + sid +
+                  '" data-sec="' + esc(g.name) + '">';
+          g.items.forEach(function (k) { html += leafHtml(k, opts, n++); });
+          html += '</div>';
+        });
         html += '</div>';
         return;
       }
@@ -324,8 +399,10 @@
       }
       document.body.style.overflow = open ? 'hidden' : '';
       if (open) {
-        var first = host.querySelector('.refnav-item');
-        if (first) first.focus();
+        // The screen he is on, not the top of the list: opening the drawer
+        // should put him where he already is.
+        var go = host.querySelector('.refnav-item.active') || host.querySelector('.refnav-item');
+        if (go) go.focus();
       }
     }
     function isOpen() { return shell.classList.contains('refnav-on'); }
@@ -342,6 +419,9 @@
     /* Bound once, to the list, so a menu entry added to MENU later needs no
        wiring of its own. */
     host.addEventListener('click', function (e) {
+      var sec = e.target.closest('[data-sectoggle]');
+      if (sec) { toggleSection(sec); return; }
+
       var toggle = e.target.closest('[data-toggle]');
       if (toggle) {
         var kids = document.getElementById(toggle.dataset.toggle);
@@ -353,10 +433,38 @@
       // Picking anything closes the drawer: on a phone it is covering the
       // very thing that was just asked for.
       setOpen(false);
+      rememberSectionOf(item);
       if (item.tagName === 'A') return;          // a link to another page: let it go
       markActive(item);
       if (opts.onView) opts.onView(item.dataset.view, item.dataset.firm || null);
     });
+
+    /* Opening one heading shuts the others beside it. "I work in one firm at
+       a time" -- so the menu shows one firm's screens, not nine rows. */
+    function setSection(btn, open) {
+      var body = document.getElementById(btn.dataset.sectoggle);
+      if (body) body.classList.toggle('open', open);
+      btn.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (!open) return;
+      var within = btn.closest('.refnav-children') || host;
+      Array.prototype.forEach.call(within.querySelectorAll('[data-sectoggle]'), function (other) {
+        if (other !== btn) setSection(other, false);
+      });
+      remember(opts.user, btn.dataset.sec);
+    }
+    function toggleSection(btn) {
+      var body = document.getElementById(btn.dataset.sectoggle);
+      setSection(btn, !(body && body.classList.contains('open')));
+    }
+    function sectionButtonOf(item) {
+      var sub = item.closest ? item.closest('.refnav-sub') : null;
+      return sub ? host.querySelector('[data-sectoggle="' + sub.id + '"]') : null;
+    }
+    function rememberSectionOf(item) {
+      var btn = sectionButtonOf(item);
+      if (btn) remember(opts.user, btn.dataset.sec);
+    }
 
     function markActive(item) {
       Array.prototype.forEach.call(host.querySelectorAll('.refnav-item'), function (n) {
@@ -367,11 +475,23 @@
 
     function select(view, firm) {
       var sel = '.refnav-item[data-view="' + view + '"]' + (firm ? '[data-firm="' + firm + '"]' : '');
-      markActive(host.querySelector(sel));
+      var item = host.querySelector(sel);
+      markActive(item);
+      // Arriving on a screen is using it: its firm is the one that is open,
+      // and the one that will be open next time.
+      if (item) {
+        var btn = sectionButtonOf(item);
+        if (btn) setSection(btn, true);
+      }
     }
 
     return { setOpen: setOpen, isOpen: isOpen, select: select, fromHash: fromHash };
   }
 
-  window.REFNav = { MENU: MENU, mount: mount, fromHash: fromHash };
+  /* Which firm he was last in. busy.html asks before it decides what to
+     open, so the menu and the screen agree: a menu folded out on RS above a
+     page of REF's figures would be worse than either default. */
+  function lastSection(user) { return remembered(user); }
+
+  window.REFNav = { MENU: MENU, mount: mount, fromHash: fromHash, lastSection: lastSection };
 })();

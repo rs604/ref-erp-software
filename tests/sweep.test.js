@@ -143,14 +143,18 @@ const HIDDEN_TABLES = () => {
 const results = [];
 const shots = [];
 
-async function look(page, name, file) {
+async function look(page, name, file, viewportOnly) {
   const r = await page.evaluate(OVERLAP);
   const hidden = await page.evaluate(HIDDEN_TABLES);
   const shot = path.join(OUT, file + '.png');
   // The WHOLE page, not the top of it. A fault below the fold is still a
   // fault, and the viewport-only shot is how a screen gets called clean
   // because its first 844 pixels were.
-  await page.screenshot({ path: shot, fullPage: true });
+  //
+  // The one exception is the menu drawer, which is fixed to the viewport:
+  // a full-page shot of it is a 49,000-pixel picture of the page BEHIND it
+  // with the thing being photographed as a sliver at the top.
+  await page.screenshot({ path: shot, fullPage: !viewportOnly });
   shots.push(shot);
   results.push({
     name, ok: !r.sideways && !r.overlaps.length && !hidden.length,
@@ -297,6 +301,20 @@ async function look(page, name, file) {
     await page.waitForTimeout(500);
     await look(page, 'busy: a price-history card, opened', 'busy-card-open');
   }
+  /* THE MENU IS A SCREEN TOO. It is the thing that was the wrong colour and
+     the thing REF and RS live in, and on a phone it is a drawer that covers
+     everything -- so it gets its own picture, open, at 390px. */
+  await page.evaluate(() => {
+    const b = document.querySelector('.refnav-open-btn');
+    if (b) b.click();
+  });
+  await page.waitForTimeout(500);
+  await look(page, 'busy: the menu, open, with REF folded out', 'busy-menu-open', true);
+  await page.evaluate(() => {
+    const b = document.querySelector('.refnav-backdrop');
+    if (b) b.click();
+  });
+
   results.push({
     name: 'busy.html threw nothing while every screen was opened',
     ok: berrs.length === 0, detail: berrs.slice(0, 3).join(' | '),
@@ -332,6 +350,7 @@ async function look(page, name, file) {
   });
   await desk.waitForTimeout(900);
   await look(desk, 'DESK — ledger', 'desk-ledger');
+  await look(desk, 'DESK — the menu, with one firm folded out', 'desk-menu', true);
   await H.go(desk, 'reports', 'REF');
   await desk.waitForTimeout(1200);
   await look(desk, 'DESK — reports > month by month', 'desk-reports-months');

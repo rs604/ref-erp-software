@@ -82,9 +82,17 @@ function __stubBuilder(name, args) {
   });
   return proxy;
 }
+window.__TEST_RPCS__ = [];
 window.__TEST_SUPABASE__ = {
   from: function (t) { return __stubBuilder('table:' + t, null); },
-  rpc: function (fn, params) { return __stubBuilder('rpc:' + fn, params); },
+  /* Recorded, so a test can ask what the page ASKED FOR and not only what it
+     drew with what came back. The stub answers the same fixture whatever the
+     arguments, so "is the right question being asked" has to be checked on
+     the question. */
+  rpc: function (fn, params) {
+    window.__TEST_RPCS__.push({ fn: fn, params: params || {} });
+    return __stubBuilder('rpc:' + fn, params);
+  },
   storage: {
     from: function (b) {
       return {

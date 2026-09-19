@@ -315,6 +315,107 @@ const READ_MENU = () => {
     await page.close();
   }
 
+  /* ---- 8. REF AND RS ARE THE TWO BRANCHES OF THE MENU ----
+     "Make both headings BOLD... Make them COLLAPSIBLE... Remember which is
+     open, per person... Open the one I used last; collapse the other."     */
+  {
+    const page = await browser.newPage({ viewport: { width: 1360, height: 900 } });
+    await H.open(server, page, { file: 'busy.html', user: OWNER, handlers: HANDLERS,
+                                 data: JSON.stringify(BUSY) });
+    await page.waitForSelector('#shell', { state: 'visible' });
+    await page.waitForTimeout(1400);
+
+    const read = () => page.evaluate(() => {
+      const secs = Array.from(document.querySelectorAll('[data-sectoggle]'));
+      return secs.map(b => ({
+        name: b.dataset.sec,
+        weight: getComputedStyle(b).fontWeight,
+        open: document.getElementById(b.dataset.sectoggle).classList.contains('open'),
+        shown: Array.from(document.getElementById(b.dataset.sectoggle)
+                 .querySelectorAll('.refnav-item'))
+                 .filter(i => i.getBoundingClientRect().height > 0).length,
+      }));
+    });
+
+    let secs = await read();
+    record('REF and RS are headings of their own in the menu',
+      secs.some(x => x.name === 'REF') && secs.some(x => x.name === 'RS'),
+      secs.map(x => x.name).join(' · '));
+    record('and both are BOLD, not faint labels',
+      secs.every(x => Number(x.weight) >= 700),
+      secs.map(x => `${x.name} ${x.weight}`).join(' · '));
+    record('exactly one firm is open on arrival — not both, and never none',
+      secs.filter(x => x.open).length === 1,
+      secs.map(x => `${x.name} ${x.open ? 'open' : 'shut'}`).join(' · '));
+    const ref = secs.find(x => x.name === 'REF');
+    record('the open one shows its screens', ref.open && ref.shown >= 4, `REF shows ${ref.shown}`);
+
+    // Click RS: it opens, and REF folds away.
+    await page.evaluate(() => {
+      const b = Array.from(document.querySelectorAll('[data-sectoggle]'))
+        .find(x => x.dataset.sec === 'RS');
+      if (b) b.click();
+    });
+    await page.waitForTimeout(250);
+    secs = await read();
+    record('clicking RS opens RS and folds REF away — one firm at a time',
+      secs.find(x => x.name === 'RS').open && !secs.find(x => x.name === 'REF').open,
+      secs.map(x => `${x.name} ${x.open ? 'open' : 'shut'}`).join(' · '));
+    record('and REF\'s screens are gone from the menu, not merely faint',
+      secs.find(x => x.name === 'REF').shown === 0);
+
+    record('the choice is stored against the person, not the machine',
+      await page.evaluate(() => window.localStorage.getItem('refnav.section.u-owner') === 'RS'),
+      await page.evaluate(() => window.localStorage.getItem('refnav.section.u-owner')));
+
+    // Come back tomorrow: the firm he was last in is the one that opens.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1600);
+    secs = await read();
+    record('and next time it opens the firm he used last, with the other shut',
+      secs.find(x => x.name === 'RS').open && !secs.find(x => x.name === 'REF').open,
+      secs.map(x => `${x.name} ${x.open ? 'open' : 'shut'}`).join(' · '));
+    await page.close();
+  }
+
+  /* Another person on the same machine keeps their own answer. */
+  {
+    const page = await browser.newPage({ viewport: { width: 1360, height: 900 } });
+    await H.open(server, page, { file: 'busy.html', user: OWNER, handlers: HANDLERS,
+                                 data: JSON.stringify(BUSY) });
+    await page.waitForTimeout(1200);
+    await page.evaluate(() => window.localStorage.setItem('refnav.section.someone-else', 'RS'));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1600);
+    record('one person\'s choice is not another\'s — the key carries who they are',
+      await page.evaluate(() => {
+        const b = Array.from(document.querySelectorAll('[data-sectoggle]'))
+          .find(x => x.dataset.sec === 'REF');
+        return !!b && document.getElementById(b.dataset.sectoggle).classList.contains('open');
+      }));
+    await page.close();
+  }
+
+  /* ---- 9. THE MENU IS THE ERP'S COLOUR, FROM THE ERP'S ONE FILE ---- */
+  {
+    const page = await browser.newPage({ viewport: { width: 1360, height: 900 } });
+    await H.open(server, page, { file: 'busy.html', user: OWNER, handlers: HANDLERS,
+                                 data: JSON.stringify(BUSY) });
+    await page.waitForTimeout(1400);
+    const seen = await page.evaluate(() => {
+      const nav = document.querySelector('.refnav');
+      const tok = getComputedStyle(document.documentElement).getPropertyValue('--steel-dark').trim();
+      const probe = document.createElement('div');
+      probe.style.background = tok; document.body.appendChild(probe);
+      const want = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return { nav: getComputedStyle(nav).backgroundColor, want: want, token: tok };
+    });
+    record('the left menu is not a colour of its own — it is the ERP\'s --steel-dark',
+      seen.nav === seen.want && /#1f3547/i.test(seen.token),
+      `${seen.nav} against ${seen.want} (${seen.token})`);
+  }
+
   await browser.close();
   server.close();
 
