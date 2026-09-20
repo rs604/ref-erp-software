@@ -1,6 +1,6 @@
 {
   "_refresh": "see tests/check-rpc-calls.js",
-  "_taken_from": "public schema of refcon-erp, 19 Sep 2026, after migration 71",
+  "_taken_from": "public schema of refcon-erp, 20 Sep 2026, after migration 72",
   "functions": {
     "busy_clear_history": {
       "args": [
@@ -189,6 +189,13 @@
       "total": 1,
       "with_defaults": 0
     },
+    "busy_name_key": {
+      "args": [
+        "p_text"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
     "busy_near": {
       "args": [
         "p_a",
@@ -251,6 +258,14 @@
       ],
       "total": 7,
       "with_defaults": 6
+    },
+    "busy_similar_ledgers": {
+      "args": [
+        "p_company",
+        "p_ledger"
+      ],
+      "total": 2,
+      "with_defaults": 0
     },
     "busy_split_query": {
       "args": [

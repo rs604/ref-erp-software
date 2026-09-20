@@ -855,7 +855,9 @@ function reportScreen(label, r) {
     const range = await page.evaluate(() => {
       const sel = document.getElementById('lgRange');
       return { options: [...sel.options].map(o => o.textContent), value: sel.value,
-               chips: document.querySelectorAll('#view-ledger .chip').length };
+               // scoped to the control bar: the near-identical-name note
+               // below the cards has chips of its own, and they are not ranges
+               chips: document.querySelectorAll('#view-ledger .ctl .chip').length };
     });
     record('the four range buttons are one dropdown that says which is chosen',
       range.options.length >= 4 && range.value === 'thisfy' && range.chips === 0,

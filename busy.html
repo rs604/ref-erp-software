@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789831002';</script>
+<script>window.__BUILD_VERSION__ = '1789891252';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -27,8 +27,8 @@
   window.addEventListener('online', checkVersion);
 })();
 </script>
-<link rel="stylesheet" href="theme.css?v=1789831002">
-<link rel="stylesheet" href="ui.css?v=1789831002">
+<link rel="stylesheet" href="theme.css?v=1789891252">
+<link rel="stylesheet" href="ui.css?v=1789891252">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   * { box-sizing:border-box; }
@@ -676,6 +676,7 @@
         <div id="lgBody" style="display:none">
           <div class="kpis kpis-4" id="lgKpis"></div>
           <div id="lgNotes"></div>
+          <div id="lgSimilar"></div>
 
           <div class="card" style="margin-top:14px">
             <div class="rowcount" id="lgCount"></div>
@@ -1974,6 +1975,41 @@ upload_token = (shown on the download screen)</pre>
       });
   }
 
+  /* NEARLY THE SAME NAME IS NOT THE SAME LEDGER.
+
+     Busy holds one ledger per NAME, so a party entered twice with a full
+     stop in a different place is two ledgers with two balances, and the
+     screen showed one of them as though it were the whole picture.
+
+     NOTHING IS MERGED. A ledger shows what Busy holds, not what the ERP
+     thinks it should hold; merging here would hide the very thing that
+     needs correcting, and correct it in the wrong book. This only says
+     so, beside the balance, and names the others so each can be opened
+     and looked at. */
+  function lgSimilar(party) {
+    var box = $('lgSimilar');
+    box.innerHTML = '';
+    if (!party) return;
+    Promise.resolve(REF.supabase().rpc('busy_similar_ledgers',
+      { p_company: firm, p_ledger: party }))
+      .then(function (r) {
+        if (!r || r.error) return;                 // a note is never worth a broken screen
+        var others = r.data || [];
+        if (!others.length) return;
+        var n = others.length + 1;
+        box.innerHTML = '<div class="note warn-note">' +
+          '<div><strong>' + n + ' ledgers with nearly the same name</strong> — balances are ' +
+          'separate in Busy. This one is <strong>' + esc(party) + '</strong>; the ' +
+          (others.length === 1 ? 'other is' : 'others are') + ':</div>' +
+          '<div class="chips" style="margin-top:6px">' + others.map(function (o) {
+            return '<button type="button" class="chip" data-otherledger="' + esc(o.ledger) +
+                   '">' + esc(o.ledger) + ' <strong>' + o.entries + '</strong></button>';
+          }).join('') + '</div>' +
+          '<div class="method">Adding them together is a correction to make in Busy, not ' +
+          'here. Nothing on this screen has been merged.</div></div>';
+      });
+  }
+
   function loadLedger() {
     var party = btrim($('lgParty').value);
     if (!party) { $('lgHint').style.display = ''; $('lgBody').style.display = 'none'; return; }
@@ -2040,6 +2076,7 @@ upload_token = (shown on the download screen)</pre>
         'shown, so the closing figure below is not the whole range. Narrow the dates.</div>');
     }
     $('lgNotes').innerHTML = notes.join('');
+    lgSimilar(d.party);
 
     /* ---- the table: opening row, entries, closing row ---- */
     var total = rows.length;
@@ -4141,6 +4178,15 @@ upload_token = (shown on the download screen)</pre>
      named ones cannot say. The dropdown says so rather than going on
      showing "This FY" over dates that are not this FY. */
   function markRange() { $('lgRange').value = 'custom'; }
+  /* Opening one of the near-identical ledgers from the note itself, so
+     checking the other balance is one tap and not a retyped name. */
+  $('lgSimilar').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-otherledger]');
+    if (!b) return;
+    $('lgParty').value = b.dataset.otherledger;
+    loadLedger();
+    $('lgParty').scrollIntoView({ block: 'start' });
+  });
   $('lgPrint').innerHTML = REFUI.icon('pdf');
   $('lgExcel').innerHTML = REFUI.icon('excel');
   $('lgPrint').addEventListener('click', ledgerPrint);

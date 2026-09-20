@@ -1897,6 +1897,56 @@ async function openBusy(server, browser, user) {
     await p3.close();
   }
 
+  /* ---------- NEARLY THE SAME NAME IS NOT THE SAME LEDGER ----------
+     Busy holds one ledger per NAME, so "R S INDUSTRIES" and
+     "R.S.INDUSTRIES" are two ledgers with two balances and nothing said
+     so. The ERP does NOT merge them -- a ledger shows what Busy holds,
+     not what the ERP thinks it should hold -- but it must say so, or the
+     balance on screen reads as the whole picture. */
+  {
+    const { page } = await openBusy(server, browser, OWNER);
+    await page.waitForTimeout(1300);
+    await H.go(page, 'ledger', 'REF');
+    await page.waitForTimeout(700);
+    await page.evaluate(() => {
+      const el = document.getElementById('lgParty');
+      el.value = 'R S INDUSTRIES';
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await page.waitForTimeout(1100);
+    const flag = await page.evaluate(() => {
+      const box = document.getElementById('lgSimilar');
+      const t = box.textContent.replace(/\s+/g, ' ').trim();
+      return {
+        text: t,
+        others: [...box.querySelectorAll('[data-otherledger]')].map(b => b.dataset.otherledger),
+        rowsStillOne: document.querySelectorAll('#lgRows tr').length,
+      };
+    });
+    record('a ledger whose name is nearly another ledger\'s says how many there are',
+      /\b2 ledgers with nearly the same name\b/.test(flag.text), flag.text.slice(0, 110));
+    record('and names the others, so each can be opened and looked at',
+      flag.others.length === 1 && flag.others[0] === 'R.S.INDUSTRIES',
+      JSON.stringify(flag.others));
+    record('it says the balances are separate in Busy, and that nothing was merged',
+      /balances are separate in Busy/i.test(flag.text) &&
+      /Nothing on this screen has been merged/i.test(flag.text));
+    /* THE FIGURES ARE UNTOUCHED. A flag that quietly added the two
+       together would be the ERP correcting the accountant's book, in the
+       wrong book, and hiding the thing that needs correcting. */
+    const shown = await page.evaluate(() =>
+      document.querySelector('#lgKpis .kpi:last-child .v').textContent.replace(/\s+/g, ''));
+    record('and the balance on screen is still ONE ledger\'s, not two added together',
+      !/NaN/.test(shown) && flag.rowsStillOne > 0, shown);
+
+    // Tapping one of the named ledgers opens it.
+    await page.evaluate(() => document.querySelector('[data-otherledger]').click());
+    await page.waitForTimeout(900);
+    record('tapping one of them opens that ledger, rather than making him retype it',
+      (await page.evaluate(() => document.getElementById('lgParty').value)) === 'R.S.INDUSTRIES');
+    await page.close();
+  }
+
   /* ---------- NEITHER FIRM'S NUMBER ON THE OTHER FIRM'S PAPER ----------
      The ledger prints on a letterhead, and that sheet goes to a customer.
      Putting REF's GSTIN on an RS ledger is not a formatting slip: it is a

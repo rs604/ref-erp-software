@@ -208,12 +208,17 @@
      drawn because a preference could not be stored is a worse fault than a
      preference that is forgotten. */
   function memKey(user) { return 'refnav.section.' + ((user && user.id) || 'anon'); }
-  function remembered(user) {
-    try { return window.localStorage.getItem(memKey(user)) || null; } catch (e) { return null; }
+  function modKey(user) { return 'refnav.module.' + ((user && user.id) || 'anon'); }
+  function readMem(key) {
+    try { return window.localStorage.getItem(key) || null; } catch (e) { return null; }
   }
-  function remember(user, sec) {
-    try { window.localStorage.setItem(memKey(user), sec); } catch (e) { /* nothing to do */ }
+  function writeMem(key, v) {
+    try { window.localStorage.setItem(key, v); } catch (e) { /* nothing to do */ }
   }
+  function remembered(user)      { return readMem(memKey(user)); }
+  function remember(user, sec)   { writeMem(memKey(user), sec); }
+  function rememberedModule(user)    { return readMem(modKey(user)); }
+  function rememberModule(user, mod) { writeMem(modKey(user), mod); }
 
   function svg(path) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' +
@@ -282,8 +287,35 @@
            '<span class="lbl">' + esc(leaf.label) + '</span></a>';
   }
 
+  /* ONE MODULE OPEN AT A TIME.
+
+     Masters, Purchase, Accounts, Busy Data and HRMS all have sub-items,
+     and every module holding a screen on THIS page used to open itself --
+     so admin.html opened three at once, the list ran off the screen, and
+     on a phone it filled the drawer.
+
+     Which one: the one he was last in, if it is still there; failing that
+     the first that holds a screen of this page; failing that none. Then
+     select() overrides it with the module of the screen actually showing,
+     because where he IS beats where he was. */
+  function openModules(opts) {
+    var user = opts.user, mods = [], here = null;
+    MENU.forEach(function (entry) {
+      if (entry.divider || !entry.children || !allowed(entry, user)) return;
+      var kids = visibleChildren(entry, user);
+      if (!kids.filter(function (k) { return !k.section; }).length) return;
+      mods.push(entry.label);
+      if (here === null && kids.some(function (k) { return k.page === opts.page; })) {
+        here = entry.label;
+      }
+    });
+    var want = rememberedModule(user);
+    return mods.indexOf(want) !== -1 ? want : here;
+  }
+
   function render(opts) {
     var user = opts.user, html = '', n = 0;
+    var openModule = openModules(opts);
     MENU.forEach(function (entry) {
       if (entry.divider) {
         if (!(user && user.is_owner)) return;
@@ -298,9 +330,10 @@
         var real = kids.filter(function (k) { return !k.section; });
         if (!real.length) return;
         var id = 'refnav-kids-' + (n++);
-        var openNow = real.some(function (k) { return k.page === opts.page; });
+        var openNow = (entry.label === openModule);
         html += '<button type="button" class="refnav-item' + (openNow ? ' open' : '') +
-                '" data-toggle="' + id + '">' +
+                '" data-toggle="' + id + '" data-module="' + esc(entry.label) + '"' +
+                ' aria-expanded="' + (openNow ? 'true' : 'false') + '" aria-controls="' + id + '">' +
                 svg(ICONS[entry.icon] || ICONS.box) +
                 '<span class="lbl">' + esc(entry.label) + '</span>' + arrow() +
                 '</button><div class="refnav-children' + (openNow ? ' open' : '') + '" id="' + id + '">';
@@ -425,7 +458,7 @@
       var toggle = e.target.closest('[data-toggle]');
       if (toggle) {
         var kids = document.getElementById(toggle.dataset.toggle);
-        if (kids) { kids.classList.toggle('open'); toggle.classList.toggle('open'); }
+        setModule(toggle, !(kids && kids.classList.contains('open')));
         return;
       }
       var item = e.target.closest('.refnav-item[data-page]');
@@ -434,10 +467,34 @@
       // very thing that was just asked for.
       setOpen(false);
       rememberSectionOf(item);
+      rememberModuleOf(item);
       if (item.tagName === 'A') return;          // a link to another page: let it go
       markActive(item);
       if (opts.onView) opts.onView(item.dataset.view, item.dataset.firm || null);
     });
+
+    /* OPENING A MODULE SHUTS EVERY OTHER MODULE. Not stack: with several
+       open the list runs off the screen and he scrolls to find anything.
+       The one he opens is the one he is remembered in. */
+    function setModule(btn, open) {
+      var body = document.getElementById(btn.dataset.toggle);
+      if (body) body.classList.toggle('open', open);
+      btn.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (!open) return;
+      Array.prototype.forEach.call(host.querySelectorAll('[data-module]'), function (other) {
+        if (other !== btn) setModule(other, false);
+      });
+      if (btn.dataset.module) rememberModule(opts.user, btn.dataset.module);
+    }
+    function moduleButtonOf(item) {
+      var box = item.closest ? item.closest('.refnav-children') : null;
+      return box ? host.querySelector('[data-toggle="' + box.id + '"]') : null;
+    }
+    function rememberModuleOf(item) {
+      var btn = moduleButtonOf(item);
+      if (btn && btn.dataset.module) rememberModule(opts.user, btn.dataset.module);
+    }
 
     /* Opening one heading shuts the others beside it. "I work in one firm at
        a time" -- so the menu shows one firm's screens, not nine rows. */
@@ -477,9 +534,12 @@
       var sel = '.refnav-item[data-view="' + view + '"]' + (firm ? '[data-firm="' + firm + '"]' : '');
       var item = host.querySelector(sel);
       markActive(item);
-      // Arriving on a screen is using it: its firm is the one that is open,
-      // and the one that will be open next time.
+      // Arriving on a screen is using it: its module and its firm are the
+      // ones that are open, and the ones that will be open next time.
+      // Where he IS beats where he was.
       if (item) {
+        var mod = moduleButtonOf(item);
+        if (mod) setModule(mod, true);
         var btn = sectionButtonOf(item);
         if (btn) setSection(btn, true);
       }

@@ -396,6 +396,94 @@ const READ_MENU = () => {
     await page.close();
   }
 
+  /* ---- 8b. ONE MODULE OPEN AT A TIME ----
+     "Expanding a menu must COLLAPSE whatever else is open. Not stack.
+     With several open the list runs off the screen and I scroll to find
+     anything -- worse on a phone, where it fills the panel entirely." */
+  {
+    const page = await browser.newPage({ viewport: { width: 1360, height: 900 } });
+    await H.open(server, page, { file: 'admin.html', user: OWNER, handlers: HANDLERS, data: '{}' });
+    await page.waitForTimeout(1500);
+
+    const readMods = () => page.evaluate(() => {
+      const btns = [...document.querySelectorAll('[data-module]')];
+      return btns.map(b => ({
+        name: b.dataset.module,
+        open: document.getElementById(b.dataset.toggle).classList.contains('open'),
+        shown: [...document.getElementById(b.dataset.toggle).querySelectorAll('.refnav-item, .refnav-soon')]
+                 .filter(i => i.getBoundingClientRect().height > 0).length,
+      }));
+    });
+
+    let mods = await readMods();
+    record('the menu has several modules with sub-items',
+      mods.length >= 4, mods.map(m => m.name).join(' · '));
+    record('exactly ONE of them is open on arrival — they do not stack',
+      mods.filter(m => m.open).length === 1,
+      mods.map(m => `${m.name} ${m.open ? 'open' : 'shut'}`).join(' · '));
+
+    // Open another: it opens, and the one that was open closes.
+    const was = mods.find(m => m.open).name;
+    const other = mods.find(m => !m.open).name;
+    await page.evaluate(n => {
+      const b = [...document.querySelectorAll('[data-module]')].find(x => x.dataset.module === n);
+      if (b) b.click();
+    }, other);
+    await page.waitForTimeout(250);
+    mods = await readMods();
+    record('opening one collapses whatever else was open',
+      mods.find(m => m.name === other).open && !mods.find(m => m.name === was).open,
+      `${other} open · ${was} shut`);
+    record('and the collapsed one has no rows left on the screen, not merely faint',
+      mods.find(m => m.name === was).shown === 0);
+    record('still exactly one open, whatever is clicked',
+      mods.filter(m => m.open).length === 1);
+
+    record('the choice is stored against the person, not the machine',
+      await page.evaluate(() => window.localStorage.getItem('refnav.module.u-owner')) === other,
+      await page.evaluate(() => window.localStorage.getItem('refnav.module.u-owner')));
+
+    // Come back: the module he was last in is the one open.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1600);
+    mods = await readMods();
+    record('and next time it opens the module he used last',
+      mods.find(m => m.name === other).open && mods.filter(m => m.open).length === 1,
+      mods.map(m => `${m.name} ${m.open ? 'open' : 'shut'}`).join(' · '));
+    await page.close();
+  }
+
+  /* WHERE HE IS BEATS WHERE HE WAS. "The screen I am currently on stays
+     open and highlighted, whatever else happens." */
+  {
+    const page = await browser.newPage({ viewport: { width: 1360, height: 900 } });
+    await H.open(server, page, { file: 'busy.html', user: OWNER, handlers: HANDLERS,
+                                 data: JSON.stringify(BUSY) });
+    await page.waitForSelector('#shell', { state: 'visible' });
+    await page.waitForTimeout(1400);
+    // Remember a module that is NOT the one holding this page's screens.
+    await page.evaluate(() => window.localStorage.setItem('refnav.module.u-owner', 'Masters'));
+    await page.evaluate(() => { window.location.hash = 'ledger%3AREF'; });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1800);
+    const at = await page.evaluate(() => {
+      const active = document.querySelector('.refnav-item.active');
+      const box = active && active.closest('.refnav-children');
+      const btn = box && document.querySelector('[data-toggle="' + box.id + '"]');
+      return {
+        active: active ? active.textContent.trim() : null,
+        visible: !!(active && active.getBoundingClientRect().height > 0),
+        module: btn ? btn.dataset.module : null,
+        openCount: [...document.querySelectorAll('[data-module]')]
+          .filter(b => document.getElementById(b.dataset.toggle).classList.contains('open')).length,
+      };
+    });
+    record('the screen he is on is highlighted and its module is the open one',
+      at.active === 'Ledger' && at.visible && at.module === 'Busy Data' && at.openCount === 1,
+      JSON.stringify(at));
+    await page.close();
+  }
+
   /* ---- 9. THE MENU IS THE ERP'S COLOUR, FROM THE ERP'S ONE FILE ---- */
   {
     const page = await browser.newPage({ viewport: { width: 1360, height: 900 } });

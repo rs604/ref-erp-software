@@ -73,6 +73,13 @@ function __stubFilter(rows, q) {
     return words.every(function (w) { return name.indexOf(w) !== -1; });
   });
 }
+/* The same key busy_name_key() builds in the database. */
+function __stubNameKey(text) {
+  return String(text || '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim()
+    .split(/\s+/).filter(Boolean)
+    .map(function (w) { return (w.length > 3 && w.slice(-1) === 'S') ? w.slice(0, -1) : w; })
+    .join(' ');
+}
 function __stubResult(name, args) {
   window.__TEST_DB_CALLS__.push({ name: name, args: args });
   var v = window.__TEST_DATA__[name];
@@ -84,6 +91,25 @@ function __stubResult(name, args) {
   // here by a substring would quietly rewrite what that screen is testing.
   if (name === 'rpc:busy_party_list' && args && args.p_query) {
     v = __stubFilter(v, args.p_query);
+  }
+  /* NEARLY THE SAME NAME IS A RULE, NOT A FIXTURE. The stub answered the
+     near-identical-name list for EVERY party, so a note about R S
+     INDUSTRIES appeared over HINDON METAFORMS' ledger and pushed the
+     first entry off the first screen. The rule is small enough to keep
+     honest here: spacing, punctuation and plurals out, then compare. */
+  if (name === 'rpc:busy_similar_ledgers' && Array.isArray(v)) {
+    var want = __stubNameKey(args && args.p_ledger);
+    v = v.filter(function (r) { return __stubNameKey(r && r.ledger) === want; });
+  }
+  /* A LEDGER ECHOES THE PARTY IT WAS ASKED ABOUT. The stub answered with
+     the fixture's party whatever was asked, and the near-identical-name
+     note -- which names the ledger whose balance is on screen -- came out
+     saying "This one is HINDON METAFORMS" over R S INDUSTRIES' figures.
+     The page was right; the stub was lying, and only the screenshot said
+     so. */
+  if (name === 'rpc:busy_ledger' && args && args.p_party &&
+      v && typeof v === 'object' && !Array.isArray(v) && 'party' in v) {
+    v = Object.assign({}, v, { party: args.p_party });
   }
   return { data: v, error: null };
 }

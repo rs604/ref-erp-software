@@ -238,6 +238,22 @@ async function look(page, name, file, viewportOnly) {
   await page.waitForTimeout(900);
   await look(page, 'busy: ledger, a party picked', 'busy-ledger');
 
+  /* THE NEAR-IDENTICAL-NAME FLAG, PHOTOGRAPHED. It sits between the four
+     cards and the entries, which is the one place he cannot miss it. */
+  await page.evaluate(() => {
+    const el = document.getElementById('lgParty');
+    el.value = 'R S INDUSTRIES';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForTimeout(1000);
+  await look(page, 'busy: ledger, a name that is nearly another name', 'busy-ledger-similar');
+  await page.evaluate(() => {
+    const el = document.getElementById('lgParty');
+    el.value = 'HINDON METAFORMS PVT.LTD';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForTimeout(800);
+
   /* THE DROPDOWN, PHOTOGRAPHED. It was a native <datalist>, which drew half
      see-through over the form on his phone -- and no assertion could have
      seen that, because the list was the browser's and not in the page at
