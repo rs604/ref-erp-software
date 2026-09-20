@@ -1,6 +1,6 @@
 {
   "_refresh": "see tests/check-rpc-calls.js",
-  "_taken_from": "public schema of refcon-erp, 20 Sep 2026, after migration 72",
+  "_taken_from": "public schema of refcon-erp, 20 Sep 2026, after migration 73",
   "functions": {
     "busy_clear_history": {
       "args": [

@@ -171,6 +171,32 @@ for (const [what, values] of Object.entries(seen)) {
   }
 }
 
+/* A PAGE NOBODY CAN REACH IS STILL A PAGE ANYONE CAN OPEN.
+
+   His words: "A disabled tab protects the person who came through the
+   menu; it does nothing for the person with an old bookmark or a link in
+   a WhatsApp message." A screen dropped from the menu but left on disk is
+   still served, still signs people in, and still answers -- and a screen
+   that reads a table nobody loads any more answers with an empty one.
+   Someone opens it, sees an empty ledger, and concludes a customer has no
+   transactions.
+
+   So every page in the repository must be REACHABLE FROM THE MENU, or be
+   one of the two doors into the ERP that cannot be (you cannot navigate to
+   a sign-in screen from inside). Anything else is an orphan, and the
+   answer to an orphan is to delete the file, not to grey out a tab. */
+{
+  const DOORS = ['index.html', 'reset.html'];   // sign in · set a password
+  const nav = fs.readFileSync(path.join(ROOT, 'nav.js'), 'utf8');
+  const inMenu = new Set([...nav.matchAll(/page:\s*'([\w.-]+\.html)'/g)].map(m => m[1]));
+  for (const page of fs.readdirSync(ROOT).filter(f => f.endsWith('.html'))) {
+    if (DOORS.includes(page) || inMenu.has(page)) continue;
+    findings.push(`${page} is in the repository but nothing in the menu points at it. ` +
+                  `It is still served to anyone with the address — delete the file, ` +
+                  `or give it a menu entry`);
+  }
+}
+
 /* TWO FUNCTIONS WITH ONE NAME IN ONE PAGE.
 
    busy.html is one file holding eight screens. The reports build added a

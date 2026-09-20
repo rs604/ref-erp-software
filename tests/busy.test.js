@@ -1944,6 +1944,27 @@ async function openBusy(server, browser, user) {
     await page.waitForTimeout(900);
     record('tapping one of them opens that ledger, rather than making him retype it',
       (await page.evaluate(() => document.getElementById('lgParty').value)) === 'R.S.INDUSTRIES');
+
+    /* A NOTE THAT FIRES ON A SINGLE RESULT IS WORSE THAN NO NOTE.
+
+       His rule, and the reason is that it teaches people to ignore the
+       note -- and then they ignore the real one. Two ways it could:
+       a ledger with nothing beside it, and a NAME NOBODY HAS, which the
+       server used to answer for, counting a ledger that does not exist
+       as one of the ones with nearly the same name. */
+    for (const [what, party] of [['a ledger with no twin', 'HINDON METAFORMS PVT.LTD'],
+                                 ['a name Busy does not hold', 'R.S. INDUSTRIES']]) {
+      await page.evaluate(p => {
+        const el = document.getElementById('lgParty');
+        el.value = p;
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }, party);
+      await page.waitForTimeout(1000);
+      const said = await page.evaluate(() =>
+        document.getElementById('lgSimilar').textContent.replace(/\s+/g, ' ').trim());
+      record(`no note at all for ${what} — one is not a finding`, said === '',
+        said.slice(0, 90) || '(nothing, which is right)');
+    }
     await page.close();
   }
 

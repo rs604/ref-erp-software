@@ -4259,6 +4259,18 @@
       "ledger_group": "Sundry Debtors",
       "entries": 19,
       "last_entry": "2026-05-30"
+    },
+    {
+      "ledger": "R S INDUSTRIES",
+      "ledger_group": "Sundry Debtors",
+      "entries": 9,
+      "last_entry": "2026-03-25"
+    },
+    {
+      "ledger": "R.S.INDUSTRIES",
+      "ledger_group": "Sundry Debtors",
+      "entries": 5,
+      "last_entry": "2025-11-02"
     }
   ],
   "rpc:busy_customer_list": [

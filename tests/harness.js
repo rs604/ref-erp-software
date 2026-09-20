@@ -98,8 +98,14 @@ function __stubResult(name, args) {
      first entry off the first screen. The rule is small enough to keep
      honest here: spacing, punctuation and plurals out, then compare. */
   if (name === 'rpc:busy_similar_ledgers' && Array.isArray(v)) {
-    var want = __stubNameKey(args && args.p_ledger);
-    v = v.filter(function (r) { return __stubNameKey(r && r.ledger) === want; });
+    var asked = (args && args.p_ledger) || '';
+    var want = __stubNameKey(asked);
+    // The subject must be a ledger that exists, or there is nothing to
+    // say -- migration 73. A fixture lists the OTHER ledgers, so the
+    // subject is real when the party list holds it.
+    var real = (window.__TEST_DATA__['rpc:busy_party_list'] || [])
+      .some(function (r) { return r && r.ledger === asked; });
+    v = real ? v.filter(function (r) { return __stubNameKey(r && r.ledger) === want; }) : [];
   }
   /* A LEDGER ECHOES THE PARTY IT WAS ASKED ABOUT. The stub answered with
      the fixture's party whatever was asked, and the near-identical-name
