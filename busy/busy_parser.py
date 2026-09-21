@@ -14,7 +14,7 @@ vch_no CANNOT be used - blank on every ledger row, and it repeats among items.
 """
 import subprocess, csv, io, re, sys
 
-PARSER_VERSION = '2026.09.18-mdbtools'
+PARSER_VERSION = '2026.09.21-mdbtools'
 
 VCH = {'2':'Purchase Bill','9':'Sales Invoice','11':'Delivery Challan',
        '12':'Purchase Order','13':'Sales Order','16':'Journal','19':'Payment',
@@ -82,7 +82,9 @@ def parse_fy(path, company, fy):
             vch_no='', vch_date='', sr_no='0', vch_total=0,
             parser_version=PARSER_VERSION,
             party=led, item='', description='', ledger=led, ledger_group=g,
-            debit=v if v>0 else 0, credit=-v if v<0 else 0,
+            # BUSY SIGN: positive = CREDIT, negative = DEBIT. Verified 21 Sep 2026
+            # against Akson Industries, a known advance received (a credit).
+            debit=-v if v<0 else 0, credit=v if v>0 else 0,
             qty=0, rate=0, amount=abs(v), is_lump_sum=False,
             cgst=0, sgst=0, igst=0, gst_rate=0,
             search_text=clean(f'{led} {g}').upper()))
@@ -125,7 +127,8 @@ def parse_fy(path, company, fy):
             lb = dict(base); lb['sr_no'] = 'L' + str(r['SrNo'])
             out.append(dict(lb, kind='ledger', party=name.get(h['MasterCode1'],''),
                 item='', description=nar, ledger=led, ledger_group=grp,
-                debit=v if v>0 else 0, credit=-v if v<0 else 0,
+                # BUSY SIGN: positive = CREDIT, negative = DEBIT
+                debit=-v if v<0 else 0, credit=v if v>0 else 0,
                 qty=0, rate=0, amount=abs(v), is_lump_sum=False,
                 cgst=0, sgst=0, igst=0, gst_rate=0,
                 search_text=clean(f"{led} {grp} {nar}").upper()))
