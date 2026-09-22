@@ -273,6 +273,15 @@ async function look(page, name, file, viewportOnly) {
   });
   await page.waitForTimeout(600);
 
+  /* The three screens that joined on 21 Sep. Debtors and Creditors are
+     the same screen asked two questions, and both have to be photographed:
+     the cards lead with a different side on each. */
+  for (const v of ['items', 'debtors', 'creditors']) {
+    await H.go(page, v, 'REF');
+    await page.waitForTimeout(1100);
+    await look(page, 'busy: ' + v, 'busy-' + v);
+  }
+
   await H.go(page, 'reports', 'REF');
   await page.waitForTimeout(1100);
   for (const tab of ['customers', 'items', 'materials']) {
@@ -385,6 +394,13 @@ async function look(page, name, file, viewportOnly) {
   });
   await desk.waitForTimeout(900);
   await look(desk, 'DESK — ledger', 'desk-ledger');
+  for (const v of ['items', 'debtors', 'creditors']) {
+    await H.go(desk, v, 'REF');
+    await desk.waitForTimeout(1000);
+    await look(desk, 'DESK — ' + v, 'desk-' + v);
+  }
+  await H.go(desk, 'ledger', 'REF');
+  await desk.waitForTimeout(700);
   await look(desk, 'DESK — the menu, with one firm folded out', 'desk-menu', true);
   await H.go(desk, 'reports', 'REF');
   await desk.waitForTimeout(1200);

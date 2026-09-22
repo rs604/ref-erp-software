@@ -134,5 +134,70 @@ def parse_fy(path, company, fy):
                 search_text=clean(f"{led} {grp} {nar}").upper()))
     return out
 
+# --- THE ITEM MASTER ---------------------------------------------------
+# Busy's own list of items, not the items that happened to appear on an
+# invoice: Master1 rows with MasterType = 6. Every one of HSN, unit,
+# alternate unit, tax category and group is a CODE pointing at another
+# Master1 row, so each is looked up by name rather than printed raw.
+#
+# Key: company + item_code. fy is the year the file was read from, and
+# the ERP keeps the latest one it has seen.
+ITEM_MASTERTYPE = '6'
+
+# THE UNITS ARE CLEANED HERE, IN ONE PLACE. Pcs. and PCS and NOS are one
+# unit written three ways, and every screen that shows a unit would
+# otherwise have to know that. Busy's own spelling is kept beside the
+# clean one so nothing is lost and a tooltip can show what was typed.
+UNIT_CLEAN = {
+    'PCS': 'Pcs', 'PCS.': 'Pcs', 'PC': 'Pcs', 'PC.': 'Pcs', 'NOS': 'Pcs',
+    'NOS.': 'Pcs', 'NO': 'Pcs', 'NO.': 'Pcs', 'PIECE': 'Pcs', 'PIECES': 'Pcs',
+    'SET': 'Set', 'SETS': 'Set',
+    'MTR': 'Metre', 'MTRS': 'Metre', 'METER': 'Metre', 'METERS': 'Metre',
+    'METRE': 'Metre', 'METRES': 'Metre', 'M': 'Metre',
+    'ROLL': 'Roll', 'ROLLS': 'Roll',
+    'FEET': 'Feet', 'FOOT': 'Feet', 'FT': 'Feet', 'FT.': 'Feet',
+    'KG': 'Kg', 'KGS': 'Kg', 'KGS.': 'Kg',
+}
+
+def clean_unit(raw):
+    """The unit as one word. An unknown unit is passed through as Busy
+    wrote it -- inventing a spelling for something not in the list would
+    be the ERP deciding what Busy meant."""
+    u = clean(raw)
+    if not u:
+        return ''
+    return UNIT_CLEAN.get(u.upper(), u)
+
+def parse_items(path, company, fy):
+    """Busy's item master, one row per item."""
+    tmp = '/tmp/_busy_items.mdb'
+    subprocess.run(['cp', path, tmp], check=True)
+    mas = table(tmp, 'Master1')
+
+    name = {r['Code']: clean(r['Name']) for r in mas}
+    out = []
+    for r in mas:
+        if r.get('MasterType') != ITEM_MASTERTYPE:
+            continue
+        item = clean(r.get('Name'))
+        if not item:
+            continue
+        unit_raw     = name.get(r.get('CM1'), '')
+        alt_unit_raw = name.get(r.get('CM2'), '')
+        out.append(dict(
+            company=company, fy=fy,
+            item_code=str(r.get('Code') or '').strip(),
+            item=item,
+            hsn=clean(r.get('HSNCode')),
+            unit=clean_unit(unit_raw),         unit_in_busy=clean(unit_raw),
+            alt_unit=clean_unit(alt_unit_raw), alt_unit_in_busy=clean(alt_unit_raw),
+            tax_category=name.get(r.get('CM8'), ''),
+            busy_group=name.get(r.get('ParentGrp'), ''),
+            parser_version=PARSER_VERSION))
+    return out
+
 if __name__ == '__main__':
-    print(len(parse_fy(sys.argv[1], sys.argv[2], sys.argv[3])), 'rows')
+    if len(sys.argv) > 4 and sys.argv[4] == 'items':
+        print(len(parse_items(sys.argv[1], sys.argv[2], sys.argv[3])), 'items')
+    else:
+        print(len(parse_fy(sys.argv[1], sys.argv[2], sys.argv[3])), 'rows')

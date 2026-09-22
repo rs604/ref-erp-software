@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1789918866';</script>
+<script>window.__BUILD_VERSION__ = '1790005916';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -27,8 +27,8 @@
   window.addEventListener('online', checkVersion);
 })();
 </script>
-<link rel="stylesheet" href="theme.css?v=1789918866">
-<link rel="stylesheet" href="ui.css?v=1789918866">
+<link rel="stylesheet" href="theme.css?v=1790005916">
+<link rel="stylesheet" href="ui.css?v=1790005916">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   * { box-sizing:border-box; }
@@ -144,6 +144,14 @@
           border:1px solid transparent; white-space:nowrap; }
   .pill-amber { background:var(--amber-bg); color:var(--amber); border-color:#e6d2a8; }
   .pill-grey  { background:var(--slate-bg); color:var(--slate); }
+  /* A slab that no longer exists is money, not decoration. */
+  .pill-danger { background:var(--danger-bg); color:var(--danger); border-color:#efd2cf; }
+  /* A word with something more behind it says so, rather than hoping
+     somebody hovers a plain word on the off chance. */
+  .has-tip { border-bottom:1px dotted var(--muted); cursor:help; }
+  tr.bal-row { cursor:pointer; }
+  tr.bal-row:hover td { background:#eef4f9; }
+  .rc.bal-row { cursor:pointer; }
   /* Its own scrollbox, so the column names stay put. th is sticky, and sticky
      resolves against the nearest scrolling ancestor -- which has to be this
      box, not the page, or the header leaves with everything else. */
@@ -169,7 +177,11 @@
               text-transform:uppercase; margin-top:2px; }
   .way-pay { color:var(--danger); }
   .way-rec { color:var(--green); }
-  .kpi .drcr { font-size:13px; font-weight:600; color:var(--muted); margin-left:3px; }
+  /* nowrap on the SUFFIX, not on the card: the value may break after the
+     figure, but "Cr" breaking into "C" and "r" is what happens if the
+     span itself is allowed to. */
+  .kpi .drcr { font-size:13px; font-weight:600; color:var(--muted); margin-left:3px;
+               white-space:nowrap; display:inline-block; }
   .kpis-4 .v { white-space:nowrap; }
 
   /* .ctl, .ctl-row, .ctl-grow, .ctl-narrow, .ctl-acts and .icon-btn are
@@ -479,6 +491,16 @@
        carries the big type -- but it does NOT span the row, or the two-by-two
        he asked for becomes three rows. */
     .kpis-4 { grid-template-columns:1fr 1fr; }
+    /* A grid item will not shrink below its content unless it is told it
+       may, and .kpis-4 .v is nowrap -- so "₹12,88,000 Dr" held its column
+       open and pushed the whole page 5px sideways. The FIGURE never breaks
+       (there are no spaces inside 12,88,000); only the Dr or Cr after it
+       may drop to the next line. */
+    .kpis > * { min-width:0; }
+    .kpis-4 .v { white-space:normal; }
+    /* 12px is the floor. .way is the PAYABLE / RECEIVABLE line and the
+       party count under a card, and it was 11px. */
+    .kpi .way { font-size:12px; }
     .kpi.kpi-lead .v { font-size:21px; }
     .kpi .v { overflow-wrap:anywhere; }
 
@@ -625,6 +647,95 @@
           <button type="button" class="btn btn-outline btn-sm" id="prevBtn" disabled>&larr; Previous</button>
           <span class="pager-where" id="pagerWhere"></span>
           <button type="button" class="btn btn-outline btn-sm" id="nextBtn" disabled>Next &rarr;</button>
+        </div>
+      </div>
+
+      <!-- ---------------- THE ITEM MASTER ----------------
+           Busy's own item list -- Master1 rows with MasterType 6 -- not
+           the items that happened to appear on an invoice. -->
+      <div id="view-items" style="display:none">
+        <div class="card ctl">
+          <div class="ctl-row">
+            <div class="ctl-grow">
+              <label class="fl" for="imSearch">Item or HSN</label>
+              <input id="imSearch" class="f" autocomplete="off"
+                     placeholder="Type a name, or an HSN like 8431">
+            </div>
+          </div>
+        </div>
+        <div class="chips" id="imChips" style="margin-bottom:10px"></div>
+        <div class="card">
+          <div class="rowcount" id="imCount"></div>
+          <div class="tbl-wrap fit">
+            <table class="tbl">
+              <thead><tr>
+                <th style="width:44px">Sr.</th><th>Item</th>
+                <th style="width:96px">HSN</th>
+                <th style="width:84px">Unit</th>
+                <th style="width:92px">Alt unit</th>
+                <th style="width:130px">Tax category</th>
+                <th>Busy group</th>
+                <th style="width:96px">Last seen</th>
+              </tr></thead>
+              <tbody id="imRows"></tbody>
+            </table>
+          </div>
+          <div class="rc-list" id="imCards"></div>
+          <div class="pager" id="imPager"></div>
+        </div>
+      </div>
+
+      <!-- ---------------- DEBTORS AND CREDITORS ----------------
+           BOTH SIDES, NEVER ONLY THE NET. For capital goods an advance is
+           normal -- 50% on order, before the machine is billed -- so a
+           list that nets the advances away hides the customers who have
+           paid for machines not yet delivered. -->
+      <div id="view-bal" style="display:none">
+        <div class="card ctl">
+          <div class="ctl-row">
+            <div class="ctl-grow">
+              <label class="fl" for="balSearch">Party</label>
+              <input id="balSearch" class="f" autocomplete="off"
+                     placeholder="Type a name to find them in the list">
+            </div>
+            <div class="ctl-acts">
+              <button type="button" class="icon-btn" id="balPrint"
+                      title="Print or save as PDF" aria-label="Print or save as PDF"></button>
+              <button type="button" class="icon-btn" id="balExcel"
+                      title="Download for Excel" aria-label="Download for Excel"></button>
+            </div>
+          </div>
+          <div class="ctl-row">
+            <div class="ctl-narrow"><label class="fl" for="balOn">Balance at</label>
+                 <input type="date" id="balOn" class="f dt" data-datekeys></div>
+            <div class="ctl-narrow"><label class="fl" for="balRange">Range</label>
+              <select id="balRange" class="f">
+                <option value="today">Today</option>
+                <option value="fyend">End of this FY</option>
+                <option value="lastfyend">End of last FY</option>
+                <option value="custom">Custom date</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="kpis kpis-4" id="balKpis"></div>
+        <div id="balNote"></div>
+        <div class="card" style="margin-top:14px">
+          <div class="rowcount" id="balCount"></div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr>
+                <th style="width:44px">Sr.</th><th>Party</th>
+                <th style="width:150px">Balance</th>
+                <th style="width:70px">Dr/Cr</th>
+                <th style="width:116px">Last transaction</th>
+                <th style="width:104px">Days since</th>
+              </tr></thead>
+              <tbody id="balRows"></tbody>
+            </table>
+          </div>
+          <div class="rc-list" id="balCards"></div>
+          <div class="pager" id="balPager"></div>
         </div>
       </div>
 
@@ -1268,9 +1379,13 @@ upload_token = (shown on the download screen)</pre>
     deleted:  ['Deleted in Busy', 'Rows that were here and have gone'],
     upload:   ['Load history', 'Send the Busy files up and watch them land'],
     download: ['Download the uploader', 'The program for the office PC'],
-    setup:    ['Setup instructions', 'How to put it on a PC, step by step']
+    setup:    ['Setup instructions', 'How to put it on a PC, step by step'],
+    items:    ['Items', "Busy's own item list, not what happened to be sold"],
+    debtors:  ['Debtors', 'Who owes us, and who has paid in advance'],
+    creditors:['Creditors', 'Who we owe, and what we have paid in advance']
   };
-  var FIRM_VIEWS = { price:1, challans:1, ledger:1, reports:1, deleted:1 };
+  var FIRM_VIEWS = { price:1, challans:1, ledger:1, reports:1, deleted:1,
+                     items:1, debtors:1, creditors:1 };
 
   function setView(v) {
     view = v;
@@ -1281,6 +1396,8 @@ upload_token = (shown on the download screen)</pre>
     $('view-upload').style.display   = (v === 'upload') ? '' : 'none';
     $('view-download').style.display = (v === 'download') ? '' : 'none';
     $('view-setup').style.display    = (v === 'setup') ? '' : 'none';
+    $('view-items').style.display    = (v === 'items') ? '' : 'none';
+    $('view-bal').style.display      = (v === 'debtors' || v === 'creditors') ? '' : 'none';
     $('challanNote').style.display   = (v === 'challans') ? '' : 'none';
     $('firmChip').style.display      = FIRM_VIEWS[v] ? '' : 'none';
     $('pageTitle').textContent = TITLES[v][0];
@@ -1296,6 +1413,8 @@ upload_token = (shown on the download screen)</pre>
     else if (v === 'upload') loadUploadScreen();
     else if (v === 'download') loadDownloadScreen();
     else if (v === 'setup') { /* plain words, nothing to fetch */ }
+    else if (v === 'items') loadItemMaster();
+    else if (v === 'debtors' || v === 'creditors') openBalances(v);
     else run();
   }
 
@@ -2255,9 +2374,11 @@ upload_token = (shown on the download screen)</pre>
     return table + cards;
   }
 
-  function kpi(k, v, sfx, way, sub, cls) {
+  /* plain: a COUNT, not money. "PARTIES ₹4" is the kind of thing nobody
+     reports and everybody notices. */
+  function kpi(k, v, sfx, way, sub, cls, plain) {
     return '<div class="kpi ' + (cls || '') + '"><div class="k">' + k + '</div>' +
-           '<div class="v">₹' + v +
+           '<div class="v">' + (plain ? '' : '₹') + v +
              (sfx ? '<span class="drcr">' + sfx + '</span>' : '') + '</div>' +
            (way || '') +
            (sub ? '<div class="method">' + esc(sub) + '</div>' : '') + '</div>';
@@ -2425,6 +2546,77 @@ upload_token = (shown on the download screen)</pre>
     out.push(["The accountant's ledger remains the authority. This sheet is for looking up and sharing, not for reconciling."]);
     saveCsv('ledger-' + firm + '-' + String(d.party).replace(/[^A-Za-z0-9]+/g, '-') +
             '-' + d.from + '-to-' + d.to + '.csv', out);
+  }
+
+
+  /* The same letterhead and the same footer as the ledger: these sheets go
+     to the same people, and two house styles is one too many. */
+  function balancesPrint() {
+    if (!balData) return;
+    var d = balData, head = LETTERHEAD[firm] || LETTERHEAD.REF, w2 = BAL_WORDS[balWhich];
+    var body = (d.rows || []).map(function (r, i) {
+      return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.party) + '</td>' +
+        '<td class="r">' + inr2.format(Math.abs(Number(r.balance))) +
+          '<span class="drcr-sfx">' + r.side + '</span></td>' +
+        '<td>' + (r.last_txn ? dmy(r.last_txn) : '') + '</td>' +
+        '<td>' + (r.days_since === null ? '' : r.days_since) + '</td></tr>';
+    }).join('');
+
+    var w = window.open('', '_blank');
+    if (!w) { alert('The browser blocked the print window. Allow pop-ups for this site.'); return; }
+    w.document.write('<!doctype html><html><head><meta charset="utf-8">' +
+      '<title>' + TITLES[balWhich][0] + '</title><style>' +
+      'body{font-family:Arial,Helvetica,sans-serif;color:#16222c;margin:22px;font-size:12px}' +
+      '.lh{text-align:center;border-bottom:2px solid #16222c;padding-bottom:10px;margin-bottom:14px}' +
+      '.lh h1{font-size:17px;margin:0 0 4px}.lh div{font-size:11px;color:#55606b;line-height:1.5}' +
+      'h2{font-size:14px;margin:0 0 2px}.sub{font-size:11px;color:#55606b;margin-bottom:10px}' +
+      'table{width:100%;border-collapse:collapse}' +
+      'th,td{border:1px solid #c8d2da;padding:4px 6px;text-align:center}' +
+      'th{background:#eef4f9}td:nth-child(2){text-align:left}.r{text-align:right}' +
+      '.tot{margin:10px 0 14px;font-size:12px}.tot b{font-size:13px}' +
+      '.drcr-sfx{margin-left:4px;font-size:10px;color:#55606b}' +
+      '.foot{margin-top:14px;font-size:10.5px;color:#55606b;line-height:1.6}' +
+      '@media print{.noprint{display:none}}</style></head><body>' +
+      '<div class="lh"><h1>' + head.name + '</h1><div>' + head.addr + '</div>' +
+      '<div>' + head.reg + '</div></div>' +
+      '<h2>' + TITLES[balWhich][0] + '</h2>' +
+      '<div class="sub">At ' + dmy(d.on) + ' &nbsp;·&nbsp; ' + esc(stamp()) + '</div>' +
+      '<div class="tot">' + w2.dr + ': <b>' + inr2.format(d.dr_total) + ' Dr</b> from ' +
+        d.dr_count + ' &nbsp;·&nbsp; ' + w2.cr + ': <b>' + inr2.format(d.cr_total) +
+        ' Cr</b> from ' + d.cr_count + '</div>' +
+      '<table><thead><tr><th>Sr.</th><th>Party</th><th>Balance</th>' +
+      '<th>Last transaction</th><th>Days since</th></tr></thead>' +
+      '<tbody>' + body + '</tbody></table>' +
+      '<div class="foot">Both sides are listed and never netted away: on capital goods an ' +
+      'advance is normal, and a single net figure hides it.<br>' +
+      '<strong>The accountant’s ledger remains the authority.</strong> This sheet is for ' +
+      'looking up and sharing, not for reconciling.</div>' +
+      '<div class="noprint" style="margin-top:16px"><button onclick="window.print()">Print</button></div>' +
+      '</body></html>');
+    w.document.close();
+  }
+
+  function balancesExcel() {
+    if (!balData) return;
+    var d = balData, w2 = BAL_WORDS[balWhich];
+    var out = [
+      [(LETTERHEAD[firm] || LETTERHEAD.REF).name.replace('&amp;', '&')],
+      [TITLES[balWhich][0], 'at', d.on],
+      [stamp()],
+      [],
+      [w2.dr, d.dr_count + ' parties', d.dr_total, 'Dr'],
+      [w2.cr, d.cr_count + ' parties', d.cr_total, 'Cr'],
+      [],
+      ['Sr.', 'Party', 'Balance', 'Dr/Cr', 'Last transaction', 'Days since']
+    ];
+    (d.rows || []).forEach(function (r, i) {
+      out.push([i + 1, r.party, Math.abs(Number(r.balance)), r.side,
+                r.last_txn || '', r.days_since === null ? '' : r.days_since]);
+    });
+    out.push([]);
+    out.push(['Both sides are listed and never netted away: on capital goods an advance is normal, and a single net figure hides it.']);
+    out.push(["The accountant's ledger remains the authority. This sheet is for looking up and sharing, not for reconciling."]);
+    saveCsv(balWhich + '-' + firm + '-at-' + d.on + '.csv', out);
   }
 
   /* ================= THE THREE CUSTOMER REPORTS ====================== */
@@ -3041,6 +3233,274 @@ upload_token = (shown on the download screen)</pre>
     }
   }
 
+  /* =====================================================================
+     THE ITEM MASTER
+
+     Busy's own list -- Master1 rows with MasterType 6 -- rather than the
+     items that happened to appear on an invoice. Two things are flagged
+     because both are money:
+
+       NO HSN                 a bill cannot be raised without one
+       A SLAB THAT IS GONE    12% and 28% were abolished on 22 Sep 2025
+
+     The unit shown is the cleaned one. Busy's own spelling is in the
+     tooltip -- Pcs. and PCS and NOS are one unit, and the PARSER says
+     so. Nothing is merged on this side: the ERP does not decide what
+     Busy meant.
+     ===================================================================== */
+  var IM_PAGE = 100;
+  var imRows = [], imPage = 1, imFilter = null;
+  var DEAD_SLABS = { 12: 1, 28: 1 };
+  var SLABS_ABOLISHED = '12% and 28% were abolished on 22 September 2025';
+
+  function loadItemMaster() {
+    imRows = []; imPage = 1; imFilter = null;
+    $('imRows').innerHTML = '<tr><td colspan="8" class="loading">Looking…</td></tr>';
+    $('imCards').innerHTML = '<div class="loading">Looking…</div>';
+    guard(REF.supabase().rpc('busy_items_list', { p_company: firm }),
+          intoTable('imRows', 8), 'the item list')
+      .then(function (res) {
+        if (!res) { $('imCards').innerHTML = ''; return; }
+        imRows = res.data || [];
+        drawItemMaster();
+      });
+  }
+
+  function imNoHsn(r)   { return !btrim(r.hsn || ''); }
+  function imDeadSlab(r) { return r.gst_rate !== null && DEAD_SLABS[Number(r.gst_rate)]; }
+
+  function imMatches() {
+    var q = btrim($('imSearch').value);
+    var list = q ? REFUI.contains(imRows, q, 'item') : imRows.slice();
+    if (q) {
+      // Search covers the HSN too, so typing 8431 finds everything under it.
+      var byHsn = imRows.filter(function (r) {
+        return String(r.hsn || '').toUpperCase().indexOf(q.toUpperCase()) !== -1;
+      });
+      var seen = {};
+      list = list.concat(byHsn).filter(function (r) {
+        if (seen[r.item_code]) return false;
+        seen[r.item_code] = 1; return true;
+      });
+    }
+    if (imFilter === 'nohsn') list = list.filter(imNoHsn);
+    if (imFilter === 'slab')  list = list.filter(imDeadSlab);
+    return list;
+  }
+
+  function drawItemMaster() {
+    var all = imRows, list = imMatches();
+    var noHsn = all.filter(imNoHsn).length, dead = all.filter(imDeadSlab).length;
+
+    $('imChips').innerHTML =
+      '<button type="button" class="chip' + (imFilter === null ? ' on' : '') +
+        '" data-imf="">Everything <strong>' + all.length + '</strong></button>' +
+      (noHsn ? '<button type="button" class="chip' + (imFilter === 'nohsn' ? ' on' : '') +
+        '" data-imf="nohsn">No HSN <strong>' + noHsn + '</strong></button>' : '') +
+      (dead ? '<button type="button" class="chip' + (imFilter === 'slab' ? ' on' : '') +
+        '" data-imf="slab">A slab that no longer exists <strong>' + dead +
+        '</strong></button>' : '');
+
+    var pages = Math.max(1, Math.ceil(list.length / IM_PAGE));
+    if (imPage > pages) imPage = pages;
+    var from = (imPage - 1) * IM_PAGE, slice = list.slice(from, from + IM_PAGE);
+
+    $('imCount').textContent = list.length + ' of ' + all.length + ' items — ' +
+      FIRM_NAME[firm] + (noHsn ? ' · ' + noHsn + ' with no HSN' : '') +
+      (dead ? ' · ' + dead + ' on a slab that no longer exists' : '');
+
+    var q = btrim($('imSearch').value);
+    $('imRows').innerHTML = slice.length ? slice.map(function (r, i) {
+      return '<tr>' +
+        '<td>' + (from + i + 1) + '</td>' +
+        '<td class="l">' + REFUI.light(r.item, q) + '</td>' +
+        '<td>' + (imNoHsn(r)
+            ? '<span class="pill pill-amber" title="A bill cannot be raised without an HSN">no HSN</span>'
+            : REFUI.light(r.hsn, q)) + '</td>' +
+        '<td>' + imUnit(r.unit, r.unit_in_busy) + '</td>' +
+        '<td>' + imUnit(r.alt_unit, r.alt_unit_in_busy) + '</td>' +
+        '<td>' + imTax(r) + '</td>' +
+        '<td class="l">' + esc(r.busy_group || '') + '</td>' +
+        '<td>' + esc(r.fy || '') + '</td></tr>';
+    }).join('') : '<tr><td colspan="8" class="loading">Nothing matches.</td></tr>';
+
+    $('imCards').innerHTML = slice.length ? slice.map(function (r) {
+      return '<div class="rc flat">' +
+        '<div class="rc-top"><div class="rc-party">' + REFUI.light(r.item, q) + '</div>' +
+        '<div class="rc-date">' + esc(r.fy || '') + '</div></div>' +
+        '<div class="rc-pair"><div class="rc-k">HSN</div><div class="rc-v r">' +
+          (imNoHsn(r) ? '<span class="pill pill-amber">no HSN</span>' : REFUI.light(r.hsn, q)) +
+        '</div></div>' +
+        '<div class="rc-pair"><div class="rc-k">Unit</div><div class="rc-v r">' +
+          imUnit(r.unit, r.unit_in_busy) +
+          (r.alt_unit ? ' · ' + imUnit(r.alt_unit, r.alt_unit_in_busy) : '') + '</div></div>' +
+        '<div class="rc-pair"><div class="rc-k">Tax category</div><div class="rc-v r">' +
+          imTax(r) + '</div></div>' +
+        (r.busy_group ? '<div class="rc-pair"><div class="rc-k">Busy group</div>' +
+          '<div class="rc-v r">' + esc(r.busy_group) + '</div></div>' : '') +
+        '</div>';
+    }).join('') : '<div class="loading">Nothing matches.</div>';
+
+    drawPagerInto('imPager', imPage, pages, function (n) { imPage = n; drawItemMaster(); });
+  }
+
+  /* The clean unit is what is read. Busy's own spelling is the tooltip,
+     and only when the two differ -- a tooltip that repeats the word under
+     it teaches people that tooltips say nothing. */
+  function imUnit(clean, raw) {
+    if (!clean) return '';
+    var same = String(raw || '').toUpperCase() === String(clean).toUpperCase();
+    return '<span' + (raw && !same ? ' title="Busy holds this as ' + esc(raw) + '"' : '') +
+           ' class="' + (raw && !same ? 'has-tip' : '') + '">' + esc(clean) + '</span>';
+  }
+
+  function imTax(r) {
+    var t = esc(r.tax_category || '');
+    if (!imDeadSlab(r)) return t || '<span class="missing">none</span>';
+    return '<span class="pill pill-danger" title="' + SLABS_ABOLISHED + '">' +
+           (t || r.gst_rate + '%') + '</span>';
+  }
+
+  /* =====================================================================
+     DEBTORS AND CREDITORS
+
+     EACH LIST SHOWS BOTH SIDES, NEVER ONLY THE NET. An advance is normal
+     on capital goods -- 50% on order, before the machine is billed -- so
+     netting them away hides the customers who have paid for machines not
+     yet delivered, which is the most important thing on the screen.
+     ===================================================================== */
+  var BAL_PAGE = 50;
+  var balData = null, balPage = 1, balWhich = 'debtors';
+  var BAL_GROUP = { debtors: 'Sundry Debtors', creditors: 'Sundry Creditors' };
+  var BAL_WORDS = {
+    debtors:   { dr: 'OWE US', cr: 'ADVANCES RECEIVED',
+                 drSub: 'billed and not yet paid', crSub: 'paid for, not yet delivered' },
+    creditors: { dr: 'ADVANCES PAID', cr: 'WE OWE THEM',
+                 drSub: 'paid for, not yet received', crSub: 'billed to us and not yet paid' }
+  };
+
+  function openBalances(which) {
+    balWhich = which; balPage = 1; balData = null;
+    if (!$('balOn').value) setBalRange('today');
+    $('balSearch').value = '';
+    loadBalances();
+  }
+
+  function setBalRange(which) {
+    var now = new Date(), d;
+    if (which === 'fyend')          d = new Date(fyStartOf(now).getFullYear() + 1, 2, 31);
+    else if (which === 'lastfyend') d = new Date(fyStartOf(now).getFullYear(), 2, 31);
+    else                            d = now;
+    $('balOn').value = iso(d);
+    $('balRange').value = which;
+  }
+
+  function loadBalances() {
+    $('balRows').innerHTML = '<tr><td colspan="6" class="loading">Looking…</td></tr>';
+    $('balCards').innerHTML = '<div class="loading">Looking…</div>';
+    guard(REF.supabase().rpc('busy_balances',
+            { p_company: firm, p_group: BAL_GROUP[balWhich], p_on: $('balOn').value }),
+          intoTable('balRows', 6), balWhich)
+      .then(function (res) {
+        if (!res) { $('balCards').innerHTML = ''; return; }
+        balData = res.data; balPage = 1;
+        drawBalances();
+      });
+  }
+
+  function drawBalances() {
+    var d = balData;
+    if (!d) return;
+    var w = BAL_WORDS[balWhich];
+
+    /* FOUR TOTALS, THE TWO SIDES NEVER ADDED TOGETHER.
+
+       The side the screen is ABOUT leads: on Debtors that is what they
+       owe us, on Creditors what we owe them. The advance is second, and
+       it is never folded into the first. */
+    /* The count is not coloured. way-rec and way-pay are the ledger's
+       green and amber for RECEIVABLE and PAYABLE, and borrowing them here
+       painted "2 PARTIES" red under ADVANCES RECEIVED -- money in the bank,
+       reading as an alarm. */
+    var count = function (n) {
+      return '<div class="way" style="color:var(--muted)">' + n + ' ' +
+             (n === 1 ? 'party' : 'parties') + '</div>';
+    };
+    var drCard = kpi(w.dr, inr.format(Math.round(d.dr_total)), 'Dr',
+          count(d.dr_count), w.drSub, 'kpi-lead');
+    var crCard = kpi(w.cr, inr.format(Math.round(d.cr_total)), 'Cr',
+          count(d.cr_count), w.crSub, 'kpi-lead');
+
+    $('balKpis').innerHTML =
+      (balWhich === 'debtors' ? drCard + crCard : crCard + drCard) +
+      kpi('NET', inr.format(Math.abs(Math.round(d.dr_total - d.cr_total))),
+          (d.dr_total - d.cr_total) >= 0 ? 'Dr' : 'Cr', '',
+          'the two above, one taken from the other') +
+      kpi('PARTIES', String(d.dr_count + d.cr_count), '', '',
+          'with a balance at ' + dmy(d.on), '', true);
+
+    $('balNote').innerHTML =
+      '<div class="note">Both sides are shown and never netted away. On capital goods an ' +
+      'advance is normal — 50% on order, before the machine is billed — so <strong>₹' +
+      inr.format(Math.round(balWhich === 'debtors' ? d.cr_total : d.dr_total)) +
+      '</strong> ' + (balWhich === 'debtors'
+        ? 'is customers who have paid for machines not yet delivered'
+        : 'is money we have paid out for things not yet received') +
+      '. A single net figure would hide it.</div>';
+
+    var q = btrim($('balSearch').value);
+    var list = q ? REFUI.contains(d.rows || [], q, 'party') : (d.rows || []);
+    var pages = Math.max(1, Math.ceil(list.length / BAL_PAGE));
+    if (balPage > pages) balPage = pages;
+    var from = (balPage - 1) * BAL_PAGE, slice = list.slice(from, from + BAL_PAGE);
+
+    $('balCount').textContent = list.length + ' of ' + (d.rows || []).length +
+      ' parties — ' + FIRM_NAME[firm] + ', at ' + dmy(d.on) + ', biggest first';
+
+    $('balRows').innerHTML = slice.length ? slice.map(function (r, i) {
+      return '<tr class="bal-row" data-balparty="' + esc(r.party) + '">' +
+        '<td>' + (from + i + 1) + '</td>' +
+        '<td class="l">' + REFUI.light(r.party, q) + '</td>' +
+        '<td class="r">' + inr2.format(Math.abs(Number(r.balance))) + '</td>' +
+        '<td><span class="' + (r.side === 'Dr' ? 'way-rec' : 'way-pay') +
+          '" style="font-weight:600">' + r.side + '</span></td>' +
+        '<td>' + (r.last_txn ? dmy(r.last_txn) : '<span class="missing">none</span>') + '</td>' +
+        '<td>' + (r.days_since === null ? '' : r.days_since) + '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="loading">Nobody with a balance.</td></tr>';
+
+    $('balCards').innerHTML = slice.length ? slice.map(function (r) {
+      return '<div class="rc flat bal-row" data-balparty="' + esc(r.party) + '">' +
+        '<div class="rc-top"><div class="rc-party">' + REFUI.light(r.party, q) + '</div>' +
+        '<div class="rc-date">' + (r.last_txn ? dmy(r.last_txn) : '—') + '</div></div>' +
+        '<div class="rc-pair"><div class="rc-k">Balance</div><div class="rc-v r rc-amt">' +
+          inr2.format(Math.abs(Number(r.balance))) +
+          '<span class="drcr-sfx">' + r.side + '</span></div></div>' +
+        '<div class="rc-pair"><div class="rc-k">Days since</div><div class="rc-v r">' +
+          (r.days_since === null ? '—' : r.days_since) + '</div></div>' +
+        '</div>';
+    }).join('') : '<div class="loading">Nobody with a balance.</div>';
+
+    drawPagerInto('balPager', balPage, pages, function (n) { balPage = n; drawBalances(); });
+  }
+
+  /* One pager, written once, used by both new screens. */
+  function drawPagerInto(id, page, pages, go) {
+    var box = $(id);
+    if (!box) return;
+    if (pages <= 1) { box.innerHTML = ''; return; }
+    box.innerHTML =
+      '<span class="pager-where">Page ' + page + ' of ' + pages + '</span>' +
+      '<button type="button" class="btn btn-outline" data-pg="prev"' +
+        (page <= 1 ? ' disabled' : '') + '>Previous</button>' +
+      '<button type="button" class="btn btn-outline" data-pg="next"' +
+        (page >= pages ? ' disabled' : '') + '>Next</button>';
+    box.onclick = function (e) {
+      var b = e.target.closest('[data-pg]');
+      if (!b || b.disabled) return;
+      go(b.dataset.pg === 'prev' ? page - 1 : page + 1);
+    };
+  }
+
   function loadReports() {
     // A different firm is a different set of customers and a different set
     // of items. Throw the cached lists away rather than showing REF's
@@ -3350,6 +3810,16 @@ upload_token = (shown on the download screen)</pre>
     return row;
   }
 
+  /* AN ITEMS FILE IS NOT A ROWS FILE. busy_items.csv carries item_code
+     and no kind, and it goes to the item master rather than to
+     busy_history. Recognised by its columns rather than by its name, so
+     renaming the file cannot send 2,897 items into the voucher table. */
+  function isItemsFile(rows) {
+    if (!rows.length) return false;
+    var r = rows[0];
+    return r.item_code !== undefined && r.kind === undefined;
+  }
+
   function readRowsFile(file) {
     return file.text().then(function (text) {
       var name = file.name.toLowerCase(), rows;
@@ -3399,6 +3869,19 @@ upload_token = (shown on the download screen)</pre>
       $('uploadState').textContent = 'Reading the rows file…';
       Promise.all(rowFiles.map(readRowsFile)).then(function (lists) {
         var all = [].concat.apply([], lists), byYear = {}, noKey = 0;
+
+        // The item master goes up whole, keyed on company and item_code,
+        // so it is not cut into firm-and-year batches.
+        var itemList = isItemsFile(all) ? all : [];
+        if (itemList.length) {
+          items.push({ via: 'items', source: 'item list', company: '', fy: '',
+                       itemRows: itemList, rows: itemList, ready: true, done: false });
+          $('uploadState').innerHTML = inr.format(itemList.length) +
+            ' items read. They go to the item master, not to the voucher history.';
+          drawItems();
+          return;
+        }
+
         all.forEach(function (row) {
           if (!row.company || !row.fy) { noKey++; return; }
           var key = row.company + '|' + row.fy;
@@ -3504,8 +3987,47 @@ upload_token = (shown on the download screen)</pre>
      real table until the whole year is there. What was staged is thrown away. */
   var CHUNK = 500;
 
+  /* THE ITEM MASTER GOES UP WHOLE. It is a list keyed on company and
+     item_code, not a year of vouchers, so there is no year to compare and
+     nothing to stage: one call, upserted, and an item seen again keeps its
+     row. Sent in chunks only because 2,897 rows of twelve fields is a
+     large request, and every chunk is an upsert, so a retry is safe. */
+  function loadItemsBatch(i, done) {
+    var it = items[i], rows = it.itemRows || [], total = rows.length, sent = 0, kept = 0;
+    setCell(i, 'prog', '<span style="color:var(--muted)">0 of ' + inr.format(total) + '</span>');
+
+    function sendNext() {
+      if (sent >= total) return Promise.resolve();
+      var piece = rows.slice(sent, sent + CHUNK);
+      return REF.supabase().rpc('busy_items_upload', { p_rows: piece })
+        .then(function (res) {
+          if (res.error) throw new Error(res.error.message);
+          sent += piece.length;
+          kept = (res.data && res.data.total) || kept;
+          setCell(i, 'prog', '<span style="color:var(--muted)">' +
+            inr.format(sent) + ' of ' + inr.format(total) + '</span>');
+          $('uploadState').textContent = 'Loading the item master — ' +
+            inr.format(sent) + ' of ' + inr.format(total) + ' sent. Leave this page open.';
+          return sendNext();
+        });
+    }
+
+    sendNext().then(function () {
+      finishItem(i, true, inr.format(total) + ' items sent · <strong>' +
+        inr.format(kept) + '</strong> in the item master',
+        '<span style="color:var(--green)">done</span>');
+      done();
+    }).catch(function (e) {
+      finishItem(i, false,
+        '<span style="color:var(--danger)">' + esc(e.message) + '</span>',
+        '<span style="color:var(--danger)">refused</span>');
+      done();
+    });
+  }
+
   function loadRowsBatch(i, done) {
     var it = items[i];
+    if (it.via === 'items') return loadItemsBatch(i, done);
     var total = it.rows.length;
     var batchId = null;
 
@@ -4191,6 +4713,42 @@ upload_token = (shown on the download screen)</pre>
   $('lgExcel').innerHTML = REFUI.icon('excel');
   $('lgPrint').addEventListener('click', ledgerPrint);
   $('lgExcel').addEventListener('click', ledgerExcel);
+
+  /* ---- the item master ---- */
+  $('imSearch').addEventListener('input', function () { imPage = 1; drawItemMaster(); });
+  $('imChips').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-imf]');
+    if (!b) return;
+    imFilter = b.dataset.imf || null;
+    imPage = 1;
+    drawItemMaster();
+  });
+
+  /* ---- debtors and creditors ---- */
+  $('balSearch').addEventListener('input', function () { balPage = 1; drawBalances(); });
+  $('balOn').addEventListener('change', function () {
+    $('balRange').value = 'custom';       // a typed date is a range the four cannot say
+    loadBalances();
+  });
+  $('balRange').addEventListener('change', function () {
+    if (this.value === 'custom') return;
+    setBalRange(this.value);
+    loadBalances();
+  });
+  /* A balance is a question about one party, and the answer is their
+     ledger. Clicking through beats reading the number and retyping it. */
+  $('view-bal').addEventListener('click', function (e) {
+    var row = e.target.closest('[data-balparty]');
+    if (!row) return;
+    setView('ledger');
+    if (refnav) refnav.select('ledger', firm);
+    $('lgParty').value = row.dataset.balparty;
+    loadLedger();
+  });
+  $('balPrint').innerHTML = REFUI.icon('pdf');
+  $('balExcel').innerHTML = REFUI.icon('excel');
+  $('balPrint').addEventListener('click', balancesPrint);
+  $('balExcel').addEventListener('click', balancesExcel);
 
   /* ---- the report tabs, and opening a row ---- */
   $('repTabs').addEventListener('click', function (e) {

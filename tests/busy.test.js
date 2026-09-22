@@ -201,11 +201,12 @@ async function openBusy(server, browser, user) {
     }
     record(`clicked ${mine.length} of this page's menu items · ${kept} kept scroll and kept the search typed · ${moved} did not`,
       moved === 0, complaints.slice(0, 4).join(' | '));
-    // 5 for REF, 5 for RS, 3 owner-only loading screens. Price History,
-    // Challans, Ledger, Reports and Deleted in Busy per firm; the Ledger
-    // joined on 19 Sep, between Challans and Reports, per doc 11.
+    // 8 for REF, 8 for RS, 3 owner-only loading screens. Price History,
+    // Challans, Ledger, Debtors, Creditors, Items, Reports and Deleted in
+    // Busy per firm; the Ledger joined on 19 Sep between Challans and
+    // Reports, and Debtors, Creditors and Items on 21 Sep after it.
     record('every Busy Data screen is reachable from the menu, owner-only ones included',
-      mine.length === 13, `${mine.length} entries for this page`);
+      mine.length === 19, `${mine.length} entries for this page`);
   }
 
   /* ============ 5. THE LIST SCREEN ============ */
@@ -1895,6 +1896,177 @@ async function openBusy(server, browser, user) {
       /net sales/i.test(recon) && /cannot be put against a machine|they agree/i.test(recon),
       recon.slice(0, 130));
     await p3.close();
+  }
+
+
+  /* ================================================================
+     THE SIDE, NOT JUST THE AMOUNT
+
+     "In Busy, a positive Value1 is a CREDIT and a negative one is a
+     DEBIT. My parser read it the other way round." Every Dr on the
+     ledger screen was a Cr, and PAYABLE and RECEIVABLE were swapped.
+
+     "The Hindon check passed only because it compared the amount, never
+     the side. 41,250 was right; Dr was wrong."
+
+     So: an amount alone can no longer satisfy any of these. Each one
+     names the side it expects, and a run with the sign flipped has to
+     fail. The ERP does no correcting of its own -- debit minus credit,
+     the same arithmetic as the ledger -- so these check that the screen
+     SAYS what the rows MEAN, which is the only part this side owns.
+     ================================================================ */
+  {
+    const { page } = await openBusy(server, browser, OWNER);
+    await page.waitForTimeout(1300);
+    await H.go(page, 'debtors', 'REF');
+    await page.waitForTimeout(1100);
+
+    const seen = await page.evaluate(() => {
+      /* Columns by HEADING, never by position: the order of a table is a
+         thing that changes, and a test that counts from the left starts
+         checking a different column without saying so. */
+      const heads = [...document.querySelectorAll('#view-bal thead th')]
+        .map(h => h.textContent.trim());
+      const col = (r, name) => r.cells[heads.indexOf(name)].textContent.trim();
+      const row = n => [...document.querySelectorAll('#balRows tr')]
+        .find(r => r.cells.length === heads.length && col(r, 'Party').startsWith(n));
+      const read = n => {
+        const r = row(n);
+        if (!r) return null;
+        return { amount: col(r, 'Balance').replace(/[^\d.]/g, ''),
+                 side: col(r, 'Dr/Cr') };
+      };
+      const cards = {};
+      document.querySelectorAll('#balKpis .kpi').forEach(k => {
+        cards[k.querySelector('.k').textContent.trim()] =
+          k.querySelector('.v').textContent.replace(/\s+/g, '');
+      });
+      return { akson: read('AKSON'), hindon: read('HINDON'), cards: cards };
+    });
+
+    /* AKSON INDUSTRIES is the balance he found it with: a 9,97,050
+       advance received. An advance is a CREDIT -- we owe them the
+       machine -- and the old parser showed it as Dr. */
+    record('an advance received is a CREDIT, not a debit — the side, not the amount',
+      seen.akson && seen.akson.side === 'Cr', JSON.stringify(seen.akson));
+    record('and its amount is right too, which is all the old check asked',
+      seen.akson && seen.akson.amount === '997050.00', JSON.stringify(seen.akson));
+    record('a party who owes us reads Dr on the same screen',
+      seen.hindon && seen.hindon.side === 'Dr', JSON.stringify(seen.hindon));
+
+    /* The two sides are never added together, and the words say which
+       is which. PAYABLE and RECEIVABLE were swapped by the same fault. */
+    record('the advances received are counted on their own, not netted away',
+      seen.cards['ADVANCES RECEIVED'] === '₹12,47,050Cr', seen.cards['ADVANCES RECEIVED']);
+    record('and what is owed to us is its own figure, on the other side',
+      seen.cards['OWE US'] === '₹12,88,000Dr', seen.cards['OWE US']);
+    record('the parties card is a count, not money',
+      seen.cards['PARTIES'] === '4', seen.cards['PARTIES']);
+
+    /* The same rows, on the ledger screen, must say the same thing. Two
+       screens answering one question differently means one is lying. */
+    await page.evaluate(() => {
+      const r = document.querySelector('#balRows tr[data-balparty="AKSON INDUSTRIES"]');
+      if (r) r.click();
+    });
+    await page.waitForTimeout(1100);
+    record('clicking a party opens their ledger',
+      (await page.evaluate(() => document.getElementById('lgParty').value)) === 'AKSON INDUSTRIES');
+    await page.close();
+  }
+
+  /* ---------- CREDITORS: THE SAME SCREEN, THE OTHER WAY ROUND ---------- */
+  {
+    const { page } = await openBusy(server, browser, OWNER);
+    await page.waitForTimeout(1300);
+    await H.go(page, 'creditors', 'REF');
+    await page.waitForTimeout(1100);
+    const c = await page.evaluate(() => {
+      const out = [];
+      document.querySelectorAll('#balKpis .kpi').forEach(k =>
+        out.push(k.querySelector('.k').textContent.trim()));
+      return { order: out, note: document.getElementById('balNote').textContent
+                 .replace(/\s+/g, ' ').trim() };
+    });
+    record('on Creditors the side the screen is about leads — what we owe them',
+      c.order[0] === 'WE OWE THEM' && c.order[1] === 'ADVANCES PAID',
+      c.order.join(' · '));
+    record('and the screen says in words why both sides are shown',
+      /advance is normal/.test(c.note) && /A single net figure would hide it/.test(c.note),
+      c.note.slice(0, 110));
+    await page.close();
+  }
+
+  /* ---------- THE ITEM MASTER ---------- */
+  {
+    const { page } = await openBusy(server, browser, OWNER);
+    await page.waitForTimeout(1300);
+    await H.go(page, 'items', 'REF');
+    await page.waitForTimeout(1100);
+
+    const im = await page.evaluate(() => ({
+      rows: document.querySelectorAll('#imRows tr').length,
+      cards: document.querySelectorAll('#imCards .rc').length,
+      amber: document.querySelectorAll('#imRows .pill-amber').length,
+      red: document.querySelectorAll('#imRows .pill-danger').length,
+      redTip: (document.querySelector('#imRows .pill-danger') || {}).title || '',
+      unitTip: [...document.querySelectorAll('#imRows .has-tip')]
+                 .map(e => e.textContent + '→' + e.title),
+      chips: [...document.querySelectorAll('#imChips .chip')].map(c =>
+               c.textContent.replace(/\s+/g, ' ').trim()),
+    }));
+    record('the item master lists Busy\'s own items, with cards for a phone',
+      im.rows === 5 && im.cards === 5, `${im.rows} rows · ${im.cards} cards`);
+    record('an item with NO HSN is flagged in amber', im.amber === 1, `${im.amber} flagged`);
+    record('a GST slab that no longer exists is flagged in red',
+      im.red === 2, `${im.red} flagged`);
+    record('and the red flag carries the date the slab was abolished',
+      /22 September 2025/.test(im.redTip), im.redTip);
+    /* The units are cleaned in the PARSER. The screen shows the clean one
+       and keeps Busy's own spelling in the tooltip -- and only where the
+       two differ, because a tooltip that repeats the word under it
+       teaches people that tooltips say nothing. */
+    record('the clean unit is shown, with Busy\'s own spelling behind it',
+      im.unitTip.includes('Pcs→Busy holds this as Pcs.') &&
+      im.unitTip.includes('Pcs→Busy holds this as NOS') &&
+      im.unitTip.includes('Metre→Busy holds this as Metres') &&
+      // PCS is Pcs in capitals, not a different spelling worth a tooltip
+      !im.unitTip.some(t => /as PCS$/.test(t)),
+      JSON.stringify(im.unitTip));
+    record('the two faults are counted at the top, so neither has to be hunted for',
+      im.chips.some(c => /No HSN 1/.test(c)) &&
+      im.chips.some(c => /no longer exists 2/.test(c)), JSON.stringify(im.chips));
+
+    // Search covers the HSN, so typing a heading finds everything under it.
+    await page.evaluate(() => {
+      const el = document.getElementById('imSearch');
+      el.value = '8431';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.waitForTimeout(500);
+    const hsn = await page.evaluate(() => {
+      const heads = [...document.querySelectorAll('#view-items thead th')]
+        .map(h => h.textContent.trim());
+      const rows = [...document.querySelectorAll('#imRows tr')];
+      return { rows: rows.length,
+               first: rows.length && rows[0].cells.length === heads.length
+                        ? rows[0].cells[heads.indexOf('Item')].textContent : '' };
+    });
+    record('typing an HSN finds everything under it, not just names',
+      hsn.rows === 1 && /CONVEYOR BEND/.test(hsn.first), JSON.stringify(hsn));
+
+    await page.evaluate(() => {
+      const el = document.getElementById('imSearch');
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      const c = [...document.querySelectorAll('#imChips .chip')]
+        .find(x => /No HSN/.test(x.textContent));
+      if (c) c.click();
+    });
+    await page.waitForTimeout(500);
+    record('and the No HSN count is a filter, not just a number',
+      (await page.evaluate(() => document.querySelectorAll('#imRows tr').length)) === 1);
+    await page.close();
   }
 
   /* ---------- NEARLY THE SAME NAME IS NOT THE SAME LEDGER ----------

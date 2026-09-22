@@ -1,7 +1,16 @@
 {
   "_refresh": "see tests/check-rpc-calls.js",
-  "_taken_from": "public schema of refcon-erp, 20 Sep 2026, after migration 73",
+  "_taken_from": "public schema of refcon-erp, 21 Sep 2026, after migration 76",
   "functions": {
+    "busy_balances": {
+      "args": [
+        "p_company",
+        "p_group",
+        "p_on"
+      ],
+      "total": 3,
+      "with_defaults": 1
+    },
     "busy_clear_history": {
       "args": [
         "p_confirm"
@@ -156,9 +165,23 @@
       "total": 2,
       "with_defaults": 0
     },
+    "busy_items_list": {
+      "args": [
+        "p_company"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
     "busy_items_sold": {
       "args": [
         "p_company"
+      ],
+      "total": 1,
+      "with_defaults": 0
+    },
+    "busy_items_upload": {
+      "args": [
+        "p_rows"
       ],
       "total": 1,
       "with_defaults": 0

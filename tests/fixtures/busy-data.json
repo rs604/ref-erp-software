@@ -4562,5 +4562,115 @@
       "ledger": "R.S.INDUSTRIES",
       "entries": 5
     }
-  ]
+  ],
+  "rpc:busy_items_list": [
+    {
+      "item_code": "I-0001",
+      "item": "INCLINED SLAT CONVEYOR",
+      "hsn": "84283300",
+      "unit": "Pcs",
+      "unit_in_busy": "PCS",
+      "alt_unit": null,
+      "alt_unit_in_busy": null,
+      "tax_category": "GST 18%",
+      "gst_rate": 18,
+      "busy_group": "CONVEYORS",
+      "fy": "2026-27"
+    },
+    {
+      "item_code": "I-0002",
+      "item": "CONVEYOR BEND",
+      "hsn": "84314390",
+      "unit": "Pcs",
+      "unit_in_busy": "Pcs.",
+      "alt_unit": "Set",
+      "alt_unit_in_busy": "SET",
+      "tax_category": "GST 18%",
+      "gst_rate": 18,
+      "busy_group": "CONVEYOR PARTS",
+      "fy": "2026-27"
+    },
+    {
+      "item_code": "I-0003",
+      "item": "FABRICATED MATERIALS",
+      "hsn": null,
+      "unit": "Pcs",
+      "unit_in_busy": "NOS",
+      "alt_unit": null,
+      "alt_unit_in_busy": null,
+      "tax_category": "GST 18%",
+      "gst_rate": 18,
+      "busy_group": "FABRICATION",
+      "fy": "2025-26"
+    },
+    {
+      "item_code": "I-0004",
+      "item": "CONVEYOR CHAIN",
+      "hsn": "73151200",
+      "unit": "Metre",
+      "unit_in_busy": "Metres",
+      "alt_unit": null,
+      "alt_unit_in_busy": null,
+      "tax_category": "GST 12%",
+      "gst_rate": 12,
+      "busy_group": "CONVEYOR PARTS",
+      "fy": "2024-25"
+    },
+    {
+      "item_code": "I-0005",
+      "item": "GOODS LIFT",
+      "hsn": "84281020",
+      "unit": "Pcs",
+      "unit_in_busy": "NOS",
+      "alt_unit": null,
+      "alt_unit_in_busy": null,
+      "tax_category": "GST 28%",
+      "gst_rate": 28,
+      "busy_group": "LIFTS",
+      "fy": "2023-24"
+    }
+  ],
+  "rpc:busy_balances": {
+    "company": "REF",
+    "group": "Sundry Debtors",
+    "on": "2026-09-21",
+    "dr_count": 2,
+    "dr_total": 1288000,
+    "cr_count": 2,
+    "cr_total": 1247050,
+    "rows": [
+      {
+        "party": "AKSON INDUSTRIES",
+        "balance": -997050,
+        "side": "Cr",
+        "last_txn": "2026-07-24",
+        "days_since": 59,
+        "entries": 3
+      },
+      {
+        "party": "HINDON METAFORMS PVT.LTD",
+        "balance": 1200000,
+        "side": "Dr",
+        "last_txn": "2026-03-25",
+        "days_since": 180,
+        "entries": 9
+      },
+      {
+        "party": "T I CYCLES OF INDIA",
+        "balance": 88000,
+        "side": "Dr",
+        "last_txn": "2026-02-11",
+        "days_since": 222,
+        "entries": 35
+      },
+      {
+        "party": "MAGMA CYCLES",
+        "balance": -250000,
+        "side": "Cr",
+        "last_txn": "2026-06-02",
+        "days_since": 111,
+        "entries": 17
+      }
+    ]
+  }
 }
