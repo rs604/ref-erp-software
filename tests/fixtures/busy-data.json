@@ -4271,6 +4271,18 @@
       "ledger_group": "Sundry Debtors",
       "entries": 5,
       "last_entry": "2025-11-02"
+    },
+    {
+      "ledger": "AKSON INDUSTRIES PVT LTD",
+      "ledger_group": "Sundry Debtors",
+      "entries": 48,
+      "last_entry": "2026-07-24"
+    },
+    {
+      "ledger": "AKSON INDUSTRIES",
+      "ledger_group": "Sundry Debtors",
+      "entries": 6,
+      "last_entry": "2026-07-24"
     }
   ],
   "rpc:busy_customer_list": [
@@ -4325,6 +4337,32 @@
       "credit_note_count": 2,
       "last_sale": "2026-09-08",
       "quiet_days": 11
+    },
+    {
+      "customer": "AKSON INDUSTRIES PVT LTD",
+      "this_fy": 26550,
+      "last_fy": 0,
+      "change_pct": null,
+      "lifetime_gross": 26550,
+      "lifetime_credit_notes": 0,
+      "lifetime": 26550,
+      "invoices": 3,
+      "credit_note_count": 0,
+      "last_sale": "2026-05-12",
+      "quiet_days": 133
+    },
+    {
+      "customer": "AKSON INDUSTRIES",
+      "this_fy": 283200,
+      "last_fy": 0,
+      "change_pct": null,
+      "lifetime_gross": 283200,
+      "lifetime_credit_notes": 0,
+      "lifetime": 283200,
+      "invoices": 1,
+      "credit_note_count": 0,
+      "last_sale": "2026-05-12",
+      "quiet_days": 133
     }
   ],
   "rpc:busy_customer_detail": {
@@ -4633,26 +4671,26 @@
   "rpc:busy_balances": {
     "company": "REF",
     "group": "Sundry Debtors",
-    "on": "2026-09-21",
+    "on": "2026-09-22",
     "dr_count": 2,
     "dr_total": 1288000,
     "cr_count": 2,
     "cr_total": 1247050,
     "rows": [
       {
-        "party": "AKSON INDUSTRIES",
+        "party": "AKSON INDUSTRIES PVT LTD",
         "balance": -997050,
         "side": "Cr",
         "last_txn": "2026-07-24",
-        "days_since": 59,
-        "entries": 3
+        "days_since": 60,
+        "entries": 7
       },
       {
         "party": "HINDON METAFORMS PVT.LTD",
         "balance": 1200000,
         "side": "Dr",
         "last_txn": "2026-03-25",
-        "days_since": 180,
+        "days_since": 181,
         "entries": 9
       },
       {
@@ -4660,7 +4698,7 @@
         "balance": 88000,
         "side": "Dr",
         "last_txn": "2026-02-11",
-        "days_since": 222,
+        "days_since": 223,
         "entries": 35
       },
       {
@@ -4668,9 +4706,27 @@
         "balance": -250000,
         "side": "Cr",
         "last_txn": "2026-06-02",
-        "days_since": 111,
+        "days_since": 112,
         "entries": 17
       }
     ]
-  }
+  },
+  "rpc:busy_similar_groups": [
+    {
+      "core": "AKSON INDUSTRIE",
+      "names": [
+        "AKSON INDUSTRIES",
+        "AKSON INDUSTRIES PVT LTD"
+      ],
+      "how_many": 2
+    },
+    {
+      "core": "R S INDUSTRIE",
+      "names": [
+        "R S INDUSTRIES",
+        "R.S.INDUSTRIES"
+      ],
+      "how_many": 2
+    }
+  ]
 }

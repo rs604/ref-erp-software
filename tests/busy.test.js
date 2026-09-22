@@ -1928,29 +1928,44 @@ async function openBusy(server, browser, user) {
       const heads = [...document.querySelectorAll('#view-bal thead th')]
         .map(h => h.textContent.trim());
       const col = (r, name) => r.cells[heads.indexOf(name)].textContent.trim();
-      const row = n => [...document.querySelectorAll('#balRows tr')]
-        .find(r => r.cells.length === heads.length && col(r, 'Party').startsWith(n));
+      // data-balparty carries the ledger name verbatim, so a row is found
+      // by the name Busy holds and never by a prefix of it.
+      const row = n => document.querySelector(
+        '#balRows tr[data-balparty="' + n.replace(/"/g, '\\"') + '"]');
       const read = n => {
         const r = row(n);
         if (!r) return null;
         return { amount: col(r, 'Balance').replace(/[^\d.]/g, ''),
-                 side: col(r, 'Dr/Cr') };
+                 side: col(r, 'Dr/Cr'), name: r.dataset.balparty };
       };
       const cards = {};
       document.querySelectorAll('#balKpis .kpi').forEach(k => {
         cards[k.querySelector('.k').textContent.trim()] =
           k.querySelector('.v').textContent.replace(/\s+/g, '');
       });
-      return { akson: read('AKSON'), hindon: read('HINDON'), cards: cards };
+      const akson = read('AKSON INDUSTRIES PVT LTD');
+      return { akson: akson, aksonName: akson && akson.name,
+               hindon: read('HINDON METAFORMS PVT.LTD'), cards: cards,
+               // the flag: two Akson ledgers, and the row says so
+               aksonFlag: (row('AKSON INDUSTRIES PVT LTD') || { textContent: '' })
+                            .textContent.replace(/\s+/g, ' '),
+               note: document.getElementById('balNote').textContent.replace(/\s+/g, ' ') };
     });
 
-    /* AKSON INDUSTRIES is the balance he found it with: a 9,97,050
-       advance received. An advance is a CREDIT -- we owe them the
-       machine -- and the old parser showed it as Dr. */
+    /* THE EXACT LEDGER, NEVER A PATTERN.
+
+       There are TWO Akson ledgers in Busy. AKSON INDUSTRIES nets to zero;
+       AKSON INDUSTRIES PVT LTD is the one holding the 9,97,050 advance. A
+       test that matched "AKSON" would have passed or failed depending on
+       which one it found first, and the combined figure happens to be the
+       same -- luck, not method. So the name is spelt out in full and the
+       row is found by equality. */
     record('an advance received is a CREDIT, not a debit — the side, not the amount',
       seen.akson && seen.akson.side === 'Cr', JSON.stringify(seen.akson));
     record('and its amount is right too, which is all the old check asked',
       seen.akson && seen.akson.amount === '997050.00', JSON.stringify(seen.akson));
+    record('the row checked is AKSON INDUSTRIES PVT LTD exactly, not whatever matched "AKSON"',
+      seen.aksonName === 'AKSON INDUSTRIES PVT LTD', String(seen.aksonName));
     record('a party who owes us reads Dr on the same screen',
       seen.hindon && seen.hindon.side === 'Dr', JSON.stringify(seen.hindon));
 
@@ -1965,13 +1980,23 @@ async function openBusy(server, browser, user) {
 
     /* The same rows, on the ledger screen, must say the same thing. Two
        screens answering one question differently means one is lying. */
+    /* ONE CUSTOMER, TWO LEDGERS, ON THE LIST ITSELF. Anyone reading only
+       AKSON INDUSTRIES -- which nets to zero -- would say Akson owes
+       nothing and has paid nothing. */
+    record('a party with a second ledger of nearly the same name is marked on the row',
+      /2 ledgers/.test(seen.aksonFlag), seen.aksonFlag.slice(0, 90));
+    record('and the list says so above the rows, before they are read',
+      /1 of these has another ledger with nearly the same name/.test(seen.note),
+      seen.note.slice(0, 100));
+
     await page.evaluate(() => {
-      const r = document.querySelector('#balRows tr[data-balparty="AKSON INDUSTRIES"]');
+      const r = document.querySelector('#balRows tr[data-balparty="AKSON INDUSTRIES PVT LTD"]');
       if (r) r.click();
     });
     await page.waitForTimeout(1100);
     record('clicking a party opens their ledger',
-      (await page.evaluate(() => document.getElementById('lgParty').value)) === 'AKSON INDUSTRIES');
+      (await page.evaluate(() => document.getElementById('lgParty').value))
+        === 'AKSON INDUSTRIES PVT LTD');
     await page.close();
   }
 
@@ -2036,6 +2061,50 @@ async function openBusy(server, browser, user) {
     record('the two faults are counted at the top, so neither has to be hunted for',
       im.chips.some(c => /No HSN 1/.test(c)) &&
       im.chips.some(c => /no longer exists 2/.test(c)), JSON.stringify(im.chips));
+
+    await page.close();
+  }
+
+  /* ---------- AND ON THE CUSTOMER LIST, WHICH IS WHERE HE ASKED ---------- */
+  {
+    const { page } = await openBusy(server, browser, OWNER);
+    await page.waitForTimeout(1300);
+    await H.go(page, 'reports', 'REF');
+    await page.waitForTimeout(1200);
+    await page.evaluate(() => document.querySelector('.rep-tab[data-rep="customers"]').click());
+    await page.waitForTimeout(1100);
+    const cust = await page.evaluate(() => {
+      const row = n => [...document.querySelectorAll('#custRows tr')]
+        .find(r => r.dataset.cust === n);
+      const a = row('AKSON INDUSTRIES'), b = row('AKSON INDUSTRIES PVT LTD');
+      return {
+        note: document.getElementById('custSimilar').textContent.replace(/\s+/g, ' ').trim(),
+        aFlag: a ? a.textContent.replace(/\s+/g, ' ') : null,
+        bFlag: b ? b.textContent.replace(/\s+/g, ' ') : null,
+        tip: (document.querySelector('#custRows .pill-amber') || {}).title || '',
+        plain: [...document.querySelectorAll('#custRows tr')]
+          .filter(r => !/ledgers/.test(r.textContent)).length,
+      };
+    });
+    record('BOTH Akson rows on the customer list are marked, not just one',
+      /2 ledgers/.test(cust.aFlag || '') && /2 ledgers/.test(cust.bFlag || ''),
+      JSON.stringify({ a: (cust.aFlag || '').slice(0, 50), b: (cust.bFlag || '').slice(0, 50) }));
+    record('the mark names the other ledger, so the row carries the whole answer',
+      /AKSON INDUSTRIES · AKSON INDUSTRIES PVT LTD/.test(cust.tip) &&
+      /balances are separate/.test(cust.tip), cust.tip.slice(0, 110));
+    record('and the customer list says so above the rows',
+      /2 of these have another ledger with nearly the same name/.test(cust.note),
+      cust.note.slice(0, 90));
+    record('a customer with one ledger is not marked — the flag is not on everything',
+      cust.plain > 0, `${cust.plain} rows unmarked`);
+    await page.close();
+  }
+
+  {
+    const { page } = await openBusy(server, browser, OWNER);
+    await page.waitForTimeout(1300);
+    await H.go(page, 'items', 'REF');
+    await page.waitForTimeout(1100);
 
     // Search covers the HSN, so typing a heading finds everything under it.
     await page.evaluate(() => {

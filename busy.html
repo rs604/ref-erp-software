@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1790005916';</script>
+<script>window.__BUILD_VERSION__ = '1790062639';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -27,8 +27,8 @@
   window.addEventListener('online', checkVersion);
 })();
 </script>
-<link rel="stylesheet" href="theme.css?v=1790005916">
-<link rel="stylesheet" href="ui.css?v=1790005916">
+<link rel="stylesheet" href="theme.css?v=1790062639">
+<link rel="stylesheet" href="ui.css?v=1790062639">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   * { box-sizing:border-box; }
@@ -835,6 +835,7 @@
               </div>
             </div>
           </div>
+          <div id="custSimilar"></div>
           <div class="quiet-chips" id="quietChips"></div>
           <div class="rowcount" id="custCount"></div>
           <div class="tbl-wrap fit">
@@ -2094,6 +2095,69 @@ upload_token = (shown on the download screen)</pre>
       });
   }
 
+  /* =====================================================================
+     ONE CUSTOMER, TWO LEDGERS — ON EVERY LIST, NOT JUST THE LEDGER
+
+     AKSON INDUSTRIES nets to zero; AKSON INDUSTRIES PVT LTD holds a
+     9,97,050 advance. Anyone reading only the first would say Akson owes
+     nothing and has paid nothing. So the flag the ledger screen already
+     carries goes on the customer list, the debtors and the creditors too.
+
+     ONE CALL PER SCREEN, not one per row: a list has hundreds of rows and
+     the server hands back every group of near-identical names in the firm
+     at once. Nothing is merged, here or anywhere -- a ledger shows what
+     Busy holds. */
+  var simGroups = null, simFirm = null;
+
+  function loadSimilar() {
+    if (simGroups && simFirm === firm) return Promise.resolve(simGroups);
+    var want = firm;
+    return Promise.resolve(REF.supabase().rpc('busy_similar_groups', { p_company: want }))
+      .then(function (r) {
+        var map = {};
+        if (r && !r.error) {
+          (r.data || []).forEach(function (g) {
+            (g.names || []).forEach(function (n) {
+              map[n] = (g.names || []).filter(function (o) { return o !== n; });
+            });
+          });
+        }
+        // A later firm switch wins: never label REF's rows with RS's groups.
+        if (want === firm) { simGroups = map; simFirm = want; }
+        return map;
+      });
+  }
+
+  function similarTo(name) {
+    if (!simGroups || simFirm !== firm) return [];
+    return simGroups[name] || [];
+  }
+
+  /* The marker on a row. It says how many ledgers there are in total, and
+     names the others in the tooltip, so the row itself carries the whole
+     answer without a click. */
+  function simPill(name) {
+    var others = similarTo(name);
+    if (!others.length) return '';
+    // Sorted, so one group reads identically on every row it appears on
+    // rather than starting with whichever row is being drawn.
+    var all = [name].concat(others).sort();
+    return ' <span class="pill pill-amber has-tip" title="Busy holds ' +
+           all.length + ' ledgers with nearly the same name: ' + esc(all.join(' · ')) +
+           '. The balances are separate.">' + all.length + ' ledgers</span>';
+  }
+
+  /* The line above a list, so the count is seen before the rows are read. */
+  function simNote(names) {
+    var hit = names.filter(function (n) { return similarTo(n).length; });
+    if (!hit.length) return '';
+    return '<div class="note warn-note"><strong>' + hit.length + ' of these ' +
+      (hit.length === 1 ? 'has' : 'have') + ' another ledger with nearly the same name</strong>' +
+      ' — marked in the list, and the balances are separate in Busy. ' +
+      'One customer entered twice is two ledgers, and reading only one of them ' +
+      'is how a party with a ten-lakh advance looks like a party with nothing.</div>';
+  }
+
   /* NEARLY THE SAME NAME IS NOT THE SAME LEDGER.
 
      Busy holds one ledger per NAME, so a party entered twice with a full
@@ -2663,7 +2727,7 @@ upload_token = (shown on the download screen)</pre>
         if (!res) return;
         custRows = res.data || [];
         custPage = 1;
-        drawCustomers();
+        loadSimilar().then(drawCustomers);
       });
   }
   function drawCustomers() {
@@ -2686,11 +2750,13 @@ upload_token = (shown on the download screen)</pre>
     $('custCount').textContent = list.length + ' of ' + all.length +
       ' customers — ' + (firm === 'REF' ? 'Raghbir Erectors & Fabricators' : 'RS Industries') +
       ' only. Taxable value, excluding GST, net of credit notes.';
+    $('custSimilar').innerHTML = simNote(all.map(function (r) { return r.customer; }));
 
     $('custRows').innerHTML = slice.map(function (r, i) {
       return '<tr class="cust-row" data-cust="' + esc(r.customer) + '">' +
         '<td>' + (from + i + 1) + '</td>' +
-        '<td class="l"><a href="#" class="cust-open">' + esc(r.customer) + '</a></td>' +
+        '<td class="l"><a href="#" class="cust-open">' + esc(r.customer) + '</a>' +
+          simPill(r.customer) + '</td>' +
         '<td class="r">' + moneyShort(r.this_fy) + '</td>' +
         '<td class="r">' + moneyShort(r.last_fy) + '</td>' +
         '<td class="r">' + changeCell(r.change_pct) + '</td>' +
@@ -2705,7 +2771,8 @@ upload_token = (shown on the download screen)</pre>
 
     $('custCards').innerHTML = slice.map(function (r) {
       return '<div class="rc cust-row" data-cust="' + esc(r.customer) + '">' +
-        '<div class="rc-top"><div class="rc-party">' + esc(r.customer) + '</div>' +
+        '<div class="rc-top"><div class="rc-party">' + esc(r.customer) +
+          simPill(r.customer) + '</div>' +
         '<div class="rc-date">' + quietWords(r.quiet_days) + '</div></div>' +
         '<div class="rc-desc">This FY ' + moneyShort(r.this_fy) +
           ' · Last FY ' + moneyShort(r.last_fy) + ' · ' + changeCell(r.change_pct) + '</div>' +
@@ -3404,7 +3471,9 @@ upload_token = (shown on the download screen)</pre>
       .then(function (res) {
         if (!res) { $('balCards').innerHTML = ''; return; }
         balData = res.data; balPage = 1;
-        drawBalances();
+        // The near-identical names, before the rows are drawn, so the flag
+        // is on the first paint rather than appearing a moment later.
+        loadSimilar().then(drawBalances);
       });
   }
 
@@ -3439,7 +3508,7 @@ upload_token = (shown on the download screen)</pre>
       kpi('PARTIES', String(d.dr_count + d.cr_count), '', '',
           'with a balance at ' + dmy(d.on), '', true);
 
-    $('balNote').innerHTML =
+    $('balNote').innerHTML = simNote((d.rows || []).map(function (r) { return r.party; })) +
       '<div class="note">Both sides are shown and never netted away. On capital goods an ' +
       'advance is normal — 50% on order, before the machine is billed — so <strong>₹' +
       inr.format(Math.round(balWhich === 'debtors' ? d.cr_total : d.dr_total)) +
@@ -3460,7 +3529,7 @@ upload_token = (shown on the download screen)</pre>
     $('balRows').innerHTML = slice.length ? slice.map(function (r, i) {
       return '<tr class="bal-row" data-balparty="' + esc(r.party) + '">' +
         '<td>' + (from + i + 1) + '</td>' +
-        '<td class="l">' + REFUI.light(r.party, q) + '</td>' +
+        '<td class="l">' + REFUI.light(r.party, q) + simPill(r.party) + '</td>' +
         '<td class="r">' + inr2.format(Math.abs(Number(r.balance))) + '</td>' +
         '<td><span class="' + (r.side === 'Dr' ? 'way-rec' : 'way-pay') +
           '" style="font-weight:600">' + r.side + '</span></td>' +
@@ -3470,7 +3539,8 @@ upload_token = (shown on the download screen)</pre>
 
     $('balCards').innerHTML = slice.length ? slice.map(function (r) {
       return '<div class="rc flat bal-row" data-balparty="' + esc(r.party) + '">' +
-        '<div class="rc-top"><div class="rc-party">' + REFUI.light(r.party, q) + '</div>' +
+        '<div class="rc-top"><div class="rc-party">' + REFUI.light(r.party, q) +
+          simPill(r.party) + '</div>' +
         '<div class="rc-date">' + (r.last_txn ? dmy(r.last_txn) : '—') + '</div></div>' +
         '<div class="rc-pair"><div class="rc-k">Balance</div><div class="rc-v r rc-amt">' +
           inr2.format(Math.abs(Number(r.balance))) +
@@ -3506,6 +3576,7 @@ upload_token = (shown on the download screen)</pre>
     // of items. Throw the cached lists away rather than showing REF's
     // customers under RS's heading.
     custRows = []; itemRows = []; matData = null; quietPick = 0;
+    simGroups = null; simFirm = null;   // REF's groups are not RS's
     $('custDetail').style.display = 'none';
     $('itemDetail').style.display = 'none';
     setRepTab(repTab);
