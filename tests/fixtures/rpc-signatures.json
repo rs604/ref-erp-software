@@ -1,6 +1,8 @@
 {
   "_refresh": "see tests/check-rpc-calls.js",
-  "_taken_from": "public schema of refcon-erp, 22 Sep 2026, after migration 77",
+  "_taken_from": "public schema of refcon-erp, 26 Sep 2026, after migration 81",
+  "_fingerprint": "cac8226b9ba08ff381edcd3fe9dc95a5",
+  "_fingerprint_is": "md5 of fn:args|total|with_defaults for the 51 recorded functions, one per line, sorted by name. The query is in tests/README.md. Re-saving this file silences the staleness warning whether or not anything was checked; this number is what proves it was.",
   "functions": {
     "busy_balances": {
       "args": [

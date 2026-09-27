@@ -907,6 +907,47 @@ function reportScreen(label, r) {
     await page.close();
   }
 
+  /* ================================================================
+     THE DEBTOR LIST ON A PHONE: CARDS, THEN A PLAIN LIST
+
+     "Same on the phone: section 1 as cards, section 2 as a plain list."
+
+     A card is for a figure you weigh against the one below it. The nil
+     list has no figure -- that is the whole point of it -- so a card there
+     is an empty frame around a name, and eighty of them is a wall.
+     ================================================================ */
+  {
+    const page = await browser.newPage(PHONE);
+    await H.open(server, page, { file: 'busy.html', user: OWNER,
+                                 handlers: HANDLERS, data: JSON.stringify(BUSY) });
+    await page.waitForSelector('#shell', { state: 'visible' });
+    await page.waitForTimeout(1300);
+    await H.go(page, 'debtors', 'REF');
+    await page.waitForTimeout(1100);
+
+    const two = await page.evaluate(() => {
+      const shown = el => el && getComputedStyle(el).display !== 'none';
+      const cards = document.getElementById('balCards');
+      const nil = document.getElementById('balNilCards');
+      return {
+        tableHidden: !shown(document.querySelector('#view-bal .tbl-wrap')),
+        cardsShown: shown(cards) && cards.querySelectorAll('.rc').length > 0,
+        nilShown: shown(nil) && nil.querySelectorAll('.nilrow').length > 0,
+        nilCards: nil ? nil.querySelectorAll('.rc').length : -1,
+        nilText: nil ? (nil.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80) : '',
+        ramson: nil ? /RAMSONS TYRES/.test(nil.textContent || '') : false,
+      };
+    });
+
+    record('the table is put away on a phone and section 1 is cards',
+      two.tableHidden && two.cardsShown, JSON.stringify(two).slice(0, 120));
+    record('section 2 is a plain list on the phone, not eighty empty cards',
+      two.nilShown && two.nilCards === 0, two.nilText);
+    record('and a party settled to nothing is still reachable there',
+      two.ramson && /NIL/.test(two.nilText), two.nilText);
+    await page.close();
+  }
+
   await browser.close();
   server.close();
 

@@ -1925,8 +1925,8 @@ async function openBusy(server, browser, user) {
       /* Columns by HEADING, never by position: the order of a table is a
          thing that changes, and a test that counts from the left starts
          checking a different column without saying so. */
-      const heads = [...document.querySelectorAll('#view-bal thead th')]
-        .map(h => h.textContent.trim());
+      const heads = [...document.querySelectorAll('#balRows')[0]
+        .closest('table').querySelectorAll('thead th')].map(h => h.textContent.trim());
       const col = (r, name) => r.cells[heads.indexOf(name)].textContent.trim();
       // data-balparty carries the ledger name verbatim, so a row is found
       // by the name Busy holds and never by a prefix of it.
@@ -2019,6 +2019,105 @@ async function openBusy(server, browser, user) {
     record('and the screen says in words why both sides are shown',
       /advance is normal/.test(c.note) && /A single net figure would hide it/.test(c.note),
       c.note.slice(0, 110));
+    await page.close();
+  }
+
+  /* ================================================================
+     TWO SECTIONS, AND NOBODY IN BOTH
+
+     "Ramson -- we have not done any business, still it shows 50,000."
+
+     The old rule took the latest opening AT OR BEFORE the date, which
+     reaches back through dead years until it finds one. It found March
+     2016. Six parties came back from the dead that way.
+
+     THE RULE NOW: a balance at a date comes only from the financial year
+     containing that date. No opening and no movement in that year means
+     NIL -- Busy already carried forward everything that was not zero.
+
+     And nil is a LIST, not an absence: sorted by last transaction it is
+     the dormant-customer call list, and it answers "have we done business
+     with them?" A party last seen in 2016 is still a customer who can be
+     called.
+     ================================================================ */
+  {
+    const { page } = await openBusy(server, browser, OWNER);
+    await page.waitForTimeout(1300);
+    await H.go(page, 'debtors', 'REF');
+    await page.waitForTimeout(1100);
+
+    const two = await page.evaluate(() => {
+      const cells = (tb, head) => {
+        const table = document.getElementById(tb).closest('table');
+        const heads = [...table.querySelectorAll('thead th')].map(h => h.textContent.trim());
+        const i = heads.indexOf(head);
+        return [...document.getElementById(tb).rows]
+          .filter(r => r.cells.length === heads.length)
+          .map(r => r.cells[i].textContent.trim());
+      };
+      return {
+        live:    cells('balRows', 'Party'),
+        nil:     cells('balNilRows', 'Party'),
+        nilBal:  cells('balNilRows', 'Balance'),
+        nilWhen: cells('balNilRows', 'Last transaction'),
+        // The totals belong to section 1 only: one set of cards on the screen.
+        kpiBlocks: document.querySelectorAll('#view-bal .kpis').length,
+        nilHead: (document.querySelector('#balNilCard .sect-h') || {}).textContent,
+        nilCount: (document.getElementById('balNilCount') || {}).textContent,
+      };
+    });
+
+    record('RAMSONS TYRES reads nil today — no business since 2015-16, and no balance',
+      two.nil.includes('RAMSONS TYRES'), two.nil.join(' · '));
+    record('and it is NOT in the list of parties with a balance',
+      !two.live.includes('RAMSONS TYRES'), two.live.join(' · '));
+    record('no party is in both sections — a balance of one rupee is a balance',
+      two.live.every(n => !two.nil.includes(n)),
+      two.live.filter(n => two.nil.includes(n)).join(', ') || 'none in both');
+    record('the nil balance is shown as the word NIL, not 0 and not blank',
+      two.nilBal.length > 0 && two.nilBal.every(v => v === 'NIL'),
+      two.nilBal.join(' · '));
+    record('the nil list is a call list — most recently seen first',
+      (() => {
+        const d = two.nilWhen.map(t => {
+          const m = /(\d{1,2}) (\w{3}) (\d{4})/.exec(t);
+          return m ? new Date(m[3] + ' ' + m[2] + ' ' + m[1]).getTime() : -1;
+        });
+        return d.every((v, i) => i === 0 || d[i - 1] >= v);
+      })(), two.nilWhen.join(' · '));
+    record('section 2 has no cards and no totals of its own — a total of nothing is nothing',
+      two.kpiBlocks === 1, String(two.kpiBlocks) + ' block(s) of cards on the screen');
+    record('and it is headed so the two lists are not read as one',
+      /nil balance/i.test(two.nilHead || '') && /settled to nothing/i.test(two.nilCount || ''),
+      (two.nilHead || '') + ' — ' + (two.nilCount || '').slice(0, 60));
+
+    /* The same search box answers both halves of "have we done business
+       with them?", which is the whole reason the nil list is on the screen
+       rather than in a report nobody opens. */
+    await page.evaluate(() => {
+      const el = document.getElementById('balSearch');
+      el.value = 'ramson';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.waitForTimeout(400);
+    const found = await page.evaluate(() => {
+      const table = document.getElementById('balNilRows').closest('table');
+      const heads = [...table.querySelectorAll('thead th')].map(h => h.textContent.trim());
+      const at = heads.indexOf('Party');
+      return {
+        live:     [...document.getElementById('balRows').rows]
+                    .filter(r => r.dataset.balparty).map(r => r.dataset.balparty),
+        liveText: document.getElementById('balRows').textContent.replace(/\s+/g, ' ').trim(),
+        nil:      [...document.getElementById('balNilRows').rows]
+                    .filter(r => r.cells.length === heads.length)
+                    .map(r => r.cells[at].textContent.trim()),
+      };
+    });
+    record('typing a name searches the nil list too, so a dormant customer is findable',
+      found.nil.some(n => /RAMSON/.test(n)), found.nil.join(' · '));
+    record('and the parties-with-a-balance list says plainly that it has none of them',
+      found.live.length === 0 && /Nobody/i.test(found.liveText),
+      found.liveText.slice(0, 80));
     await page.close();
   }
 

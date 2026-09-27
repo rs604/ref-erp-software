@@ -57,6 +57,30 @@ let calls = 0;
   }
 }
 
+/* AND THE SNAPSHOT MUST BE THE SNAPSHOT IT SAYS IT IS.
+
+   The staleness rule above is a file date, and a file date is cleared by
+   saving the file -- whether or not anyone compared it with the project.
+   _fingerprint is the md5 the DATABASE computes over the same 51 functions,
+   written down when the copy was taken, so "I refreshed it" is checkable:
+   the same query against the project has to give the same number. This part
+   only catches the functions block being edited by hand afterwards. */
+{
+  const crypto = require('crypto');
+  const fns = SIGS.functions || {};
+  const line = Object.keys(fns).sort().map(fn =>
+    fn + ':' + fns[fn].args.join(',') + '|' + fns[fn].total + '|' + fns[fn].with_defaults);
+  const have = crypto.createHash('md5').update(line.join('\n')).digest('hex');
+  if (SIGS._fingerprint && have !== SIGS._fingerprint) {
+    findings.push('the recorded signatures no longer match their own _fingerprint (' +
+      have + ' vs ' + SIGS._fingerprint + ') — they were edited by hand rather than ' +
+      're-taken from the project. Re-take them (see tests/README.md)');
+  } else if (!SIGS._fingerprint) {
+    findings.push('the recorded signatures carry no _fingerprint, so a refresh cannot be ' +
+      'checked against the project — only against the file date');
+  }
+}
+
 let opaque = 0;
 for (const site of rpcCallSites(ROOT)) {
   calls++;

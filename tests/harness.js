@@ -107,6 +107,22 @@ function __stubResult(name, args) {
       .some(function (r) { return r && r.ledger === asked; });
     v = real ? v.filter(function (r) { return __stubNameKey(r && r.ledger) === want; }) : [];
   }
+  /* THE GROUP DECIDES THE ORDER, AND THE STUB ANSWERED BOTH GROUPS WITH THE
+     DEBTORS FIXTURE. Creditors then drew the debtors' rows under the
+     creditors' headings, in the debtors' order, and the screenshot agreed
+     with itself. So the group is echoed and section 1 is re-sorted the way
+     the database sorts it: the side the screen is ABOUT first, biggest
+     inside each side. */
+  if (name === 'rpc:busy_balances' && args && args.p_group &&
+      v && typeof v === 'object' && !Array.isArray(v)) {
+    var lead = args.p_group === 'Sundry Creditors' ? 'Cr' : 'Dr';
+    var ordered = (v.rows || []).slice().sort(function (a, b) {
+      var ka = (a.side === lead ? 0 : 1), kb = (b.side === lead ? 0 : 1);
+      if (ka !== kb) return ka - kb;
+      return Math.abs(b.balance) - Math.abs(a.balance);
+    });
+    v = Object.assign({}, v, { group: args.p_group, rows: ordered });
+  }
   /* A LEDGER ECHOES THE PARTY IT WAS ASKED ABOUT. The stub answered with
      the fixture's party whatever was asked, and the near-identical-name
      note -- which names the ledger whose balance is on screen -- came out

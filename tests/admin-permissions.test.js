@@ -54,7 +54,14 @@ const record = (name, ok, detail) => results.push({ name, ok, detail: detail || 
   // what a fix actually changed rather than asserting that it did.
   await H.open(server, page, { file: process.env.SCREEN || 'admin.html', user: OWNER, handlers: HANDLERS });
   await page.waitForSelector('#appShell', { state: 'visible' });
-  await page.waitForSelector('#refnav-host .refnav-item[data-view="admin-panel"]');
+  /* ATTACHED, not visible. Since "one module open at a time" landed, a cold
+     load of admin.html opens only the FIRST module holding a screen of this
+     page, and Permissions is not in it -- so its button is in the menu and
+     folded away. Waiting for it to be VISIBLE waited for something that
+     only happens after the next line, and this test had been dying on a
+     30-second timeout rather than running. */
+  await page.waitForSelector('#refnav-host .refnav-item[data-view="admin-panel"]',
+                             { state: 'attached' });
   await H.go(page, 'admin-panel');   // H.go opens the module it lives in first
   await page.waitForSelector('.perm-cell-checkbox');
 

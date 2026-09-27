@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Admin</title>
-<script>window.__BUILD_VERSION__ = '1790062639';</script>
+<script>window.__BUILD_VERSION__ = '1790439137';</script>
 <script>
 (function() {
   function checkVersion() {
@@ -33,8 +33,8 @@
   document.addEventListener('visibilitychange', function() { if (!document.hidden) checkVersion(); });
 })();
 </script>
-<link rel="stylesheet" href="theme.css?v=1790062639">
-<link rel="stylesheet" href="ui.css?v=1790062639">
+<link rel="stylesheet" href="theme.css?v=1790439137">
+<link rel="stylesheet" href="ui.css?v=1790439137">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 
@@ -59,7 +59,7 @@
   }
   .auth-title { font-size: 20px; font-weight: 650; margin: 0 0 22px; }
   .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
   .field input, .field select {
     width: 100%;
     border: 1px solid var(--border);
@@ -191,7 +191,7 @@
   table.paygrid { border-collapse: separate; border-spacing: 0; font-size: 12px; table-layout: fixed; width: max-content; }
   table.paygrid th {
     background: #e3e9ee; border-right: 1px solid #c3ced8; border-bottom: 1px solid #9fb0bf;
-    padding: 4px 5px; font-size: 10.5px; color: #2b3d4f; font-weight: 700;
+    padding: 4px 5px; font-size: 12px; color: #2b3d4f; font-weight: 700;
     position: sticky; top: 0; z-index: 15;
     text-align: center; vertical-align: middle;
     white-space: normal; word-break: break-word; overflow-wrap: anywhere; line-height: 1.15;
@@ -214,8 +214,8 @@
   table.paygrid tbody tr:nth-child(odd) td.pg-label { background: #fbfcfd; }
   table.paygrid tbody tr:nth-child(even) td.pg-label { background: #eef3f7; }
   table.paygrid tbody tr:hover td.pg-label { background: #e4eefa; }
-  .pg-emp-name { font-weight: 600; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pg-emp-inc { font-size: 9.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pg-emp-name { font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pg-emp-inc { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   table.paygrid td.pg-calc { padding: 4px 6px; text-align: right; color: #5a6b7c; }
   table.paygrid td.pg-net { padding: 4px 6px; text-align: right; font-weight: 700; color: #14532d; }
   table.paygrid input.pg-cell {
@@ -227,12 +227,12 @@
   /* Inherits the standard .btn look (steel fill, 6px corners) so it matches Save;
      only the grid-specific sizing is adjusted here. */
   table.paygrid button.pay-slip-btn {
-    padding: 4px 10px; font-size: 10.5px; white-space: nowrap;
+    padding: 4px 10px; font-size: 12px; white-space: nowrap;
   }
   table.paygrid button.pg-nav.pg-selected { box-shadow: 0 0 0 2px #0b3d91; }
   table.paygrid td.pg-readonly-cell { outline: none; cursor: default; }
   table.paygrid textarea.pg-text {
-    width: 100%; border: none; padding: 3px 6px; font-size: 11.5px; font-family: inherit;
+    width: 100%; border: none; padding: 3px 6px; font-size: 12px; font-family: inherit;
     background: transparent; outline: none; box-sizing: border-box; resize: none;
     white-space: pre-wrap; word-break: break-word; line-height: 1.25; cursor: cell;
   }
@@ -245,7 +245,7 @@
   .pg-resizer { position: absolute; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; z-index: 11; }
   .pg-resizer:hover { background: #1a73e8; opacity: 0.4; }
   body.pg-resizing { cursor: col-resize !important; user-select: none !important; }
-  .pay-hint { font-size: 11px; color: var(--muted); margin: 4px 0 0; }
+  .pay-hint { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
 
   /* Modal — used for create/edit forms so the list view stays clean and separate */
   .modal-overlay {
@@ -279,7 +279,7 @@
     background: var(--danger-bg) !important;
     box-shadow: 0 0 0 3px rgba(165,69,58,0.15);
   }
-  .field-inline-error { color: var(--danger); font-size: 11px; margin-top: 4px; display: none; }
+  .field-inline-error { color: var(--danger); font-size: 12px; margin-top: 4px; display: none; }
 
   .emp-dept-group { margin-bottom: 22px; }
   .emp-dept-header {
@@ -332,7 +332,7 @@
   .emp-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px; background: #fff; }
   .emp-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
   .emp-card-name a { color: var(--steel); font-weight: 650; font-size: 14px; text-decoration: none; }
-  .emp-card-code { font-size: 11.5px; color: var(--muted); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+  .emp-card-code { font-size: 12px; color: var(--muted); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
   .emp-card-meta { font-size: 12.5px; color: var(--ink); line-height: 1.7; margin-bottom: 10px; }
   .panel-header {
     padding: 14px 18px;
@@ -345,11 +345,11 @@
   .panel-header.header-recent { background: var(--slate-bg); border-bottom-color: #d2d9df; }
   .panel-title { font-size: 13.5px; font-weight: 650; font-family: 'Inter', sans-serif; }
   .section-label { font-size: 12.5px; font-weight: 700; color: var(--steel); text-transform: uppercase; letter-spacing: 0.4px; margin: 20px 0 10px; padding-top: 14px; border-top: 1px solid var(--border); }
-  .pill-section-label { display:inline-block; font-size:11px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.4px; border:1px solid var(--green); border-radius:5px; padding:3px 10px; }
+  .pill-section-label { display:inline-block; font-size:12px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.4px; border:1px solid var(--green); border-radius:5px; padding:3px 10px; }
   .vv-info-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:0; border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-top:12px; }
   .vv-info-cell { padding:12px 14px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
   .vv-info-cell:nth-child(4n) { border-right:none; }
-  .vv-info-label { font-size:11px; color:var(--muted); margin-bottom:3px; }
+  .vv-info-label { font-size:12px; color:var(--muted); margin-bottom:3px; }
   .vv-info-value { font-size:13.5px; font-weight:600; color:var(--ink); }
   .vv-subsection { margin-top:26px; padding-top:20px; border-top:1px solid var(--border); }
   .form-section-heading {
@@ -390,7 +390,7 @@
   .doc-dropzone-btn { flex-shrink:0; background:var(--green); border-color:var(--green); color:#fff; padding:5px 12px; font-size:12px; }
   .doc-dropzone-btn:hover { background:#256b45; }
   .panel-body { padding: 18px; }
-  .count-chip { font-size: 11px; font-weight: 700; background: var(--amber); color: #fff; padding: 2px 8px; border-radius: 4px; margin-left: 6px; }
+  .count-chip { font-size: 12px; font-weight: 700; background: var(--amber); color: #fff; padding: 2px 8px; border-radius: 4px; margin-left: 6px; }
 
   .icon-btn {
     display: inline-flex;
@@ -432,7 +432,7 @@
   table.ledger { width: 100%; border-collapse: collapse; }
   table.ledger th {
     text-align: left;
-    font-size: 10.5px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.6px;
     color: var(--muted);
@@ -481,21 +481,21 @@
     align-items: center;
     justify-content: center;
     color: var(--muted);
-    font-size: 9px;
+    font-size: 12px;
     text-align: center;
     background: var(--surface-sunken);
   }
   .reading-cell { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
-  .reading-cell .time { color: var(--muted); font-size: 10.5px; display: block; margin-top: 1px; }
+  .reading-cell .time { color: var(--muted); font-size: 12px; display: block; margin-top: 1px; }
   .num-cell { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 13px; }
 
-  .status-tag { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+  .status-tag { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
   .status-tag.calculated { background: var(--amber-bg); color: var(--amber); }
   .status-tag.approved { background: var(--green-bg); color: var(--green); }
   .status-tag.rejected { background: var(--danger-bg); color: var(--danger); }
   .status-tag.paid { background: var(--slate-bg); color: var(--slate); }
   .status-tag.pending_evening { background: var(--surface-sunken); color: var(--muted); }
-  .rejection-note { font-size: 11px; color: var(--danger); margin-top: 3px; font-style: italic; }
+  .rejection-note { font-size: 12px; color: var(--danger); margin-top: 3px; font-style: italic; }
 
   .lightbox {
     position: fixed; inset: 0; background: rgba(20,26,32,0.88);
@@ -512,8 +512,8 @@
   .roster-item { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); }
   .roster-item:last-child { border-bottom: none; }
   .roster-name { font-weight: 600; font-size: 13.5px; }
-  .roster-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-  .role-tag { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: var(--steel-tint); color: var(--steel); text-transform: uppercase; margin-left: 7px; }
+  .roster-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .role-tag { font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: var(--steel-tint); color: var(--steel); text-transform: uppercase; margin-left: 7px; }
 
   .subtabs {
     display: flex;
@@ -753,7 +753,7 @@
     }
     table.ledger td::before {
       content: attr(data-label);
-      font-size: 10px;
+      font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.4px;
       color: var(--muted);
@@ -1513,7 +1513,7 @@
 
     chipsArea.innerHTML = chips.length === 0
       ? '<span style="color:var(--muted); font-size:12.5px;">No filters applied</span>'
-      : chips.map(c => `<span class="role-tag" style="font-size:11px;">${c}</span>`).join('');
+      : chips.map(c => `<span class="role-tag" style="font-size:12px;">${c}</span>`).join('');
 
     const filtered = dashboardData.entries.filter(e => {
       if (activeFilters.employee && e.employee_id !== activeFilters.employee) return false;
@@ -2958,7 +2958,7 @@
         </tr></thead><tbody>
           ${rows.length === 0 ? `<tr><td colspan="${scoped ? 7 : 8}" style="text-align:center; color:var(--muted); padding:16px;">No ${loanStatusFilter === 'all' ? '' : (LOAN_FILTER_LABEL[loanStatusFilter] || loanStatusFilter) + ' '}loans.</td></tr>` : rows.map(l => `
             <tr class="${laIsOpen(l.status) ? 'row-open' : 'row-approved'}">
-              ${!scoped ? `<td><strong>${l.employees?.name || '—'}</strong><div style="font-size:11px; color:var(--muted);">${l.employees?.employee_code || ''}</div></td>` : ''}
+              ${!scoped ? `<td><strong>${l.employees?.name || '—'}</strong><div style="font-size:12px; color:var(--muted);">${l.employees?.employee_code || ''}</div></td>` : ''}
               <td>${fmtMoney(l.principal_amount)}</td>
               <td>${fmtMoney(l.total_repaid)}</td>
               <td><strong style="color:${Number(l.balance) > 0 ? 'var(--danger)' : 'var(--green)'};">${fmtMoney(l.balance)}</strong></td>
@@ -3036,12 +3036,12 @@
         </tr></thead><tbody>
           ${rows.length === 0 ? `<tr><td colspan="${scoped ? 7 : 8}" style="text-align:center; color:var(--muted); padding:16px;">No ${advanceStatusFilter === 'all' ? '' : (ADVANCE_FILTER_LABEL[advanceStatusFilter] || advanceStatusFilter) + ' '}advances.</td></tr>` : rows.map(a => `
             <tr class="${laIsOpen(a.status) ? 'row-open' : 'row-approved'}">
-              ${!scoped ? `<td><strong>${a.employees?.name || '—'}</strong><div style="font-size:11px; color:var(--muted);">${a.employees?.employee_code || ''}</div></td>` : ''}
+              ${!scoped ? `<td><strong>${a.employees?.name || '—'}</strong><div style="font-size:12px; color:var(--muted);">${a.employees?.employee_code || ''}</div></td>` : ''}
               <td>${fmtMoney(a.amount)}</td>
               <td>${fmtMoney(a.recovered_amount)}</td>
               <td><strong style="color:${Number(a.outstanding) > 0 ? 'var(--danger)' : 'var(--green)'};">${fmtMoney(a.outstanding)}</strong></td>
               <td>${fmtShortDate(a.advance_date)}</td>
-              <td>${fmtPeriod(a.payroll_period)}${a.carried_forward ? ' <span class="status-tag calculated" style="font-size:9px;">CARRIED</span>' : ''}</td>
+              <td>${fmtPeriod(a.payroll_period)}${a.carried_forward ? ' <span class="status-tag calculated" style="font-size:12px;">CARRIED</span>' : ''}</td>
               <td><span class="status-tag ${laStatusTagClass(a.status)}">${ADVANCE_STATUS_LABEL[a.status] || a.status}</span></td>
               <td class="action-cell">
                 ${a.status === 'approved' && canEdit ? `<button class="btn btn-sm adv-recover-btn" data-id="${a.id}">Record Recovery</button>` : ''}
@@ -3235,7 +3235,7 @@
         <div class="field"><label>Amount Recovered (₹) *</label><input type="number" id="rec_amount" min="0.01" step="0.01" value="${adv.outstanding}" /></div>
         <div class="field"><label>If Short, Carry To</label><input type="month" id="rec_carry" value="${nextMonth}" /></div>
       </div>
-      <p style="font-size:11.5px; color:var(--muted); margin:10px 0 0;">Recovering the full outstanding amount closes this advance. Recovering less leaves the remainder outstanding and moves it to the month above.</p>
+      <p style="font-size:12px; color:var(--muted); margin:10px 0 0;">Recovering the full outstanding amount closes this advance. Recovering less leaves the remainder outstanding and moves it to the month above.</p>
       <div class="msg" id="recMsg"></div>
     `, `
       <button class="btn btn-outline" id="recCancelBtn">Cancel</button>
@@ -3397,7 +3397,7 @@
           <button type="button" class="emp-dept-header" data-dept="${deptName}" style="border-bottom-color:${deptColor};">
             <span class="emp-dept-name" style="color:${deptColor};">${highlightMatch(deptName, rawSearchQ)}</span>
             <span class="count-chip">${groupEmployees.length}</span>
-            <span style="margin-left:auto; font-size:11px; font-weight:500; color:var(--muted);">${isCollapsed ? 'Show' : 'Hide'}</span>
+            <span style="margin-left:auto; font-size:12px; font-weight:500; color:var(--muted);">${isCollapsed ? 'Show' : 'Hide'}</span>
           </button>
           <div class="emp-dept-body" style="${isCollapsed ? 'display:none' : ''}">
             ${empListViewMode === 'card' ? groupBodyHtml : `<div class="table-scroll">${groupBodyHtml}</div>`}
@@ -3588,7 +3588,7 @@
           </div>
         </div>
         <div style="flex-shrink:0;">
-          ${e.photo_signed_url ? `<img src="${e.photo_signed_url}" style="width:96px; height:96px; object-fit:cover; border-radius:8px; border:1px solid var(--border);" />` : `<div style="width:96px; height:96px; border-radius:8px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; text-align:center;">No photo</div>`}
+          ${e.photo_signed_url ? `<img src="${e.photo_signed_url}" style="width:96px; height:96px; object-fit:cover; border-radius:8px; border:1px solid var(--border);" />` : `<div style="width:96px; height:96px; border-radius:8px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:12px; text-align:center;">No photo</div>`}
         </div>
       </div>
 
@@ -4250,7 +4250,7 @@
               </div>
             </div>
           `}
-          <div class="msg" id="erpAccessMsg" style="margin-top:6px;"></div>` : ((isOwnerUser || myPermissionKeys.includes('employee_master.create')) ? `<p style="font-size:11.5px; color:var(--muted); margin-top:14px;">Save this employee first to request ERP access.</p>` : '')}
+          <div class="msg" id="erpAccessMsg" style="margin-top:6px;"></div>` : ((isOwnerUser || myPermissionKeys.includes('employee_master.create')) ? `<p style="font-size:12px; color:var(--muted); margin-top:14px;">Save this employee first to request ERP access.</p>` : '')}
         </div>
 
         <div id="etab-personal" class="etab-content">
@@ -4301,9 +4301,9 @@
 
           <div class="field" style="margin-top:6px;"><label><input type="checkbox" id="f_has_driving_license" ${(e.driving_license_number || e.vehicle_km_applicable) ? 'checked' : ''} style="width:auto; margin-right:6px;" />Driving License Available</label></div>
           <div id="drivingLicenseFields" class="form-grid" style="${(e.driving_license_number || e.vehicle_km_applicable) ? '' : 'display:none'}; margin-top:10px;">
-            <div class="field"><label>Driving License No <span style="font-weight:400; color:var(--muted); font-size:10.5px;">(required if Vehicle KM applicable)</span></label><input id="f_driving_license_number" value="${e.driving_license_number || ''}" /></div>
+            <div class="field"><label>Driving License No <span style="font-weight:400; color:var(--muted); font-size:12px;">(required if Vehicle KM applicable)</span></label><input id="f_driving_license_number" value="${e.driving_license_number || ''}" /></div>
             <div class="field"><label>License Category</label><input id="f_driving_license_category" value="${e.driving_license_category || ''}" /></div>
-            <div class="field"><label>License Validity <span style="font-weight:400; color:var(--muted); font-size:10.5px;">(required if License No filled)</span></label><input type="date" id="f_driving_license_validity" value="${e.driving_license_validity || ''}" /></div>
+            <div class="field"><label>License Validity <span style="font-weight:400; color:var(--muted); font-size:12px;">(required if License No filled)</span></label><input type="date" id="f_driving_license_validity" value="${e.driving_license_validity || ''}" /></div>
             ${docUploadField('driving_license', 'Driving License Upload (required if Vehicle KM applicable)', findDoc('driving_license'))}
           </div>
           <p class="section-label">Emergency Contact</p>
@@ -5062,12 +5062,12 @@
     const isSel = e.id === selectedPermEmployeeId;
     const hasAccess = permissionsData.grants.some(g => g.employee_id === e.id) || e.role === 'owner';
     return `<button type="button" class="perm-emp-row ${isSel ? 'active' : ''}" data-id="${e.id}" style="width:100%; display:flex; align-items:center; gap:10px; padding:10px 14px; border:none; border-bottom:1px solid var(--border); background:${isSel ? 'var(--steel-dark)' : '#fff'}; color:${isSel ? '#fff' : 'var(--ink)'}; cursor:pointer; text-align:left;">
-        <div style="width:32px; height:32px; border-radius:50%; background:${avatarColor(e.name)}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; flex-shrink:0;">${initials(e.name)}</div>
+        <div style="width:32px; height:32px; border-radius:50%; background:${avatarColor(e.name)}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">${initials(e.name)}</div>
         <div style="flex:1; min-width:0;">
           <div style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.name}</div>
-          <div style="font-size:11px; opacity:0.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.designations?.name || '—'} · ${e.departments?.name || '—'}</div>
+          <div style="font-size:12px; opacity:0.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.designations?.name || '—'} · ${e.departments?.name || '—'}</div>
         </div>
-        <span class="perm-emp-access" style="font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:4px; white-space:nowrap; background:${hasAccess ? (isSel ? 'rgba(255,255,255,0.2)' : 'var(--green-bg)') : (isSel ? 'rgba(255,255,255,0.1)' : 'var(--surface-sunken)')}; color:${hasAccess ? (isSel ? '#fff' : 'var(--green)') : (isSel ? 'rgba(255,255,255,0.6)' : 'var(--muted)')};">${hasAccess ? 'HAS ACCESS' : 'NO ACCESS'}</span>
+        <span class="perm-emp-access" style="font-size:12px; font-weight:700; padding:2px 6px; border-radius:4px; white-space:nowrap; background:${hasAccess ? (isSel ? 'rgba(255,255,255,0.2)' : 'var(--green-bg)') : (isSel ? 'rgba(255,255,255,0.1)' : 'var(--surface-sunken)')}; color:${hasAccess ? (isSel ? '#fff' : 'var(--green)') : (isSel ? 'rgba(255,255,255,0.6)' : 'var(--muted)')};">${hasAccess ? 'HAS ACCESS' : 'NO ACCESS'}</span>
       </button>`;
   }
 
@@ -5128,7 +5128,7 @@
           <option value="single" ${selectedEmp.login_mode === 'single' ? 'selected' : ''}>Single device only</option>
           <option value="multiple" ${selectedEmp.login_mode === 'multiple' ? 'selected' : ''}>Multiple devices allowed</option>
         </select>
-        <span style="font-size:11px; color:var(--muted);">Logging in on a new device will sign out the old one if set to single.</span>
+        <span style="font-size:12px; color:var(--muted);">Logging in on a new device will sign out the old one if set to single.</span>
       </div>` : ''}
 
       ${selectedEmp.role === 'owner' ? `
@@ -5139,7 +5139,7 @@
         <table class="ledger perm-grid-table">
             <thead><tr>
               <th style="text-align:left;">Module / Sub-head</th>
-              ${ACTION_ORDER.map(a => `<th class="perm-col-header" data-action="${a}" tabindex="0" role="button" style="text-align:center; cursor:pointer;" title="Click to toggle all in this column">${ACTION_LABELS[a]}<br/><span style="font-size:10px; font-weight:500; color:var(--muted); text-transform:none;">all</span></th>`).join('')}
+              ${ACTION_ORDER.map(a => `<th class="perm-col-header" data-action="${a}" tabindex="0" role="button" style="text-align:center; cursor:pointer;" title="Click to toggle all in this column">${ACTION_LABELS[a]}<br/><span style="font-size:12px; font-weight:500; color:var(--muted); text-transform:none;">all</span></th>`).join('')}
             </tr></thead>
             <tbody>
               ${categories.map(cat => {
@@ -5495,7 +5495,7 @@
         ${pageItems.length === 0 ? '<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:16px;">No vendors match.</td></tr>' : pageItems.map(v => `
           <tr class="${v.status === 'approved' ? 'row-approved' : v.status === 'rejected' ? 'row-open' : 'row-pending'}">
             <td data-label="Code" class="mono">${highlightMatch(v.vendor_code, searchQ)}</td>
-            <td data-label="Name"><a href="#" class="vendor-view-link" data-id="${v.id}" style="color:var(--steel); font-weight:600; text-decoration:none;">${highlightMatch(v.vendor_name, searchQ)}</a>${v.is_test_entry ? ' <span class="status-tag rejected" style="font-size:9px;">TEST</span>' : ''}</td>
+            <td data-label="Name"><a href="#" class="vendor-view-link" data-id="${v.id}" style="color:var(--steel); font-weight:600; text-decoration:none;">${highlightMatch(v.vendor_name, searchQ)}</a>${v.is_test_entry ? ' <span class="status-tag rejected" style="font-size:12px;">TEST</span>' : ''}</td>
             <td data-label="Alias">${highlightMatch(v.vendor_alias, searchQ)}</td>
             <td data-label="Type">${v.vendor_type === 'individual' ? 'Individual/Contractor' : 'Company'}</td>
             <td data-label="Deals In">${highlightMatch(v.deals_in, searchQ)}</td>
@@ -5555,7 +5555,7 @@
       <div style="display:flex; gap:8px; align-items:end; margin-bottom:14px;">
         <div class="field" style="margin-bottom:0; max-width:160px;"><label>How many?</label><input type="number" min="0" max="50" id="${containerId}-count" placeholder="e.g. 2" /></div>
         <button type="button" class="btn btn-sm" id="${containerId}-generateBtn">Generate</button>
-        <span style="font-size:11.5px; color:var(--muted);">Optional — enter count, then click Generate</span>
+        <span style="font-size:12px; color:var(--muted);">Optional — enter count, then click Generate</span>
       </div>
       <div style="overflow-x:auto;">
         <table class="ledger" id="${containerId}-table" style="display:none; min-width:900px;">
@@ -5642,7 +5642,7 @@
           <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
             <input type="checkbox" id="vf_is_individual" ${isIndividual ? 'checked' : ''} style="width:auto; margin-top:3px;" />
             <span><strong>This is an Individual / Contractor (not a company)</strong>
-              <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">Check this for freelancers, job workers, and individual contractors with no registered company.</div>
+              <div style="font-size:12px; color:var(--muted); margin-top:2px;">Check this for freelancers, job workers, and individual contractors with no registered company.</div>
             </span>
           </label>
         </div>
@@ -5650,7 +5650,7 @@
         <h3 class="form-section-heading" style="margin-top:0;">${isIndividual ? 'Individual Details' : 'Company Details'}</h3>
         <div class="form-grid">
           <div class="field"><label>${isIndividual ? 'Individual Name' : 'Company Name'} *</label><input id="vf_vendor_name" placeholder="e.g. Suresh Kumar" /></div>
-          <div class="field"><label>${isIndividual ? 'Individual' : 'Vendor'} Alias <span style="font-weight:400; color:var(--muted); font-size:10.5px;">(optional, for search only)</span></label><input id="vf_vendor_alias" placeholder="e.g. Hi Tech" /></div>
+          <div class="field"><label>${isIndividual ? 'Individual' : 'Vendor'} Alias <span style="font-weight:400; color:var(--muted); font-size:12px;">(optional, for search only)</span></label><input id="vf_vendor_alias" placeholder="e.g. Hi Tech" /></div>
           <div class="field"><label>Deals In${isIndividual ? ' / Type of Work' : ''} *</label><input id="vf_deals_in" placeholder="e.g. Ovens, Conveyors" /></div>
 
           <div class="field" id="vf_pan_field" style="${isIndividual ? 'display:none' : ''}"><label>PAN Number *</label><input id="vf_pan" placeholder="AAAAA9999A" style="text-transform:uppercase;" maxlength="10" /></div>
@@ -5686,11 +5686,11 @@
         <h3 class="form-section-heading">Address</h3>
         <div class="form-grid">
           <div class="field" style="${isIndividual ? 'display:none' : ''}"><label>Branch Name *</label><input id="vf_branch_name" placeholder="e.g. Unit 1, Main Office" /></div>
-          <div class="field" style="${isIndividual ? 'display:none' : ''}"><label>Branch Alias <span style="font-weight:400; color:var(--muted); font-size:10.5px;">(optional, for search only)</span></label><input id="vf_branch_alias" placeholder="e.g. Samrala Chowk Unit" /></div>
+          <div class="field" style="${isIndividual ? 'display:none' : ''}"><label>Branch Alias <span style="font-weight:400; color:var(--muted); font-size:12px;">(optional, for search only)</span></label><input id="vf_branch_alias" placeholder="e.g. Samrala Chowk Unit" /></div>
           <div class="field"><label>State *</label><select id="vf_branch_state_id">${opt(dd.states, '447c39c5-046f-4298-88ed-0e3f269bea74')}</select></div>
           <div class="field"><label>City</label><select id="vf_branch_city_id">${opt((dd.cities || []).filter(c => c.state_id === '447c39c5-046f-4298-88ed-0e3f269bea74'), 'f694e1f1-0378-4797-a6ea-4b1a03518882')}</select></div>
           <div class="field"><label>Pincode</label><input id="vf_branch_pincode" maxlength="6" /></div>
-          <div class="field"><label>Location URL <span style="font-weight:400; color:var(--muted); font-size:10.5px;">(map link, optional)</span></label><input id="vf_branch_location_url" placeholder="https://maps.google.com/..." /></div>
+          <div class="field"><label>Location URL <span style="font-weight:400; color:var(--muted); font-size:12px;">(map link, optional)</span></label><input id="vf_branch_location_url" placeholder="https://maps.google.com/..." /></div>
           <div class="field"><label>Address *</label><textarea id="vf_branch_address" rows="3" style="width:100%; border:1px solid var(--border); border-radius:6px; padding:10px 11px; font-size:14px; font-family:inherit; background:var(--surface-sunken); resize:vertical;"></textarea></div>
         </div>
 
@@ -5709,7 +5709,7 @@
           <div>${docUploadField('cancelled_cheque', 'Cancelled Cheque')}</div>
         </div>
 
-        <p class="section-label">${isIndividual ? 'People Working For This Contractor' : 'Contact Persons'} <span style="font-weight:400; color:var(--muted); font-size:11px;">(${isIndividual ? 'helpers, assistants, or others linked to this individual' : 'other people linked to this branch — helpers, staff, etc.'})</span></p>
+        <p class="section-label">${isIndividual ? 'People Working For This Contractor' : 'Contact Persons'} <span style="font-weight:400; color:var(--muted); font-size:12px;">(${isIndividual ? 'helpers, assistants, or others linked to this individual' : 'other people linked to this branch — helpers, staff, etc.'})</span></p>
         ${renderGenerateRowsSection('vf_contacts', getContactFields(isIndividual))}
 
         <div style="margin-top:20px; display:flex; gap:10px;">
@@ -6368,7 +6368,7 @@
         <h3 class="form-section-heading" style="margin-top:0;">New Vendor Details</h3>
         <div class="form-grid">
           <div class="field"><label>Company Name *</label><input id="ab_vendor_name" /></div>
-          <div class="field"><label>Vendor Alias <span style="font-weight:400; color:var(--muted); font-size:10.5px;">(optional)</span></label><input id="ab_vendor_alias" /></div>
+          <div class="field"><label>Vendor Alias <span style="font-weight:400; color:var(--muted); font-size:12px;">(optional)</span></label><input id="ab_vendor_alias" /></div>
           <div class="field"><label>Deals In *</label><input id="ab_deals_in" /></div>
           <div class="field"><label>PAN Number *</label><input id="ab_pan" style="text-transform:uppercase;" maxlength="10" /></div>
         </div>
@@ -6376,7 +6376,7 @@
       <h3 class="form-section-heading">Branch Details</h3>
       <div class="form-grid">
         <div class="field"><label>Branch Name *</label><input id="ab_branch_name" /></div>
-        <div class="field"><label>Branch Alias <span style="font-weight:400; color:var(--muted); font-size:10.5px;">(optional)</span></label><input id="ab_branch_alias" /></div>
+        <div class="field"><label>Branch Alias <span style="font-weight:400; color:var(--muted); font-size:12px;">(optional)</span></label><input id="ab_branch_alias" /></div>
         <div class="field"><label>GST Number *</label><input id="ab_gstin" style="text-transform:uppercase;" maxlength="15" /></div>
         <div class="field"><label>State *</label><select id="ab_state_id">${opt(dd.states, null)}</select></div>
         <div class="field"><label>City</label><select id="ab_city_id"></select></div>

@@ -63,6 +63,30 @@ select json_object_agg(fn, info)::text from (
 ) t;
 ```
 
+Then take the fingerprint and write it into `_fingerprint`. Re-saving the file
+clears the staleness warning whether or not anything was compared; this number
+is what proves the copy came from the project:
+
+```sql
+with t as (
+  select p.proname::text as fn,
+         (select coalesce(string_agg(a.name, ',' order by a.ord), '')
+          from unnest(coalesce(p.proargnames,'{}')) with ordinality a(name, ord)
+          where a.ord <= p.pronargs) as args,
+         p.pronargs, p.pronargdefaults
+  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and p.prokind='f'
+    and p.prorettype <> 'trigger'::regtype
+    and p.proname not in ('attach_conventions','block_attachment_delete',
+                          'log_audit','log_event','move_pre_delivery_chase'))
+select count(*), md5(string_agg(fn||':'||args||'|'||pronargs||'|'||pronargdefaults,
+                                E'\n' order by fn))
+from t;
+```
+
+The trigger functions are left out on purpose: nothing calls them by name, so
+there is no call site to check them against.
+
 ## Checking the call sites against the LIVE project
 
 The offline check compares against the copy. To check against the database

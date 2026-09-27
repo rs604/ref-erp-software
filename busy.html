@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1790062639';</script>
+<script>window.__BUILD_VERSION__ = '1790439137';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -27,8 +27,8 @@
   window.addEventListener('online', checkVersion);
 })();
 </script>
-<link rel="stylesheet" href="theme.css?v=1790062639">
-<link rel="stylesheet" href="ui.css?v=1790062639">
+<link rel="stylesheet" href="theme.css?v=1790439137">
+<link rel="stylesheet" href="ui.css?v=1790439137">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   * { box-sizing:border-box; }
@@ -53,15 +53,15 @@
             justify-content:space-between; gap:12px; flex-wrap:wrap;
             flex:0 0 auto; }
   .topbar-title { font-weight:600; font-size:15px; }
-  .topbar-sub { font-size:11.5px; color:var(--muted); }
+  .topbar-sub { font-size:12px; color:var(--muted); }
   .firm-chip { font-weight:700; font-size:12px; padding:4px 10px; border-radius:3px;
                border:1px solid var(--border); }
   .firm-REF { background:var(--steel-tint); color:var(--steel-dark); }
   .firm-RS  { background:var(--amber-bg);  color:var(--amber); }
-  .sync-stamp { font-size:11.5px; color:var(--muted); }
+  .sync-stamp { font-size:12px; color:var(--muted); }
   /* The small caption under a number. A class, not an inline size, so a phone
      can make every one of them bigger in one rule. */
-  .sub { font-size:11.5px; color:var(--muted); }
+  .sub { font-size:12px; color:var(--muted); }
   .content { padding:12px 16px 16px; flex:1; overflow-y:auto; min-height:0; }
 
   .card { background:var(--surface); border:1px solid var(--border); border-radius:4px;
@@ -70,7 +70,7 @@
           padding:10px 12px; font-size:12.5px; color:#3c4a57; border-radius:3px;
           margin-bottom:14px; }
 
-  label.fl { display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.5px;
+  label.fl { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.5px;
              color:var(--muted); margin-bottom:3px; }
   input.f, select.f { height:30px; width:100%; border:1px solid var(--border);
                       border-radius:3px; padding:0 8px; font-size:13px;
@@ -125,7 +125,7 @@
   body.col-resizing { cursor:col-resize; user-select:none; }
   /* What Busy did not give us. Said in words, in a quieter colour, so it
      reads as a note about the source rather than as a value. */
-  .missing { color:var(--muted); font-style:italic; font-size:11.5px; white-space:nowrap; }
+  .missing { color:var(--muted); font-style:italic; font-size:12px; white-space:nowrap; }
 
   /* The three lines that go in config.txt, and the file and folder names
      around them. On a phone the box was narrower than the longest line, so
@@ -166,6 +166,22 @@
   .tbl-wrap.fit { min-height:0; }
   .rowcount { font-size:12px; color:var(--muted); margin:0 2px 6px; }
 
+  /* TWO SECTIONS, NOT ONE. The heading is what tells a reader that the list
+     below it is a different kind of thing from the list above it, and that
+     the totals at the top belong to the first list only. */
+  .sect-h { font-size:13px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+            color:var(--ink); margin:0 2px 6px; }
+
+  /* The nil list on the phone is a LIST, not cards. A card is for a figure
+     you weigh; these have no figure, so a card would be an empty frame. */
+  .nil-list { gap:0; }
+  .nil-list .nilrow { display:flex; align-items:baseline; justify-content:space-between;
+                      gap:10px; padding:9px 2px; border-bottom:1px solid var(--border); }
+  .nil-list .nilrow:last-child { border-bottom:0; }
+  .nil-list .nil-party { font-weight:600; min-width:0; overflow-wrap:anywhere; }
+  .nil-list .nil-when { font-size:12px; color:var(--muted); white-space:nowrap; }
+  .nil-word { font-weight:700; letter-spacing:.4px; color:var(--muted); }
+
   /* ---------------- THE LEDGER AND THE REPORTS ---------------- */
   /* Four cards across at a desk, two rows of two on a phone. The plain
      .kpis goes to a single column on a phone, which is right for three
@@ -173,7 +189,7 @@
      other -- opening and closing belong side by side. */
   .kpis-4 { grid-template-columns:repeat(4, 1fr); }
   .kpi.kpi-lead .v { font-size:22px; }
-  .kpi .way { font-size:11px; font-weight:600; letter-spacing:.4px;
+  .kpi .way { font-size:12px; font-weight:600; letter-spacing:.4px;
               text-transform:uppercase; margin-top:2px; }
   .way-pay { color:var(--danger); }
   .way-rec { color:var(--green); }
@@ -193,7 +209,7 @@
      Shaded so the eye finds where the range starts and stops. */
   tr.lg-edge td { background:var(--row-head) !important; font-weight:600; }
   tr.lg-edge td.l { color:#16222c; }
-  .drcr-sfx { font-size:11px; color:var(--muted); margin-left:3px; font-weight:600; }
+  .drcr-sfx { font-size:12px; color:var(--muted); margin-left:3px; font-weight:600; }
 
   /* Report tabs. Same pattern as the HR tabs in admin: they scroll
      sideways rather than wrapping into an overlapping heap. */
@@ -212,16 +228,16 @@
   .rc.mat-sale { cursor:pointer; }
 
   /* The method under a number, so nobody has to guess which average it is. */
-  .method { font-size:11.5px; color:var(--muted); margin-top:4px; }
+  .method { font-size:12px; color:var(--muted); margin-top:4px; }
   .warn-note { border-left-color:var(--amber); background:var(--amber-bg); }
 
   .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
   .kpi { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:12px; }
-  .kpi .k { font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
+  .kpi .k { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
   .kpi .v { font-size:19px; font-weight:600; font-variant-numeric:tabular-nums; margin-top:3px; }
   .up { color:var(--green); } .down { color:var(--danger); }
 
-  .shortcut-hint { position:fixed; right:12px; bottom:8px; font-size:11px; color:var(--muted); }
+  .shortcut-hint { position:fixed; right:12px; bottom:8px; font-size:12px; color:var(--muted); }
   /* ---- the search bar: one row, nothing hidden behind a dropdown ---- */
   .searchbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
                background:var(--surface); border:1px solid var(--border);
@@ -265,7 +281,7 @@
                         font-size:12.5px; cursor:pointer; border-radius:3px; }
   .colmenu-list label:hover { background:var(--slate-bg); }
   .colmenu-list input { accent-color:var(--steel); }
-  .colmenu-note { font-size:11px; color:var(--muted); padding:5px 8px 2px;
+  .colmenu-note { font-size:12px; color:var(--muted); padding:5px 8px 2px;
                   border-top:1px solid var(--border); margin-top:4px; }
 
   /* the ERP's own shortcut list */
@@ -721,6 +737,7 @@
         <div class="kpis kpis-4" id="balKpis"></div>
         <div id="balNote"></div>
         <div class="card" style="margin-top:14px">
+          <div class="sect-h">Parties with a balance</div>
           <div class="rowcount" id="balCount"></div>
           <div class="tbl-wrap">
             <table class="tbl">
@@ -736,6 +753,38 @@
           </div>
           <div class="rc-list" id="balCards"></div>
           <div class="pager" id="balPager"></div>
+        </div>
+
+        <!-- SECTION 2 -- NIL BALANCE.
+
+             "A party last seen in 2016 is still a customer who can be called."
+             Every party in the group, across ALL years, whose balance TODAY is
+             exactly zero. Sorted by last transaction, most recent first, it is
+             the dormant-customer call list and it answers "have we done
+             business with them?" without opening Busy.
+
+             No cards and no totals -- a total of nothing is nothing. The
+             balance column says the word NIL, not 0 and not blank, because
+             blank reads as missing data and 0 reads as a rounding.
+
+             A PARTY IS NEVER IN BOTH SECTIONS. A balance of one rupee is a
+             balance and belongs above; only exactly zero is here. -->
+        <div class="card" id="balNilCard" style="margin-top:14px">
+          <div class="sect-h">Nil balance</div>
+          <div class="rowcount" id="balNilCount"></div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr>
+                <th style="width:44px">Sr.</th><th>Party</th>
+                <th style="width:90px">Balance</th>
+                <th style="width:116px">Last transaction</th>
+                <th style="width:104px">Days since</th>
+              </tr></thead>
+              <tbody id="balNilRows"></tbody>
+            </table>
+          </div>
+          <div class="rc-list nil-list" id="balNilCards"></div>
+          <div class="pager" id="balNilPager"></div>
         </div>
       </div>
 
@@ -2244,15 +2293,24 @@ upload_token = (shown on the download screen)</pre>
         ' for this party. They are not listed below — they are already inside the opening ' +
         'balance, and listing them would count the same money twice.</div>');
     }
-    if (d.anchor_fy && d.anchor_fy !== fyLabel(d.from)) {
-      notes.push('<div class="note warn-note">Busy has no opening balance for this party in ' +
-        esc(fyLabel(d.from)) + '. The opening above is carried forward from <strong>' +
-        esc(d.anchor_fy) + '</strong> plus everything that has moved since.</div>');
+    /* A BALANCE COMES FROM ITS OWN YEAR.
+
+       The old note said "carried forward from 2015-16", because the old rule
+       reached back through dead years until it found an opening. That is the
+       fault Raghbir found on RAMSONS TYRES: no business since 2015-16, still
+       showing 50,000. There is no carrying forward now -- the opening is this
+       financial year's opening and nothing else -- so the note says what is
+       actually true instead. */
+    if (!d.has_opening) {
+      notes.push('<div class="note">Busy carried no opening balance into <strong>' +
+        esc(d.fy || fyLabel(d.from)) + '</strong> for this party, so the year opens at nil. ' +
+        'Nothing is carried in from an earlier year: a balance comes only from the year it ' +
+        'is read in.</div>');
     }
-    if (!d.anchor_fy) {
-      notes.push('<div class="note warn-note">Busy has no opening balance for this party at all. ' +
-        'The opening above is counted from the first entry, which is right only if this party ' +
-        'genuinely started at nil.</div>');
+    if (d.crosses_years) {
+      notes.push('<div class="note warn-note">This range crosses 1 April. Busy sets a fresh ' +
+        'opening every year, so the running balance below is not the balance Busy shows at ' +
+        'each year end.</div>');
     }
     if (d.capped) {
       notes.push('<div class="note warn-note">More than 5,000 entries. Only the first 5,000 are ' +
@@ -2626,6 +2684,18 @@ upload_token = (shown on the download screen)</pre>
         '<td>' + (r.days_since === null ? '' : r.days_since) + '</td></tr>';
     }).join('');
 
+    /* The nil list goes on the sheet too: it is half the answer to "have we
+       done business with them?", and a printout that drops it makes a
+       dormant customer look like a customer who never existed. */
+    var nilRows = d.nil_rows || [];
+    var nilBody = nilRows.map(function (r, i) {
+      return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.party) + '</td>' +
+        '<td class="r">NIL</td>' +
+        '<td>' + (r.last_txn ? dmy(r.last_txn) : 'never') + '</td>' +
+        '<td>' + (r.days_since === null || r.days_since === undefined ? '' : r.days_since) +
+        '</td></tr>';
+    }).join('');
+
     var w = window.open('', '_blank');
     if (!w) { alert('The browser blocked the print window. Allow pop-ups for this site.'); return; }
     w.document.write('<!doctype html><html><head><meta charset="utf-8">' +
@@ -2634,6 +2704,7 @@ upload_token = (shown on the download screen)</pre>
       '.lh{text-align:center;border-bottom:2px solid #16222c;padding-bottom:10px;margin-bottom:14px}' +
       '.lh h1{font-size:17px;margin:0 0 4px}.lh div{font-size:11px;color:#55606b;line-height:1.5}' +
       'h2{font-size:14px;margin:0 0 2px}.sub{font-size:11px;color:#55606b;margin-bottom:10px}' +
+      'h3{font-size:12px;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.4px}' +
       'table{width:100%;border-collapse:collapse}' +
       'th,td{border:1px solid #c8d2da;padding:4px 6px;text-align:center}' +
       'th{background:#eef4f9}td:nth-child(2){text-align:left}.r{text-align:right}' +
@@ -2648,9 +2719,14 @@ upload_token = (shown on the download screen)</pre>
       '<div class="tot">' + w2.dr + ': <b>' + inr2.format(d.dr_total) + ' Dr</b> from ' +
         d.dr_count + ' &nbsp;·&nbsp; ' + w2.cr + ': <b>' + inr2.format(d.cr_total) +
         ' Cr</b> from ' + d.cr_count + '</div>' +
+      '<h3>Parties with a balance</h3>' +
       '<table><thead><tr><th>Sr.</th><th>Party</th><th>Balance</th>' +
       '<th>Last transaction</th><th>Days since</th></tr></thead>' +
       '<tbody>' + body + '</tbody></table>' +
+      '<h3>Nil balance — ' + nilRows.length + ' parties settled to nothing</h3>' +
+      '<table><thead><tr><th>Sr.</th><th>Party</th><th>Balance</th>' +
+      '<th>Last transaction</th><th>Days since</th></tr></thead>' +
+      '<tbody>' + nilBody + '</tbody></table>' +
       '<div class="foot">Both sides are listed and never netted away: on capital goods an ' +
       'advance is normal, and a single net figure hides it.<br>' +
       '<strong>The accountant’s ledger remains the authority.</strong> This sheet is for ' +
@@ -2676,6 +2752,15 @@ upload_token = (shown on the download screen)</pre>
     (d.rows || []).forEach(function (r, i) {
       out.push([i + 1, r.party, Math.abs(Number(r.balance)), r.side,
                 r.last_txn || '', r.days_since === null ? '' : r.days_since]);
+    });
+    out.push([]);
+    out.push(['NIL BALANCE', (d.nil_rows || []).length + ' parties settled to nothing',
+              'most recently seen first']);
+    out.push(['Sr.', 'Party', 'Balance', 'Dr/Cr', 'Last transaction', 'Days since']);
+    (d.nil_rows || []).forEach(function (r, i) {
+      out.push([i + 1, r.party, 'NIL', '',
+                r.last_txn || '', r.days_since === null || r.days_since === undefined
+                  ? '' : r.days_since]);
     });
     out.push([]);
     out.push(['Both sides are listed and never netted away: on capital goods an advance is normal, and a single net figure hides it.']);
@@ -3437,7 +3522,7 @@ upload_token = (shown on the download screen)</pre>
      yet delivered, which is the most important thing on the screen.
      ===================================================================== */
   var BAL_PAGE = 50;
-  var balData = null, balPage = 1, balWhich = 'debtors';
+  var balData = null, balPage = 1, balNilPage = 1, balWhich = 'debtors';
   var BAL_GROUP = { debtors: 'Sundry Debtors', creditors: 'Sundry Creditors' };
   var BAL_WORDS = {
     debtors:   { dr: 'OWE US', cr: 'ADVANCES RECEIVED',
@@ -3447,7 +3532,7 @@ upload_token = (shown on the download screen)</pre>
   };
 
   function openBalances(which) {
-    balWhich = which; balPage = 1; balData = null;
+    balWhich = which; balPage = 1; balNilPage = 1; balData = null;
     if (!$('balOn').value) setBalRange('today');
     $('balSearch').value = '';
     loadBalances();
@@ -3465,12 +3550,21 @@ upload_token = (shown on the download screen)</pre>
   function loadBalances() {
     $('balRows').innerHTML = '<tr><td colspan="6" class="loading">Looking…</td></tr>';
     $('balCards').innerHTML = '<div class="loading">Looking…</div>';
+    $('balNilRows').innerHTML = '<tr><td colspan="5" class="loading">Looking…</td></tr>';
+    $('balNilCards').innerHTML = '<div class="loading">Looking…</div>';
+    $('balNilCount').textContent = '';
     guard(REF.supabase().rpc('busy_balances',
             { p_company: firm, p_group: BAL_GROUP[balWhich], p_on: $('balOn').value }),
           intoTable('balRows', 6), balWhich)
       .then(function (res) {
-        if (!res) { $('balCards').innerHTML = ''; return; }
-        balData = res.data; balPage = 1;
+        if (!res) {
+          $('balCards').innerHTML = '';
+          $('balNilCards').innerHTML = '';
+          $('balNilRows').innerHTML = '';
+          $('balNilCount').textContent = '';
+          return;
+        }
+        balData = res.data; balPage = 1; balNilPage = 1;
         // The near-identical names, before the rows are drawn, so the flag
         // is on the first paint rather than appearing a moment later.
         loadSimilar().then(drawBalances);
@@ -3524,7 +3618,8 @@ upload_token = (shown on the download screen)</pre>
     var from = (balPage - 1) * BAL_PAGE, slice = list.slice(from, from + BAL_PAGE);
 
     $('balCount').textContent = list.length + ' of ' + (d.rows || []).length +
-      ' parties — ' + FIRM_NAME[firm] + ', at ' + dmy(d.on) + ', biggest first';
+      ' parties — ' + FIRM_NAME[firm] + ', at ' + dmy(d.on) + ', ' +
+      (balWhich === 'debtors' ? 'receivable first' : 'payable first') + ', biggest first';
 
     $('balRows').innerHTML = slice.length ? slice.map(function (r, i) {
       return '<tr class="bal-row" data-balparty="' + esc(r.party) + '">' +
@@ -3551,6 +3646,63 @@ upload_token = (shown on the download screen)</pre>
     }).join('') : '<div class="loading">Nobody with a balance.</div>';
 
     drawPagerInto('balPager', balPage, pages, function (n) { balPage = n; drawBalances(); });
+    drawNil(q);
+  }
+
+  /* SECTION 2 -- NIL BALANCE.
+
+     Every party in the group whose balance today is exactly zero, newest
+     first. The same search box filters it, so typing a name answers "have we
+     done business with them?" in one place whether or not they owe anything.
+
+     The balance column says NIL. Not 0, which reads as a rounding of a real
+     figure, and not blank, which reads as data we failed to load. */
+  function drawNil(q) {
+    var d = balData; if (!d) return;
+    var all = d.nil_rows || [];
+    var list = q ? REFUI.contains(all, q, 'party') : all;
+    var pages = Math.max(1, Math.ceil(list.length / BAL_PAGE));
+    if (balNilPage > pages) balNilPage = pages;
+    var from = (balNilPage - 1) * BAL_PAGE, slice = list.slice(from, from + BAL_PAGE);
+
+    $('balNilCount').textContent = list.length + ' of ' + all.length +
+      ' parties settled to nothing at ' + dmy(d.on) +
+      ' — most recently seen first, so the bottom is the people who have not been back';
+
+    var when = function (r) {
+      return r.last_txn ? dmy(r.last_txn) : '<span class="missing">never</span>';
+    };
+
+    $('balNilRows').innerHTML = slice.length ? slice.map(function (r, i) {
+      return '<tr>' +
+        '<td>' + (from + i + 1) + '</td>' +
+        '<td class="l">' + REFUI.light(r.party, q) + simPill(r.party) + '</td>' +
+        '<td class="r"><span class="nil-word">NIL</span></td>' +
+        '<td>' + when(r) + '</td>' +
+        '<td>' + (r.days_since === null || r.days_since === undefined ? '' : r.days_since) +
+        '</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="loading">' +
+        (q ? 'Nobody settled to nothing with that name.' : 'Nobody settled to nothing.') +
+        '</td></tr>';
+
+    $('balNilCards').innerHTML = slice.length ? slice.map(function (r) {
+      /* NIL sits at the FRONT of the right-hand block, not after the name.
+         Put after a name it drops onto a line of its own the moment the
+         name is long, and a stray NIL under R S INDUSTRIES reads as a
+         second row rather than as that row's balance. */
+      return '<div class="nilrow">' +
+        '<div class="nil-party">' + REFUI.light(r.party, q) + simPill(r.party) + '</div>' +
+        '<div class="nil-when"><span class="nil-word">NIL</span> · ' + when(r) +
+          (r.days_since === null || r.days_since === undefined
+             ? '' : ' · ' + r.days_since + 'd') + '</div>' +
+        '</div>';
+    }).join('') : '<div class="loading">' +
+        (q ? 'Nobody settled to nothing with that name.' : 'Nobody settled to nothing.') +
+        '</div>';
+
+    drawPagerInto('balNilPager', balNilPage, pages, function (n) {
+      balNilPage = n; drawNil(btrim($('balSearch').value));
+    });
   }
 
   /* One pager, written once, used by both new screens. */
@@ -4194,7 +4346,7 @@ upload_token = (shown on the download screen)</pre>
       var pc = Math.round((e.loaded / e.total) * 100);
       setCell(i, 'prog', '<div style="background:var(--surface-sunken); border-radius:3px; height:14px; position:relative">' +
         '<div style="background:var(--steel); height:14px; width:' + pc + '%; border-radius:3px"></div>' +
-        '<span style="position:absolute; inset:0; font-size:10px; line-height:14px">' + pc + '%</span></div>');
+        '<span style="position:absolute; inset:0; font-size:12px; line-height:16px">' + pc + '%</span></div>');
     };
     xhr.onload = function () {
       var d = {};
@@ -4796,7 +4948,9 @@ upload_token = (shown on the download screen)</pre>
   });
 
   /* ---- debtors and creditors ---- */
-  $('balSearch').addEventListener('input', function () { balPage = 1; drawBalances(); });
+  $('balSearch').addEventListener('input', function () {
+    balPage = 1; balNilPage = 1; drawBalances();
+  });
   $('balOn').addEventListener('change', function () {
     $('balRange').value = 'custom';       // a typed date is a range the four cannot say
     loadBalances();

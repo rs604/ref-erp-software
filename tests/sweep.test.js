@@ -140,12 +140,44 @@ const HIDDEN_TABLES = () => {
   return bad;
 };
 
+/* 12px IS A FLOOR ON EVERY SCREEN, NOT JUST A PHONE.
+
+   "Not phone only. A desktop screen is read for hours, and 11px on a
+   24-inch monitor is still 11px."
+
+   phone.test.js has held this floor at 380px for a while. The desk never
+   did, and twenty-six places had drifted below it -- status tags at 10px,
+   a CARRIED tag at 9px, hints, count chips, a column sub-heading, the
+   Dr/Cr suffix on every card in Busy.
+
+   It runs on every screen the sweep walks, at BOTH widths, so the next
+   11px is caught where it is written rather than at the next sweep. */
+const TINY = () => {
+  const out = [];
+  const name = el => el.id ? '#' + el.id
+    : el.tagName.toLowerCase() + (typeof el.className === 'string' && el.className.trim()
+        ? '.' + el.className.trim().split(/\s+/)[0] : '');
+  document.querySelectorAll('body *').forEach(el => {
+    if (el.children.length) return;                       // measure the text, not its box
+    if (!(el.textContent || '').trim()) return;
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return;
+    const b = el.getBoundingClientRect();
+    if (b.width === 0 || b.height === 0) return;
+    const px = parseFloat(cs.fontSize);
+    if (px < 12) out.push(Math.round(px * 10) / 10 + 'px ' + name(el) +
+                          ' "' + (el.textContent || '').trim().slice(0, 16) + '"');
+  });
+  return [...new Set(out)].slice(0, 6);
+};
+
 const results = [];
 const shots = [];
 
 async function look(page, name, file, viewportOnly) {
   const r = await page.evaluate(OVERLAP);
   const hidden = await page.evaluate(HIDDEN_TABLES);
+  const tiny = await page.evaluate(TINY);
   const shot = path.join(OUT, file + '.png');
   // The WHOLE page, not the top of it. A fault below the fold is still a
   // fault, and the viewport-only shot is how a screen gets called clean
@@ -157,10 +189,11 @@ async function look(page, name, file, viewportOnly) {
   await page.screenshot({ path: shot, fullPage: !viewportOnly });
   shots.push(shot);
   results.push({
-    name, ok: !r.sideways && !r.overlaps.length && !hidden.length,
+    name, ok: !r.sideways && !r.overlaps.length && !hidden.length && !tiny.length,
     detail: (r.sideways ? 'RUNS OFF THE SIDE. ' : '') +
             (hidden.length ? 'A TABLE WITH NO CARDS BESIDE IT, SO ITS ROWS ARE NOT ON A PHONE AT ALL: '
                              + hidden.join(' | ') + '. ' : '') +
+            (tiny.length ? 'UNDER THE 12px FLOOR: ' + tiny.join(' | ') + '. ' : '') +
             (r.overlaps.length ? 'PRINTED ON TOP: ' + r.overlaps.join(' | ') : ''),
   });
 }

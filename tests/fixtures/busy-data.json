@@ -4131,7 +4131,9 @@
     "closing": 41250,
     "entry_count": 9,
     "undated_openings": 7,
-    "anchor_fy": "2025-26",
+    "fy": "2025-26",
+    "has_opening": true,
+    "crosses_years": false,
     "capped": false,
     "rows": [
       {
@@ -4672,19 +4674,13 @@
     "company": "REF",
     "group": "Sundry Debtors",
     "on": "2026-09-22",
+    "fy": "2026-27",
     "dr_count": 2,
     "dr_total": 1288000,
     "cr_count": 2,
     "cr_total": 1247050,
+    "nil_count": 5,
     "rows": [
-      {
-        "party": "AKSON INDUSTRIES PVT LTD",
-        "balance": -997050,
-        "side": "Cr",
-        "last_txn": "2026-07-24",
-        "days_since": 60,
-        "entries": 7
-      },
       {
         "party": "HINDON METAFORMS PVT.LTD",
         "balance": 1200000,
@@ -4702,12 +4698,47 @@
         "entries": 35
       },
       {
+        "party": "AKSON INDUSTRIES PVT LTD",
+        "balance": -997050,
+        "side": "Cr",
+        "last_txn": "2026-07-24",
+        "days_since": 60,
+        "entries": 7
+      },
+      {
         "party": "MAGMA CYCLES",
         "balance": -250000,
         "side": "Cr",
         "last_txn": "2026-06-02",
         "days_since": 112,
         "entries": 17
+      }
+    ],
+    "nil_rows": [
+      {
+        "party": "MADHAV FABRICS",
+        "last_txn": "2026-09-15",
+        "days_since": 7
+      },
+      {
+        "party": "R S INDUSTRIES",
+        "last_txn": "2026-05-04",
+        "days_since": 141
+      },
+      {
+        "party": "RAMSON TYRES",
+        "last_txn": "2016-11-02",
+        "days_since": 3611
+      },
+      {
+        "party": "RAMSONS TYRES",
+        "last_txn": "2016-03-28",
+        "days_since": 3830
+      },
+      {
+        "party": "RIGHT SEEDS PVT. LTD",
+        "last_txn": "2015-04-25",
+        "days_since": 4168
       }
     ]
   },
