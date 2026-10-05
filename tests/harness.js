@@ -84,6 +84,20 @@ function __stubResult(name, args) {
   window.__TEST_DB_CALLS__.push({ name: name, args: args });
   var v = window.__TEST_DATA__[name];
   if (typeof v === 'function') v = v(args);
+  /* The per-type counts are DERIVED from the rows busy_search would hand
+     back, so the number on a tickbox and the rows behind it cannot
+     disagree -- which is the whole property this screen needs. It sits
+     above the "nothing recorded means an empty list" line below, because
+     an empty list of counts is a wrong answer, not a missing one. A test
+     that records its own counts means them, and keeps them. */
+  if (name === 'rpc:busy_type_counts' && v === undefined) {
+    var all = window.__TEST_DATA__['rpc:busy_search'];
+    var by = {};
+    if (Array.isArray(all)) all.forEach(function (r) { by[r.doc_type] = (by[r.doc_type] || 0) + 1; });
+    return { data: Object.keys(by).sort().map(function (t) {
+      return { doc_type: t, n: by[t] };
+    }), error: null };
+  }
   if (v === undefined) return { data: [], error: null };
   if (v && v.error) return { data: null, error: v.error };
   // Only the lookup lists a picker asks per keystroke. busy_search also
@@ -106,6 +120,26 @@ function __stubResult(name, args) {
     var real = (window.__TEST_DATA__['rpc:busy_party_list'] || [])
       .some(function (r) { return r && r.ledger === asked; });
     v = real ? v.filter(function (r) { return __stubNameKey(r && r.ledger) === want; }) : [];
+  }
+  /* THE TICKBOXES DECIDE WHAT COMES BACK, AND THE STUB IGNORED THEM.
+
+     rpc:busy_search answered with all 200 fixture rows whatever was ticked,
+     so a screenshot of "Sales Invoice only" showed Purchase Bills under it
+     and agreed with itself. The chip counts come from the same rows, so the
+     number on a box and the rows behind it cannot disagree here either --
+     which is the property worth testing. The query itself is still the
+     DATABASE's matching and is not imitated. */
+  if (name === 'rpc:busy_search' && args && Array.isArray(args.p_doc_types) &&
+      Array.isArray(v)) {
+    v = v.filter(function (r) { return args.p_doc_types.indexOf(r.doc_type) !== -1; });
+  }
+  // The undated count is its own question -- how many rows a DATE RANGE
+  // cannot hold -- and the fixture's rows all carry a date, so it is zero.
+  // Answering it with the row total put "200 rows have no date" under a
+  // table of 200 dated rows.
+  if (name === 'rpc:busy_search_count' && args && args.p_undated_only &&
+      typeof window.__TEST_DATA__['rpc:busy_search_count'] !== 'function') {
+    return { data: 0, error: null };
   }
   /* THE GROUP DECIDES THE ORDER, AND THE STUB ANSWERED BOTH GROUPS WITH THE
      DEBTORS FIXTURE. Creditors then drew the debtors' rows under the

@@ -269,7 +269,16 @@ function reportScreen(label, r) {
       ];
       window.__TEST_DATA__['rpc:busy_search'] = () => rows.map(r => Object.assign({}, base, r));
       window.__TEST_DATA__['rpc:busy_search_count'] = () => rows.length;
+      window.__TEST_DATA__['rpc:busy_type_counts'] = () => [{ doc_type: base.doc_type, n: rows.length }];
+      /* The stub honours the tickboxes now, the way the database does, and
+         these rows carry whatever type the fixture row they are built on
+         had. This block is about what a CARD says, not about which types
+         are showing, so every box is ticked first. */
+      document.querySelectorAll('#docChips .chip input').forEach(i => {
+        if (!i.checked) { i.checked = true; i.dispatchEvent(new Event('change', { bubbles: true })); }
+      });
     });
+    await page.waitForTimeout(500);
     await page.locator('#q').fill('');
     await page.locator('#q').type('avon skd', { delay: 10 });
     await page.waitForTimeout(800);

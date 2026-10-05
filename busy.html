@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>REF ERP — Busy Data</title>
-<script>window.__BUILD_VERSION__ = '1790439137';</script>
+<script>window.__BUILD_VERSION__ = '1791216080';</script>
 <script>
 (function () {
   function checkVersion() {
@@ -27,8 +27,8 @@
   window.addEventListener('online', checkVersion);
 })();
 </script>
-<link rel="stylesheet" href="theme.css?v=1790439137">
-<link rel="stylesheet" href="ui.css?v=1790439137">
+<link rel="stylesheet" href="theme.css?v=1791216080">
+<link rel="stylesheet" href="ui.css?v=1791216080">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   * { box-sizing:border-box; }
@@ -262,6 +262,15 @@
   .chip:hover { border-color:var(--steel); }
   .chip.on { background:var(--steel-tint); border-color:var(--steel); color:var(--steel-dark);
              font-weight:600; }
+  /* The count of rows hiding under this tickbox. Monospaced digits so the
+     numbers line up down a column of chips instead of jittering. */
+  .chip-n { font-size:12px; font-weight:700; font-variant-numeric:tabular-nums;
+            background:var(--surface-sunken); color:var(--muted);
+            border-radius:3px; padding:0 5px; margin-left:2px; }
+  .chip.on .chip-n { background:#fff; color:var(--steel-dark); }
+  /* Nothing of this type matches. Still shown -- a blank is a question and
+     a zero is an answer. */
+  .chip-n0 { opacity:.55; }
 
   .searchbar-end { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-left:auto; }
   .searchbar-end .fl { margin:0 0 0 4px; }
@@ -1418,7 +1427,7 @@ upload_token = (shown on the download screen)</pre>
     $('firmChip').className = 'firm-chip firm-' + f;
     loadSync();
     pageNo = 1;                            // a different firm is a different list
-    if (chosenTypes) refreshDocTypes();   // the types a firm actually has
+    refreshDocTypes();                    // the types a firm actually has
   }
 
   var TITLES = {
@@ -1632,7 +1641,17 @@ upload_token = (shown on the download screen)</pre>
     var w = th ? Math.round(th.getBoundingClientRect().width) : 0;
     table.style.setProperty('--desc-w', (w > 40 ? w - 18 : 250) + 'px');
   }
-  var shownCols = null;
+  /* A REAL VALUE FROM THE FIRST LINE, for the same reason chosenTypes has
+     one: visibleCols() reads shownCols[c.key], run() calls visibleCols()
+     before it writes anything, and the keystroke handler is bound long
+     before loadCols() runs inside the boot promise. Fixing chosenTypes
+     alone would have moved the same silent TypeError one line down. */
+  var shownCols = (function () {
+    var def = {};
+    COLUMNS.forEach(function (c) { def[c.key] = !c.offByDefault; });
+    def.sr = true;
+    return def;
+  })();
 
   function loadCols() {
     var def = {};
@@ -1736,32 +1755,93 @@ upload_token = (shown on the download screen)</pre>
           var fresh = found.filter(function (t) { return DOC_TYPES.indexOf(t) === -1; }).sort();
           DOC_TYPES = known.concat(fresh);
         }
+        docTypesKnown = true;
+        reconcileTypes();
         drawChips();
       })
-      .catch(function () { drawChips(); });   // the five are a fine fallback
+      // The five are a fine fallback, and once we have fallen back they are
+      // the best list there is -- so a saved choice is reconciled against
+      // them rather than being left unchecked forever.
+      .catch(function () { docTypesKnown = true; reconcileTypes(); drawChips(); });
   }
   var TYPE_STORE = 'ref-busy-types';
-  var chosenTypes = null;
+  var TYPE_DEFAULT = ['Sales Invoice'];
+  /* False until busy_doc_types has answered. Until then DOC_TYPES is five
+     hard-coded names and nothing may be measured against it. */
+  var docTypesKnown = false;
 
+  /* A REAL VALUE FROM THE FIRST LINE, NOT null.
+
+     This was null until loadTypes() ran inside the boot promise, and the
+     keystroke handler is bound long before that. run() reads
+     chosenTypes.length while building its filters -- BEFORE the line that
+     writes "Looking..." -- so a keystroke in that window threw a TypeError
+     that nothing caught, and the screen did not change at all. No rows, no
+     message, no error. That is what Raghbir saw when he searched for the
+     inclined conveyor.
+
+     A screen must never go quiet. Giving this a value at declaration means
+     the earliest possible keystroke searches Sales Invoice, which is what
+     the screen would have settled on anyway. */
+  var chosenTypes = TYPE_DEFAULT.slice();
+
+  /* DO NOT FILTER A SAVED CHOICE AGAINST A LIST THAT IS STILL PROVISIONAL.
+
+     DOC_TYPES starts as five hard-coded names and is replaced by the seven
+     the data actually holds, asynchronously. loadTypes() runs before that
+     answer lands -- during boot, and again on every visit to Price History
+     -- so filtering here silently threw away Debit Note and Credit Note,
+     and could leave the selection empty.
+
+     So: take the saved list as it stands, and reconcile it in
+     reconcileTypes() once the real list is known. */
   function loadTypes() {
-    // Sales Invoice only, until this person says otherwise.
-    var def = ['Sales Invoice'];
-    try {
-      var saved = JSON.parse(localStorage.getItem(TYPE_STORE) || 'null');
-      if (Array.isArray(saved)) def = saved.filter(function (t) { return DOC_TYPES.indexOf(t) !== -1; });
-    } catch (e) {}
-    chosenTypes = def;
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(TYPE_STORE) || 'null'); } catch (e) {}
+    chosenTypes = (Array.isArray(saved) && saved.length) ? saved.slice() : TYPE_DEFAULT.slice();
+    // Only once the real list is in. Reconciling here on the way up is
+    // exactly the fault: Debit Note and Credit Note are not among the five,
+    // so a saved choice containing either was thrown away before the seven
+    // arrived.
+    if (docTypesKnown) reconcileTypes();
+  }
+
+  /* AN EMPTY SELECTION IS NOT A STATE THE SCREEN MAY START UP IN.
+
+     Unticking every box is a deliberate act and the screen answers it while
+     he is looking at it. Coming back the next morning to a screen that shows
+     nothing, with no memory of having done it, is a different thing. So a
+     stored selection that is empty -- or that empties once the real type
+     list arrives -- falls back to the default, quietly. */
+  function reconcileTypes() {
+    var keep = chosenTypes.filter(function (t) { return DOC_TYPES.indexOf(t) !== -1; });
+    chosenTypes = keep.length ? keep : TYPE_DEFAULT.slice();
   }
   function saveTypes() {
     try { localStorage.setItem(TYPE_STORE, JSON.stringify(chosenTypes)); } catch (e) {}
   }
+
+  /* How many rows sit under each tickbox for the search actually typed,
+     filled in by run(). Null until the first answer comes back, so a chip
+     says nothing rather than saying zero before it has been counted. */
+  var typeCounts = null;
+
   function drawChips() {
     if (typeof countFilters === 'function') countFilters();
     $('docChips').innerHTML = DOC_TYPES.map(function (t) {
       var on = chosenTypes.indexOf(t) !== -1;
-      return '<label class="chip' + (on ? ' on' : '') + '">' +
+      /* THE NUMBER GOES ON THE BOX. The screen opens on Sales Invoice only,
+         which is right for what he sells and silently wrong for everything
+         he buys: `pipe` is 64 rows here and 1,150 under Purchase Bill. A
+         filter that hides rows has to say how many it is hiding. */
+      var n = typeCounts ? (typeCounts[t] || 0) : null;
+      var tag = (n === null) ? '' :
+        '<span class="chip-n' + (n ? '' : ' chip-n0') + '">' + inr.format(n) + '</span>';
+      return '<label class="chip' + (on ? ' on' : '') + '"' +
+             (n === null ? '' : ' title="' + inr.format(n) + ' row' + (n === 1 ? '' : 's') +
+               ' of this type match what is typed"') + '>' +
              '<input type="checkbox" data-type="' + esc(t) + '"' + (on ? ' checked' : '') + '>' +
-             esc(t) + '</label>';
+             esc(t) + tag + '</label>';
     }).join('');
   }
 
@@ -1813,36 +1893,93 @@ upload_token = (shown on the download screen)</pre>
      information about what came out of Busy, not a defect to tidy away. */
   var undatedOut = 0;
 
+  /* A SCREEN MUST NEVER GO QUIET.
+
+     Every path out of a search ends in something visible: rows, "nothing
+     matches", or a named error. "I could not ask" and "there is nothing"
+     are different sentences and must never be shown as the same thing, or
+     as nothing at all.
+
+     run() is the one place that can throw before any of that is written, so
+     it is wrapped: anything unexpected puts the message where the rows
+     would have gone, and in the cards beside them. */
   function run() {
+    try { runInner(); }
+    catch (err) {
+      var n = 1;
+      try { n = visibleCols().length || 1; } catch (e2) { n = 1; }
+      intoTable('rows', n)('Something went wrong building this search. ' +
+        esc((err && err.message) || String(err)) +
+        ' — nothing was asked for, so this is not an empty result.');
+      intoBox('cards')('Something went wrong building this search. ' +
+        esc((err && err.message) || String(err)));
+      $('rowCount').textContent = '';
+      $('pager').style.display = 'none';
+    }
+  }
+
+  /* ONE DECISION ABOUT AN EMPTY SELECTION, MADE HERE AND USED BY BOTH SIDES.
+
+     run() used to send `null` for an empty list, which asks for EVERY type,
+     and render() then threw the rows away with "nothing is ticked". The
+     pager could show 1,476 rows above an empty table. An empty selection
+     means NOTHING, so nothing is asked for. */
+  function noTypesTicked() {
+    if (chosenTypes.length) return false;
+    var cols = visibleCols().length;
+    $('rows').innerHTML = '<tr><td colspan="' + cols + '" class="loading">' +
+      'No voucher types are ticked, so there is nothing to show. Tick at least one above.</td></tr>';
+    intoBox('cards')('No voucher types are ticked, so there is nothing to show. ' +
+      'Tap <strong>Filters</strong> and tick at least one.');
+    totalRows = 0;
+    $('rowCount').textContent = '';
+    $('pager').style.display = 'none';
+    return true;
+  }
+
+  function runInner() {
     clearTimeout(typingTimer);
     var q = $('q').value.trim();
     lastQuery = q;
     pageSizeNow = parseInt($('pageSize').value, 10) || 50;
     var cols = visibleCols().length;
     var mine = ++runToken;                // an older answer must not overwrite a newer one
+    if (noTypesTicked()) return;
     var filters = {
       p_company: firm,
       p_query: q || null,
       p_party: null,
-      // null means every type. The screen never sends an empty list, because
-      // unticking everything is answered on the screen instead.
-      p_doc_types: chosenTypes.length ? chosenTypes : null,
+      // Never null and never empty: noTypesTicked() above has already
+      // answered the empty case, so this is always the real list.
+      p_doc_types: chosenTypes,
       p_date_from: $('from').value || null,
       p_date_to: $('to').value || null
     };
     $('rows').innerHTML = '<tr><td colspan="' + cols + '" class="loading">Looking…</td></tr>';
 
-    // How many match in total, so the pager can say "page 2 of 14". Counted
-    // with the same filters, so it counts the same rows.
-    // p_undated_only is passed rather than left to its default, so the two
-    // calls below read as the pair they are: the rows inside the range, and
-    // the rows the range can never hold.
-    Promise.resolve(REF.supabase().rpc('busy_search_count',
-      Object.assign({}, filters, { p_undated_only: false })))
+    // How many match under EACH type, so the pager can say "page 2 of 14"
+    // and the tickboxes can say what they are hiding. The total is the sum
+    // over the ticked types, which is the number busy_search_count returned
+    // before -- one call, doing both jobs.
+    Promise.resolve(REF.supabase().rpc('busy_type_counts', {
+      p_company: filters.p_company,
+      p_query: filters.p_query,
+      p_party: filters.p_party,
+      p_date_from: filters.p_date_from,
+      p_date_to: filters.p_date_to
+    }))
       .then(function (c) {
         if (mine !== runToken) return;
-        totalRows = (c && !c.error && Number(c.data)) || 0;
+        var map = {};
+        if (c && !c.error) {
+          (c.data || []).forEach(function (r) { map[r.doc_type] = Number(r.n) || 0; });
+        }
+        typeCounts = map;
+        totalRows = chosenTypes.reduce(function (a, t) { return a + (map[t] || 0); }, 0);
         if (pageNo > pageCount()) pageNo = pageCount();
+        drawChips();
+        drawPager();
+        if (lastShown.rows.length) drawRowCount();
       })
       .catch(function () { totalRows = 0; });
 
@@ -1875,14 +2012,12 @@ upload_token = (shown on the download screen)</pre>
       });
   }
 
+  /* No second opinion about an empty selection here. noTypesTicked() in
+     run() decided it and did not ask, so whatever reaches render() was
+     genuinely asked for. Two places deciding the same thing is how the
+     pager came to show a count above an empty table. */
   function render(rows, q, limit) {
     var cols = visibleCols();
-    if (!chosenTypes.length) {
-      $('rows').innerHTML = '<tr><td colspan="' + cols.length + '" class="loading">' +
-        'No voucher types are ticked, so there is nothing to show. Tick at least one above.</td></tr>';
-      $('rowCount').textContent = '';
-      return;
-    }
     if (!rows.length) {
       $('rows').innerHTML = '<tr><td colspan="' + cols.length + '" class="loading">' +
         (q ? 'Nothing matches “' + esc(q) + '”.'
@@ -1958,11 +2093,6 @@ upload_token = (shown on the download screen)</pre>
     var box = $('cards');
     if (!box) return;
 
-    if (!chosenTypes.length) {
-      box.innerHTML = '<div class="loading">No voucher types are ticked, so there is nothing ' +
-        'to show. Tap <strong>Filters</strong> and tick at least one.</div>';
-      return;
-    }
     if (!rows.length) {
       box.innerHTML = '<div class="loading">' +
         (q ? 'Nothing matches “' + esc(q) + '”.'
@@ -4593,7 +4723,7 @@ upload_token = (shown on the download screen)</pre>
     if ($('from').value) n++;
     if ($('to').value) n++;
     // Every type ticked is the default, not a filter.
-    if (chosenTypes.length && chosenTypes.length !== DOC_TYPES.length) n++;
+    if (chosenTypes && chosenTypes.length && chosenTypes.length !== DOC_TYPES.length) n++;
     var chip = $('filterCount');
     if (chip) {
       chip.textContent = n;

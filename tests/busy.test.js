@@ -24,6 +24,22 @@ const HANDLERS = `{ 'me': function () { return { success: true }; } }`;
 const results = [];
 const record = (name, ok, detail) => results.push({ name, ok, detail: detail || '' });
 
+/* EVERY TYPE TICKED.
+
+   The screen opens on Sales Invoice only, and the stub honours that now --
+   it hands back the rows of the ticked types and nothing else, the way the
+   database does. A test about paging, match tiers or a missing voucher
+   number is not a test about which types are showing, so it asks for all of
+   them first and then looks at the rows. */
+async function tickEveryType(p) {
+  await p.evaluate(() => {
+    document.querySelectorAll('#docChips .chip input').forEach(i => {
+      if (!i.checked) { i.checked = true; i.dispatchEvent(new Event('change', { bubbles: true })); }
+    });
+  });
+  await p.waitForTimeout(700);
+}
+
 async function openBusy(server, browser, user) {
   const page = await browser.newPage({ viewport: { width: 1360, height: 800 } });
   const errors = [];
@@ -220,7 +236,14 @@ async function openBusy(server, browser, user) {
       window.__TEST_DATA__['rpc:busy_search'] = a =>
         rows.slice(a.p_offset || 0, (a.p_offset || 0) + (a.p_limit || 50));
       window.__TEST_DATA__['rpc:busy_search_count'] = () => rows.length;
+      // The total is the sum of the ticked tickboxes now, so a test that
+      // installs its own rows has to say how they fall across the types.
+      const by = {};
+      rows.forEach(r => { by[r.doc_type] = (by[r.doc_type] || 0) + 1; });
+      window.__TEST_DATA__['rpc:busy_type_counts'] =
+        () => Object.keys(by).sort().map(t => ({ doc_type: t, n: by[t] }));
     }, DB['rpc:busy_search']);
+    await tickEveryType(page);
     await page.fill('#q', '');
     await page.waitForTimeout(500);
     const shown = await page.locator('#rows tr').count();
@@ -585,8 +608,10 @@ async function openBusy(server, browser, user) {
     // the reports' quiet filters wear the same chip look deliberately and are
     // plain buttons, so an unscoped .chip walked into one with no tickbox in
     // it and the whole file died on the first of them.
+    // The label alone: a chip carries its row count now, and "Receipt 0" is
+    // the chip for Receipt.
     const chips = await p.evaluate(() => Array.from(document.querySelectorAll('#docChips .chip')).map(c => ({
-      label: c.innerText.trim(), on: c.querySelector('input').checked })));
+      label: c.querySelector('input').dataset.type, on: c.querySelector('input').checked })));
     // Counted against the DATA, not against a number written here. The types
     // come from busy_doc_types now, so a type the parser starts reading
     // tomorrow gets a tickbox without anyone editing a list.
@@ -630,6 +655,10 @@ async function openBusy(server, browser, user) {
       await p.evaluate(() => document.activeElement?.id === 'q'));
 
     // 6 — the highlight
+    // These blocks craft their own rows out of the fixture, and a crafted
+    // row carries whatever type its fixture row had. They are about what a
+    // row SAYS, not about which types are showing, so every box is ticked.
+    await tickEveryType(p);
     await p.evaluate(rows => {
       window.__TEST_DATA__['rpc:busy_search'] = () => [
         Object.assign({}, rows[0], { item: 'MS PIPE 80X40X2.5', party: 'AGGARWAL STEELS',
@@ -767,6 +796,10 @@ async function openBusy(server, browser, user) {
     await p.evaluate(() => {
       window.__TEST_DATA__['rpc:busy_search_count'] =
         (args) => (args && args.p_undated_only) ? 5 : 120;
+      // 120 inside the range, spread over one type, because the total on
+      // the line is the sum of the ticked boxes.
+      window.__TEST_DATA__['rpc:busy_type_counts'] =
+        () => [{ doc_type: 'Sales Invoice', n: 120 }];
     });
     await p.locator('#from').fill('2024-04-01');
     await p.waitForTimeout(700);
@@ -869,6 +902,18 @@ async function openBusy(server, browser, user) {
       window.__TEST_DATA__['rpc:busy_search'] = a =>
         rows.slice(a.p_offset || 0, (a.p_offset || 0) + (a.p_limit || 50));
       window.__TEST_DATA__['rpc:busy_search_count'] = () => rows.length;
+      // The total on the pager is the sum of the ticked tickboxes now, so
+      // the paging fixture has to answer that call too, grouped the way the
+      // database groups it.
+      const by = {};
+      rows.forEach(r => { by[r.doc_type] = (by[r.doc_type] || 0) + 1; });
+      window.__TEST_DATA__['rpc:busy_type_counts'] =
+        () => Object.keys(by).sort().map(t => ({ doc_type: t, n: by[t] }));
+      // Every type ticked, so this test is about paging and not about
+      // which types are showing.
+      document.querySelectorAll('#docChips .chip input').forEach(i => {
+        if (!i.checked) { i.checked = true; i.dispatchEvent(new Event('change', { bubbles: true })); }
+      });
     }, DB['rpc:busy_search']);
     await p.selectOption('#pageSize', '25');
     await p.waitForTimeout(600);
@@ -2334,6 +2379,151 @@ async function openBusy(server, browser, user) {
     record('each PAN is the one inside its own GST number',
       refPart.includes(REF_GSTIN.slice(2, 12)) && rsPart.includes(RS_GSTIN.slice(2, 12)),
       `${REF_GSTIN.slice(2, 12)} and ${RS_GSTIN.slice(2, 12)}`);
+  }
+
+  /* ================================================================
+     THE SCREEN THAT WENT QUIET
+
+     Raghbir searched for the inclined conveyor he sold to New Hero Auto
+     Rim and the screen showed nothing at all as he typed. Not a message,
+     not "Looking...", nothing.
+
+     The database was never at fault: busy_search_count('REF','inclined
+     conveyor',null,'{Sales Invoice}') is 74 and has been all along. Four
+     defects in the voucher-type code on this page, and the fourth is the
+     one that matches what he saw: chosenTypes was null until the boot
+     promise resolved, the keystroke handler is bound long before that,
+     and run() reads chosenTypes.length before it writes "Looking..." --
+     so an early keystroke threw a TypeError nothing caught and the screen
+     did not change at all.
+
+     THE RULE: a screen must never go quiet. Rows, "nothing matches", or a
+     named error. "I could not ask" and "there is nothing" are different
+     sentences and are never shown as the same thing, or as nothing.
+     ================================================================ */
+  {
+    /* 4 — the declaration itself. The fault was an ORDER-OF-STARTUP fault,
+       so the guard against it is the declaration, read from the source. A
+       browser test cannot reach into the closure to see it. */
+    const src = require('fs').readFileSync(require('path').join(H.ROOT, 'busy.html'), 'utf8');
+    record('the voucher types have a real value from the first line, never null',
+      /var chosenTypes = TYPE_DEFAULT\.slice\(\);/.test(src) &&
+      !/var chosenTypes = null/.test(src),
+      (src.match(/var chosenTypes = .*/) || ['(not found)'])[0]);
+    record('and run\u2019s body is wrapped, so a throw writes a line instead of nothing',
+      /function run\(\) \{\s*try \{ runInner\(\); \}/.test(src));
+
+    /* 1 — a saved type outside the hard-coded five used to be filtered away
+       against a DOC_TYPES that had not been replaced yet. */
+    const p1 = await browser.newPage({ viewport: { width: 1360, height: 800 } });
+    await p1.addInitScript(() => {
+      localStorage.setItem('ref-busy-types', JSON.stringify(['Sales Invoice', 'Receipt']));
+    });
+    await H.open(server, p1, { file: 'busy.html', user: OWNER, handlers: HANDLERS,
+                               data: JSON.stringify(DB) });
+    await p1.waitForSelector('#shell', { state: 'visible' });
+    await p1.waitForTimeout(1200);
+    const ticked = () => p1.evaluate(() =>
+      Array.from(document.querySelectorAll('#docChips .chip input'))
+        .filter(i => i.checked).map(i => i.dataset.type));
+    record('a saved selection containing a type outside the built-in five survives a reload',
+      (await ticked()).includes('Receipt'), (await ticked()).join(', ') || 'none');
+    await p1.close();
+
+    /* 3 — and an empty one is not a state the screen may start up in. */
+    const p2 = await browser.newPage({ viewport: { width: 1360, height: 800 } });
+    await p2.addInitScript(() => {
+      localStorage.setItem('ref-busy-types', JSON.stringify([]));
+    });
+    await H.open(server, p2, { file: 'busy.html', user: OWNER, handlers: HANDLERS,
+                               data: JSON.stringify(DB) });
+    await p2.waitForSelector('#shell', { state: 'visible' });
+    await p2.waitForTimeout(1200);
+    const back = await p2.evaluate(() =>
+      Array.from(document.querySelectorAll('#docChips .chip input'))
+        .filter(i => i.checked).map(i => i.dataset.type));
+    record('a saved selection of nothing loads as the default, not as empty',
+      back.length === 1 && back[0] === 'Sales Invoice', back.join(', ') || 'none');
+
+    /* 2 — run() and render() agreed on nothing. The pager could show a
+       count above an empty table. */
+    const seen = await p2.evaluate(() => ({
+      rows: document.querySelectorAll('#rows tr:not(:has(.loading))').length,
+      text: document.getElementById('rows').textContent.replace(/\s+/g, ' ').trim().slice(0, 60),
+      count: document.getElementById('rowCount').textContent,
+    }));
+    record('the default selection actually draws rows rather than an empty table',
+      seen.rows > 0, seen.rows + ' rows · ' + seen.text);
+
+    /* Untick everything: ONE decision, and it is "nothing". */
+    await p2.evaluate(() => {
+      document.querySelectorAll('#docChips .chip input').forEach(i => {
+        if (i.checked) { i.checked = false; i.dispatchEvent(new Event('change', { bubbles: true })); }
+      });
+    });
+    await p2.waitForTimeout(700);
+    const none = await p2.evaluate(() => ({
+      text: document.getElementById('rows').textContent.replace(/\s+/g, ' ').trim(),
+      count: document.getElementById('rowCount').textContent.trim(),
+      pager: getComputedStyle(document.getElementById('pager')).display,
+      asked: window.__TEST_DB_CALLS__.filter(c => c.name === 'rpc:busy_search').length,
+    }));
+    record('unticking everything says so, and does not leave a count above an empty table',
+      /No voucher types are ticked/.test(none.text) && none.count === '' &&
+      none.pager === 'none', JSON.stringify(none).slice(0, 140));
+    await p2.close();
+
+    /* 5 — whatever run() asked for is what render() draws, and the number
+       on each tickbox is the number of rows behind it. */
+    const p3 = await browser.newPage({ viewport: { width: 1360, height: 800 } });
+    await H.open(server, p3, { file: 'busy.html', user: OWNER, handlers: HANDLERS,
+                               data: JSON.stringify(DB) });
+    await p3.waitForSelector('#shell', { state: 'visible' });
+    await p3.waitForTimeout(1200);
+    const chipN = await p3.evaluate(() => {
+      const out = {};
+      document.querySelectorAll('#docChips .chip').forEach(c => {
+        const n = c.querySelector('.chip-n');
+        out[c.querySelector('input').dataset.type] = n ? Number(n.textContent.replace(/[^\d]/g, '')) : null;
+      });
+      return out;
+    });
+    record('every tickbox carries the count of rows hiding under it',
+      Object.keys(chipN).length > 0 && Object.values(chipN).every(v => v !== null),
+      Object.keys(chipN).map(k => k + '=' + chipN[k]).join(' · '));
+    record('and Purchase Bill shows its own number, not the one on Sales Invoice',
+      chipN['Purchase Bill'] > 0 && chipN['Purchase Bill'] !== null,
+      'Sales Invoice ' + chipN['Sales Invoice'] + ' · Purchase Bill ' + chipN['Purchase Bill']);
+
+    const drawn = await p3.evaluate(() => {
+      const heads = [...document.querySelectorAll('#view-search thead th')].map(h => h.textContent.trim());
+      const at = heads.indexOf('Type');
+      return [...document.querySelectorAll('#rows tr')]
+        .filter(r => !r.querySelector('.loading'))
+        .map(r => r.cells[at] ? r.cells[at].textContent.trim() : '');
+    });
+    record('what was asked for is what is drawn — no row of an unticked type',
+      drawn.length > 0 && drawn.every(t => t === 'Sales Invoice'),
+      [...new Set(drawn)].join(', ') || 'no rows');
+    const said = await p3.evaluate(() => document.getElementById('rowCount').textContent);
+    record('and the row count is the sum of the ticked tickboxes, not of all of them',
+      said.indexOf(String(chipN['Sales Invoice'])) !== -1,
+      said.trim().slice(0, 70) + '  (Sales Invoice chip says ' + chipN['Sales Invoice'] + ')');
+
+    /* 6 — an error is a sentence of its own, never "nothing matches". */
+    await p3.evaluate(() => {
+      window.__TEST_DATA__['rpc:busy_search'] = { error: { message: 'connection refused by the database' } };
+      const el = document.getElementById('q');
+      el.value = 'inclined conveyor';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await p3.waitForTimeout(900);
+    const errText = await p3.evaluate(() =>
+      document.getElementById('rows').textContent.replace(/\s+/g, ' ').trim());
+    record('an error shows the error, never "nothing matches"',
+      /connection refused by the database/.test(errText) && !/Nothing matches/i.test(errText),
+      errText.slice(0, 110));
+    await p3.close();
   }
 
   await browser.close();

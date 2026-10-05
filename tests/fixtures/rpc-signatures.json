@@ -1,7 +1,7 @@
 {
   "_refresh": "see tests/check-rpc-calls.js",
-  "_taken_from": "public schema of refcon-erp, 26 Sep 2026, after migration 81",
-  "_fingerprint": "cac8226b9ba08ff381edcd3fe9dc95a5",
+  "_taken_from": "public schema of refcon-erp, 5 Oct 2026, after migration 82",
+  "_fingerprint": "a26d938c3ebb6a6178c3788dde6f86cc",
   "_fingerprint_is": "md5 of fn:args|total|with_defaults for the 51 recorded functions, one per line, sorted by name. The query is in tests/README.md. Re-saving this file silences the staleness warning whether or not anything was checked; this number is what proves it was.",
   "functions": {
     "busy_balances": {
@@ -313,6 +313,17 @@
       ],
       "total": 2,
       "with_defaults": 0
+    },
+    "busy_type_counts": {
+      "args": [
+        "p_company",
+        "p_query",
+        "p_party",
+        "p_date_from",
+        "p_date_to"
+      ],
+      "total": 5,
+      "with_defaults": 4
     },
     "busy_vouchers": {
       "args": [
