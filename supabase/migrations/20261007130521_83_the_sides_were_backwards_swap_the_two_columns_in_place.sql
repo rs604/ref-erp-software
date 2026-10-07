@@ -1,0 +1,53 @@
+-- ==============================================================================
+-- 83 THE SIDES WERE BACKWARDS. SWAP THE TWO COLUMNS IN PLACE.
+--
+-- "In Busy a positive Value1 is a CREDIT and a negative one is a DEBIT. My
+-- parser read it the other way round."
+--
+-- The parser was fixed on 21 September (2026.09.21-mdbtools). The 98,644 rows
+-- already loaded were written by the old one, so every Dr on the ledger screen
+-- is a Cr, and PAYABLE and RECEIVABLE are swapped on debtors and creditors.
+--
+-- THE RELOAD IS CANCELLED, AND A SWAP IS EQUIVALENT TO IT.
+-- The corrected parser and the loaded rows differ in exactly one way: debit
+-- holds what belongs in credit and credit holds what belongs in debit. Same
+-- row counts, same voucher keys, therefore the same vouchers -- established
+-- on 21 Sep and re-checked since. Clearing and re-uploading 98,644 rows would
+-- rewrite every one of them to reach the same place, and leaves the ERP empty
+-- in between with no way to refill it from this side.
+--
+-- Postgres evaluates both right-hand sides against the OLD row, so the two
+-- exchange in a single pass. There is no temporary column and no window in
+-- which one side holds the other's value.
+--
+-- IT IS ITS OWN UNDO. Running it twice returns every row to where it started,
+-- which is what makes it safe to run at all.
+--
+-- CHECKED BEFORE WRITING THIS, against the live project on 7 Oct:
+--   * the three generated columns are search_comp, search_norm and
+--     search_words. All three are built from search_text and none of them
+--     reads debit or credit. search_text itself holds names and narration,
+--     no amounts, so the search index cannot go stale behind this.
+--   * the two triggers are busy_history_set_updated_at (set_updated_at) and
+--     busy_history_sr_no_guard (busy_guard_sr_no). Neither function mentions
+--     debit or credit.
+--   * busy_history_ref, busy_history_rs and busy_item_rate_stats are all
+--     VIEWS -- recomputed on read, not stored -- so they follow by themselves.
+--
+-- ITEM ROWS ARE UNAFFECTED. They carry 0 and 0, and 0 swapped with 0 is 0.
+--
+-- WHAT THIS DOES NOT FIX, AND MUST NOT BE READ AS FIXING:
+-- Four years do not balance Dr = Cr, and did not before this ran:
+--     REF 2022-23   Cr higher by 26,097.00
+--     RS  2016-17   Cr higher by 48,000.00
+--     RS  2018-19   Cr higher by    100.00
+--     RS  2019-20   Dr higher by 41,991.82
+-- Every one of those sits in the OPENING rows. Every ledger voucher in the
+-- whole table balances to the paisa -- checked voucher by voucher, zero
+-- exceptions. Busy's opening list for a year covers the party ledgers, not
+-- the whole trial balance, so it is not expected to net to zero on its own.
+-- The swap mirrors these four differences and changes nothing else about
+-- them. It is a question for the export, not for this migration.
+-- ==============================================================================
+
+update public.busy_history set debit = credit, credit = debit;
